@@ -179,7 +179,7 @@ tests:
           path: spec.template.spec.containers[0].resources
           value:
             requests: {cpu: 100m, memory: 128Mi}
-            limits: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: 128m, memory: 192Mi}
       - equal:
           path: spec.template.spec.securityContext.runAsNonRoot
           value: true

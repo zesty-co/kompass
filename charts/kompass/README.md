@@ -21,6 +21,15 @@ Install the chart and verify cluster identity, licensing, and deployment health.
 Follow the [installation guide](docs/install.md) for manual installation, configuration checks,
 verification, troubleshooting, and removal.
 
+## Supported kinds
+
+The umbrella chart owns `global.supportedKinds` (the built-in workload catalog) and
+`global.additionalSupportedKinds` (an optional extension list, empty by default). It renders both
+as separate YAML strings in the `Opaque` Secret named by `global.supportedKindsSecretName`,
+defaulting to `kompass-supported-kinds`, in the Helm release namespace under keys `supportedKinds`
+and `additionalSupportedKinds`. Each kind retains its `Group`, `Version`, `Kind`, `Alias`, and
+`Properties` fields; `Resource` is optional.
+
 ## Product recording rules
 
 The spoke chart mounts the base recording rules ConfigMap at `/config` and

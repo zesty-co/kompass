@@ -152,6 +152,8 @@ spec:
             {{- end }}
             - name: ENABLE_APPLICATION_WEBHOOK
               value: {{ .Values.actionTaker.webhooks.application.enabled | quote }}
+            - name: ENABLE_HPA_WEBHOOK
+              value: {{ .Values.actionTaker.webhooks.hpa.enabled | quote }}
             - name: CM_NAME
               value: {{ include "kompass-pod-rightsizing-config.name" . }}
             - name: INITIAL_VALUES_CM_NAME

@@ -73,3 +73,30 @@ tests:
       - equal:
           path: webhooks[6].name
           value: mapplication.kb.io
+
+  - it: renders the HPA mutating webhook only when enabled
+    template: templates/webhook/mutating-webhook.yaml
+    values:
+      - ../render/fixtures/enabled-values.yaml
+    set:
+      actionTaker.webhooks.hpa.enabled: true
+    asserts:
+      - contains:
+          path: webhooks
+          content:
+            name: vhorizontalpodautoscaler-v2.kb.io
+          any: true
+      - equal:
+          path: webhooks[0].clientConfig.service.path
+          value: /mutate-autoscaling-v2-horizontalpodautoscaler
+
+  - it: excludes the HPA mutating webhook by default
+    template: templates/webhook/mutating-webhook.yaml
+    values:
+      - ../render/fixtures/enabled-values.yaml
+    asserts:
+      - notContains:
+          path: webhooks
+          content:
+            name: vhorizontalpodautoscaler-v2.kb.io
+          any: true

@@ -8,6 +8,109 @@ global:
   license:
     secretName: kompass-license
     documentKey: kompass_license
+  supportedKindsSecretName: kompass-supported-kinds
+  additionalSupportedKinds: []
+  supportedKinds:
+    - Group: "apps"
+      Version: "v1"
+      Kind: "Deployment"
+      Alias: "deployment"
+      Properties:
+        - Native
+        - Standalone
+        - Virtual
+        - Builtin
+    - Group: "apps"
+      Version: "v1"
+      Kind: "StatefulSet"
+      Alias: "statefulset"
+      Properties:
+        - Native
+        - Standalone
+        - Virtual
+        - Builtin
+    - Group: "apps"
+      Version: "v1"
+      Kind: "DaemonSet"
+      Alias: "daemonset"
+      Properties:
+        - Native
+        - Standalone
+        - Virtual
+        - Builtin
+    - Group: "apps"
+      Version: "v1"
+      Kind: "ReplicaSet"
+      Alias: "replicaset"
+      Properties:
+        - Native
+        - Standalone
+        - Virtual
+        - Builtin
+    - Group: "batch"
+      Version: "v1"
+      Kind: "Job"
+      Alias: "job"
+      Properties:
+        - Virtual
+        - Builtin
+    - Group: "batch"
+      Version: "v1"
+      Kind: "CronJob"
+      Alias: "cronjob"
+      Properties:
+        - Native
+        - Standalone
+        - Virtual
+        - Builtin
+    # Custom
+    - Group: "argoproj.io"
+      Version: "v1alpha1"
+      Kind: "Rollout"
+      Alias: "rollout"
+      Properties:
+        - Native
+        - Standalone
+        - Virtual
+    - Group: "argoproj.io"
+      Version: "v1alpha1"
+      Kind: "Workflow"
+      Alias: "workflow"
+      Properties:
+        - Virtual
+    - Group: "keda.sh"
+      Version: "v1alpha1"
+      Kind: "ScaledJob"
+      Alias: "scaledjob"
+      Properties:
+        - Standalone
+        - Virtual
+    - Group: "sparkoperator.k8s.io"
+      Version: "v1beta2"
+      Kind: "SparkApplication"
+      Alias: "sparkapplication"
+      Properties:
+        - Virtual
+    - Group: ""
+      Version: "v1"
+      Kind: "Pod"
+      Alias: "pod"
+      Properties:
+        - Native
+        - Virtual
+        - Builtin
+    - Group: "kompass.zesty.co"
+      Version: "v1alpha1"
+      Kind: "VirtualWorkload"
+      Alias: "virtualworkload"
+      Properties:
+        - Standalone
+    - Group: "kompass.zesty.co"
+      Version: "v1alpha1"
+      Kind: "ClusterVirtualWorkload"
+      Alias: "clustervirtualworkload"
+      Properties:
+        - Standalone
   # -- (object) KWOK test-cluster integration.
   kwok:
     # -- (bool) Enable scraping metrics from fake KWOK nodes.
@@ -68,7 +171,7 @@ global:
   # -- (map) Guardian request ceilings for first-party Kompass workloads.
   guardian:
     # -- (bool) Enable Guardian resource profiles for first-party Kompass charts.
-    enabled: false
+    enabled: true
     requestCeilings:
       bridge:
         bridge:
@@ -251,6 +354,8 @@ rightsizing:
   # -- (map) Optional custom replica aggregation quantiles (integers 1..99).
   config:
     customReplicaAggregationMethodsOverride: {}
+    kompassWorkloadsRightsizing:
+      enabled: true
 disk:
   # -- (bool) Enable or disable the Zesty disk optimization feature components.
   enabled: false
@@ -265,6 +370,9 @@ victoriaMetrics:
   serviceAccount:
     name: kompass-victoria-metrics
   server:
+    env:
+      - name: GOMAXPROCS
+        value: "2"
     image:
       variant: scratch
     annotations:
@@ -280,8 +388,11 @@ victoriaMetrics:
       storageClassName: *storageClassName
     resources:
       requests:
-        memory: "3Gi"
-        cpu: "0.5"
+        memory: "688Mi"
+        cpu: "200m"
+      limits:
+        memory: "864Mi"
+        cpu: "300m"
     extraArgs:
       retentionPeriod: 1w
       storageDataPath: /victoria-metrics-data
@@ -297,6 +408,9 @@ victoriaMetricsCluster:
   serviceAccount:
     name: kompass-victoria-metrics-cluster
   vmselect:
+    env:
+      - name: GOMAXPROCS
+        value: "8"
     image:
       variant: cluster-scratch
     extraLabels:
@@ -348,9 +462,15 @@ victoriaMetricsCluster:
     replicaCount: 2
     resources:
       requests:
-        memory: "512Mi"
-        cpu: "0.5"
+        memory: "640Mi"
+        cpu: "530m"
+      limits:
+        memory: "896Mi"
+        cpu: "689m"
   vminsert:
+    env:
+      - name: GOMAXPROCS
+        value: "4"
     image:
       variant: cluster-scratch
     extraLabels:
@@ -397,9 +517,15 @@ victoriaMetricsCluster:
     replicaCount: 2
     resources:
       requests:
-        memory: "512Mi"
-        cpu: "0.5"
+        memory: "300Mi"
+        cpu: "100m"
+      limits:
+        memory: "420Mi"
+        cpu: "130m"
   vmstorage:
+    env:
+      - name: GOMAXPROCS
+        value: "5"
     image:
       variant: cluster-scratch
     extraLabels:
@@ -450,8 +576,11 @@ victoriaMetricsCluster:
     replicaCount: 2
     resources:
       requests:
-        memory: "3Gi"
-        cpu: "0.5"
+        memory: "1000Mi"
+        cpu: "500m"
+      limits:
+        memory: "1400Mi"
+        cpu: "650m"
   vmauth:
     image:
       variant: scratch
@@ -459,6 +588,13 @@ victoriaMetricsCluster:
       app.kubernetes.io/part-of: kompass
     podLabels:
       app.kubernetes.io/part-of: kompass
+    resources:
+      requests:
+        cpu: 100m
+        memory: 16Mi
+      limits:
+        cpu: 200m
+        memory: 32Mi
 victoriaMetricsMigration:
   enabled: false
   image:
@@ -545,12 +681,22 @@ metricsScrapeFilters:
     prefixes:
       - kompass_rs_
 victoriaMetricsAgent:
+  env:
+    - name: GOMAXPROCS
+      value: "4"
   enabled: true
   image:
     variant: scratch
   fullnameOverride: kompass-victoria-metrics-agent
   annotations:
     guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"vmagent":{"cpuRequest":"7","memoryRequest":"12Gi"}}}'
+  resources:
+    requests:
+      cpu: 100m
+      memory: 160Mi
+    limits:
+      cpu: 200m
+      memory: 208Mi
   extraLabels:
     app.kubernetes.io/part-of: kompass
   podLabels:
@@ -596,10 +742,20 @@ victoriaMetricsAlert:
       app.kubernetes.io/part-of: kompass
   fullnameOverride: kompass-victoria-metrics-alert
   server:
+    env:
+      - name: GOMAXPROCS
+        value: "4"
     image:
       variant: scratch
     annotations:
       guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"vmalert":{"cpuRequest":"2","memoryRequest":"3Gi"}}}'
+    resources:
+      requests:
+        cpu: 100m
+        memory: 96Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
     podLabels:
       app.kubernetes.io/part-of: kompass
     datasource:
@@ -700,14 +856,24 @@ victoriaMetricsAuth:
         type: RollingUpdate
   resources:
     requests:
-      memory: "128Mi"
-      cpu: "0.1"
+      memory: 16Mi
+      cpu: 100m
+    limits:
+      memory: 32Mi
+      cpu: 200m
 kubeStateMetrics:
   # Set to true to install and manage kube-state-metrics from this chart.
   # Set to false to use a pre-existing external kube-state-metrics service.
   enabled: true
   annotations:
     guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"kube-state-metrics":{"cpuRequest":"3","memoryRequest":"2Gi"}}}'
+  resources:
+    requests:
+      cpu: 200m
+      memory: 560Mi
+    limits:
+      cpu: 300m
+      memory: 640Mi
   kompassScrapeInterval: 30s
   force: false
   # Required when enabled=false: service name of the external kube-state-metrics.
@@ -790,6 +956,13 @@ grafana:
   enabled: true
   annotations:
     guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"grafana":{"cpuRequest":"0.5","memoryRequest":"512Mi"},"grafana-sc-dashboard":{"cpuRequest":"0.5","memoryRequest":"256Mi"},"grafana-sc-datasources":{"cpuRequest":"0.5","memoryRequest":"256Mi"}}}'
+  resources:
+    requests:
+      cpu: 100m
+      memory: 250Mi
+    limits:
+      cpu: 300m
+      memory: 600Mi
   extraLabels:
     app.kubernetes.io/part-of: kompass
   fullnameOverride: "kompass-grafana"
@@ -823,6 +996,13 @@ grafana:
     storageClassName: *storageClassName
   # Use ConfigMaps for datasources and dashboards
   sidecar:
+    resources:
+      requests:
+        cpu: 200m
+        memory: 144Mi
+      limits:
+        cpu: 300m
+        memory: 192Mi
     datasources:
       enabled: true
       label: grafana_datasource
@@ -835,12 +1015,33 @@ cert-manager:
   enabled: true
   deploymentAnnotations:
     guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"cert-manager-controller":{"cpuRequest":"1.5","memoryRequest":"256Mi"}}}'
+  resources:
+    requests:
+      cpu: 100m
+      memory: 48Mi
+    limits:
+      cpu: 200m
+      memory: 64Mi
   cainjector:
     deploymentAnnotations:
       guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"cert-manager-cainjector":{"cpuRequest":"1","memoryRequest":"750Mi"}}}'
+    resources:
+      requests:
+        cpu: 0.4
+        memory: 160Mi
+      limits:
+        cpu: 0.5
+        memory: 208Mi
   webhook:
     deploymentAnnotations:
       guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"cert-manager-webhook":{"cpuRequest":"1.5","memoryRequest":"256Mi"}}}'
+    resources:
+      requests:
+        cpu: 0.5
+        memory: 32Mi
+      limits:
+        cpu: 0.7
+        memory: 48Mi
   global:
     commonLabels:
       app.kubernetes.io/part-of: kompass
@@ -873,9 +1074,19 @@ kompass-bridge:
     # -- (string) Image tag. When empty, falls back to .Chart.AppVersion.
     # This chart requires a Bridge image supporting license-backed Kafka configuration;
     # main releases pin the newest published RC or stable Bridge release before packaging.
-    tag: "v0.3.0"
+    tag: "v0.4.0"
     # -- (string) Image pull policy.
     pullPolicy: Always
+  # -- Actor cleanup requires a Bridge image containing the cleanup controller.
+  actorRegistry:
+    cleanup:
+      ttl: 10m
+      enabled: true
+      interval: 5m
+  manager:
+    leaderElection:
+      enabled: true
+      idSuffix: kompass-bridge-actor-cleanup
   # Kafka configuration comes only from the Manager-delivered license Secret at
   # global.license.secretName/documentKey in the release namespace.
   # -- (int) Time for manager, Kafka and telemetry shutdown. Keep above the Bridge's
@@ -1001,6 +1212,13 @@ metrics-server:
   enabled: false # enable it to install metrics-server
   deploymentAnnotations:
     guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"metrics-server":{"cpuRequest":"1.5","memoryRequest":"512Mi"}}}'
+  resources:
+    requests:
+      cpu: 100m
+      memory: 160Mi
+    limits:
+      cpu: 200m
+      memory: 208Mi
   commonLabels:
     app.kubernetes.io/part-of: kompass
   podLabels:

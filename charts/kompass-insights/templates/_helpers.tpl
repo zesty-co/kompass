@@ -135,18 +135,6 @@ Create a name for the Service.
   {{ printf "%s-svc" (include "zesty-k8s.fullname" .) }}
 {{- end -}}
 
-{{/*
-All of the relevant verbs.
-*/}}
-{{- define "zesty-k8s.verbs" -}}
-verbs:
-  - get
-  - list
-  - patch
-  - update
-  - watch
-{{- end -}}
-
 {{- define "zesty-k8s.labels" -}}
 helm.sh/chart: {{ include "zesty-k8s.chart" . }}
 {{ include "zesty-k8s.selectorLabels" . }}

@@ -27,6 +27,11 @@ rules:
       - get
       - list
       - watch
+  {{- if dig "actorRegistry" "cleanup" "enabled" false $bridgeValues }}
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  {{- end }}
   {{- with $rbac.extraRules }}
   {{- toYaml . | nindent 2 }}
   {{- end }}
