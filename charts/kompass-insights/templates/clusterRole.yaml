@@ -31,15 +31,22 @@ rules:
     resources:
       - persistentvolumeclaims
     verbs: ["get", "list", "watch"]
-  {{- if .Values.insights.clusterRole.fullRO }}
-  # fullRO=true. Full read-only discovery for building ownerReference maps.
+  {{- if eq .Values.global.readScope "cluster" }}
+  # Full read-only discovery for building ownerReference maps.
   - apiGroups:
       - "*"
     resources:
       - "*"
     verbs: ["get", "list", "watch"]
   {{- end }}
-  # fullRO=false. Explicit resource coverage instead of wildcard read-only discovery.
+  # Read access to shared workload kinds and customer extensions.
+  {{- range concat (.Values.global.supportedKinds | default list) (.Values.global.additionalSupportedKinds | default list) }}
+  {{- $resource := .Resource | default (printf "%ss" (.Kind | lower)) }}
+  - apiGroups: [{{ .Group | default "" | quote }}]
+    resources: [{{ $resource | quote }}]
+    verbs: ["get", "list", "watch"]
+  {{- end }}
+  # Explicit resource coverage for discovery.
   - apiGroups:
       - "argoproj.io"
     resources:

@@ -1,0 +1,384 @@
+suite: Action Taker supported-kind RBAC
+release:
+  name: ci
+  namespace: zesty-system
+templates:
+  - templates/action-taker/role.yaml
+values:
+  - ../render/fixtures/guardian-request-ceilings-values.yaml
+tests:
+  - it: defaults to cluster-wide reads while granting enabled catalog mutations
+    documentIndex: 0
+    set:
+      enabled: true
+    asserts:
+      - contains:
+          path: rules
+          content:
+            apiGroups: [apps]
+            resources: [deployments]
+            verbs: [get, list, watch, patch, update]
+      - contains:
+          path: rules
+          content:
+            apiGroups: [""]
+            resources: [nodes, namespaces, pods]
+            verbs: [get, list, watch]
+      - contains:
+          path: rules
+          content: {apiGroups: [argoproj.io], resources: [applications], verbs: [get, list, patch, update, watch]}
+      - contains:
+          path: rules
+          content:
+            apiGroups: [""]
+            resources: [pods]
+            verbs: [get, list, watch, patch, update]
+      - contains:
+          path: rules
+          content: {apiGroups: [argoproj.io], resources: [workflows], verbs: [get, list, watch, patch, update]}
+      - contains:
+          path: rules
+          content:
+            apiGroups: ["*"]
+            resources: ["*"]
+            verbs: [get, list, watch]
+      - equal:
+          path: rules[?(@.apiGroups[0] == '*')].verbs
+          value: [get, list, watch]
+      - contains:
+          path: rules
+          content: {apiGroups: [apps], resources: [statefulsets], verbs: [get, list, watch, patch, update]}
+      - contains:
+          path: rules
+          content: {apiGroups: [apps], resources: [daemonsets], verbs: [get, list, watch, patch, update]}
+      - contains:
+          path: rules
+          content: {apiGroups: [apps], resources: [replicasets], verbs: [get, list, watch, patch, update]}
+      - contains:
+          path: rules
+          content: {apiGroups: [batch], resources: [jobs], verbs: [get, list, watch, patch, update]}
+      - contains:
+          path: rules
+          content: {apiGroups: [batch], resources: [cronjobs], verbs: [get, list, watch, patch, update]}
+      - contains:
+          path: rules
+          content: {apiGroups: [argoproj.io], resources: [rollouts], verbs: [get, list, watch, patch, update]}
+      - contains:
+          path: rules
+          content: {apiGroups: [keda.sh], resources: [scaledjobs], verbs: [get, list, watch, patch, update]}
+      - contains:
+          path: rules
+          content: {apiGroups: [sparkoperator.k8s.io], resources: [sparkapplications], verbs: [get, list, watch, patch, update]}
+      - contains:
+          path: rules
+          content: {apiGroups: [kompass.zesty.co], resources: [virtualworkloads], verbs: [get, list, watch, patch, update]}
+      - contains:
+          path: rules
+          content: {apiGroups: [kompass.zesty.co], resources: [clustervirtualworkloads], verbs: [get, list, watch, patch, update]}
+      - contains:
+          path: rules
+          content: {apiGroups: [kompass.zesty.co], resources: [clustervirtualworkloads, virtualworkloads], verbs: [create, delete, get, list, patch, update, watch]}
+
+  - it: grants external catalog reads without catalog-loop mutations when disabled
+    documentIndex: 0
+    set:
+      enabled: false
+    asserts:
+      - contains:
+          path: rules
+          content: {apiGroups: [apps], resources: [deployments], verbs: [get, list, watch]}
+      - contains:
+          path: rules
+          content:
+            apiGroups: [""]
+            resources: [nodes, namespaces, pods]
+            verbs: [get, list, watch]
+      - contains:
+          path: rules
+          content: {apiGroups: [argoproj.io], resources: [applications], verbs: [get, list, watch]}
+      - contains:
+          path: rules
+          content: {apiGroups: [apps], resources: [statefulsets], verbs: [get, list, watch]}
+      - contains:
+          path: rules
+          content: {apiGroups: [apps], resources: [daemonsets], verbs: [get, list, watch]}
+      - contains:
+          path: rules
+          content: {apiGroups: [apps], resources: [replicasets], verbs: [get, list, watch]}
+      - contains:
+          path: rules
+          content: {apiGroups: [batch], resources: [jobs], verbs: [get, list, watch]}
+      - contains:
+          path: rules
+          content: {apiGroups: [batch], resources: [cronjobs], verbs: [get, list, watch]}
+      - contains:
+          path: rules
+          content: {apiGroups: [argoproj.io], resources: [rollouts], verbs: [get, list, watch]}
+      - contains:
+          path: rules
+          content: {apiGroups: [argoproj.io], resources: [workflows], verbs: [get, list, watch]}
+      - contains:
+          path: rules
+          content: {apiGroups: [keda.sh], resources: [scaledjobs], verbs: [get, list, watch]}
+      - contains:
+          path: rules
+          content: {apiGroups: [sparkoperator.k8s.io], resources: [sparkapplications], verbs: [get, list, watch]}
+      - contains:
+          path: rules
+          content: {apiGroups: [""], resources: [pods], verbs: [get, list, watch]}
+      - contains:
+          path: rules
+          content: {apiGroups: [kompass.zesty.co], resources: [virtualworkloads], verbs: [get, list, watch]}
+      - contains:
+          path: rules
+          content: {apiGroups: [kompass.zesty.co], resources: [clustervirtualworkloads], verbs: [get, list, watch]}
+      - contains:
+          path: rules
+          content: {apiGroups: [kompass.zesty.co], resources: [clustervirtualworkloads, virtualworkloads], verbs: [create, delete, get, list, patch, update, watch]}
+      - notContains:
+          path: rules
+          content: {apiGroups: [apps], resources: [deployments], verbs: [patch, update]}
+      - notContains:
+          path: rules
+          content: {apiGroups: [apps], resources: [statefulsets], verbs: [patch, update]}
+      - notContains:
+          path: rules
+          content: {apiGroups: [apps], resources: [daemonsets], verbs: [patch, update]}
+      - notContains:
+          path: rules
+          content: {apiGroups: [apps], resources: [replicasets], verbs: [patch, update]}
+      - notContains:
+          path: rules
+          content: {apiGroups: [batch], resources: [jobs], verbs: [patch, update]}
+      - notContains:
+          path: rules
+          content: {apiGroups: [batch], resources: [cronjobs], verbs: [patch, update]}
+      - notContains:
+          path: rules
+          content: {apiGroups: [argoproj.io], resources: [rollouts], verbs: [patch, update]}
+      - notContains:
+          path: rules
+          content: {apiGroups: [argoproj.io], resources: [workflows], verbs: [patch, update]}
+      - notContains:
+          path: rules
+          content: {apiGroups: [keda.sh], resources: [scaledjobs], verbs: [patch, update]}
+      - notContains:
+          path: rules
+          content: {apiGroups: [sparkoperator.k8s.io], resources: [sparkapplications], verbs: [patch, update]}
+      - notContains:
+          path: rules
+          content: {apiGroups: [""], resources: [pods], verbs: [patch, update]}
+
+  - it: keeps the default cluster-wide reads when disabled without wildcard writes
+    documentIndex: 0
+    set:
+      enabled: false
+    asserts:
+      - contains:
+          path: rules
+          content: {apiGroups: ["*"], resources: ["*"], verbs: [get, list, watch]}
+      - equal:
+          path: rules[?(@.apiGroups[0] == '*')].verbs
+          value: [get, list, watch]
+
+  - it: omits cluster-wide reads when enabled in supported-kinds scope
+    documentIndex: 0
+    set:
+      enabled: true
+      global.readScope: supportedKinds
+    asserts:
+      - notContains:
+          path: rules
+          content: {apiGroups: ["*"], resources: ["*"], verbs: [get, list, watch]}
+      - notContains:
+          path: rules
+          content: {apiGroups: [""], resources: [secrets], verbs: [get, list, watch]}
+      - contains:
+          path: rules
+          content: {apiGroups: [apps], resources: [deployments], verbs: [get, list, watch, patch, update]}
+
+  - it: omits cluster-wide reads when disabled in supported-kinds scope
+    documentIndex: 0
+    set:
+      enabled: false
+      global.readScope: supportedKinds
+    asserts:
+      - notContains:
+          path: rules
+          content: {apiGroups: ["*"], resources: ["*"], verbs: [get, list, watch]}
+      - contains:
+          path: rules
+          content: {apiGroups: [apps], resources: [deployments], verbs: [get, list, watch]}
+
+  - it: grants custom-kind reads and gates mutations by enabled state in cluster scope
+    documentIndex: 0
+    set:
+      enabled: true
+      global:
+        additionalSupportedKinds:
+        - Group: example.io
+          Version: v1
+          Kind: Application
+          Alias: application
+    asserts:
+      - contains:
+          path: rules
+          content: {apiGroups: [example.io], resources: [applications], verbs: [get, list, watch, patch, update]}
+
+  - it: keeps custom-kind reads but omits mutations when disabled in cluster scope
+    documentIndex: 0
+    set:
+      enabled: false
+      global:
+        additionalSupportedKinds:
+        - Group: example.io
+          Version: v1
+          Kind: Application
+          Alias: application
+    asserts:
+      - contains:
+          path: rules
+          content: {apiGroups: [example.io], resources: [applications], verbs: [get, list, watch]}
+      - notContains:
+          path: rules
+          content: {apiGroups: [example.io], resources: [applications], verbs: [get, list, watch, patch, update]}
+
+  - it: grants custom-kind reads and gates mutations by enabled state in supported-kinds scope
+    documentIndex: 0
+    set:
+      enabled: true
+      global.readScope: supportedKinds
+      global:
+        additionalSupportedKinds:
+        - Group: example.io
+          Version: v1
+          Kind: Application
+          Alias: application
+    asserts:
+      - contains:
+          path: rules
+          content: {apiGroups: [example.io], resources: [applications], verbs: [get, list, watch, patch, update]}
+      - notContains:
+          path: rules
+          content: {apiGroups: ["*"], resources: ["*"], verbs: [get, list, watch]}
+
+  - it: keeps custom-kind reads but omits mutations when disabled in supported-kinds scope
+    documentIndex: 0
+    set:
+      enabled: false
+      global.readScope: supportedKinds
+      global:
+        additionalSupportedKinds:
+        - Group: example.io
+          Version: v1
+          Kind: Application
+          Alias: application
+    asserts:
+      - contains:
+          path: rules
+          content: {apiGroups: [example.io], resources: [applications], verbs: [get, list, watch]}
+      - notContains:
+          path: rules
+          content: {apiGroups: [example.io], resources: [applications], verbs: [get, list, patch, update, watch]}
+      - notContains:
+          path: rules
+          content: {apiGroups: ["*"], resources: ["*"], verbs: [get, list, watch]}
+
+  - it: grants custom-kind reads but no custom-kind mutations when disabled
+    documentIndex: 0
+    set:
+      enabled: false
+      global:
+        additionalSupportedKinds:
+        - Group: example.io
+          Version: v1
+          Kind: Application
+          Alias: person
+    asserts:
+      - contains:
+          path: rules
+          content: {apiGroups: [example.io], resources: [applications], verbs: [get, list, watch]}
+      - notContains:
+          path: rules
+          content: {apiGroups: [example.io], resources: [applications], verbs: [patch, update]}
+
+  - it: grants configured irregular plural and core-group reads and enabled mutations
+    documentIndex: 0
+    set:
+      enabled: true
+      global:
+        additionalSupportedKinds:
+        - Group: example.io
+          Version: v1
+          Kind: Person
+          Alias: Person
+          Resource: people
+        - Group: ""
+          Version: v2
+          Kind: Gadget
+          Alias: Gadget
+          Resource: gadgets
+        - Group: example.io
+          Version: v2
+          Kind: Person
+          Alias: PersonV2
+          Resource: peoplev2
+    asserts:
+      - contains:
+          path: rules
+          content:
+            apiGroups: [example.io]
+            resources: [people]
+            verbs: [get, list, watch, patch, update]
+      - contains:
+          path: rules
+          content:
+            apiGroups: [example.io]
+            resources: [peoplev2]
+            verbs: [get, list, watch, patch, update]
+      - contains:
+          path: rules
+          content:
+            apiGroups: [""]
+            resources: [gadgets]
+            verbs: [get, list, watch, patch, update]
+
+  - it: rejects additional supported kinds missing Alias
+    set:
+      enabled: true
+      global:
+        additionalSupportedKinds:
+        - Group: example.io
+          Version: v1
+          Kind: Person
+    asserts:
+      - failedTemplate:
+          {}
+
+  - it: grants unrestricted reads of secrets in the release namespace
+    documentIndex: 1
+    set:
+      enabled: true
+      secret: custom-rightsizing-secret
+    asserts:
+      - contains:
+          path: rules
+          content:
+            apiGroups: [""]
+            resources: [secrets]
+            verbs: [get, list, watch]
+      - equal:
+          path: rules[1]
+          value:
+            apiGroups: [""]
+            resources: [secrets]
+            verbs: [get, list, watch]
+
+  - it: does not grant cluster-wide secret reads in supported-kinds scope
+    documentIndex: 0
+    set:
+      global.readScope: supportedKinds
+    asserts:
+      - notContains:
+          path: rules
+          content: {apiGroups: ["*"], resources: ["*"], verbs: [get, list, watch]}

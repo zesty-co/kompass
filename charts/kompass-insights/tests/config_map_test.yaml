@@ -32,3 +32,117 @@ tests:
       - equal:
           path: data.METADATA_REGION
           value: us-east-1
+
+  - it: omits GCP billing configuration by default
+    asserts: &gcpBillingDisabled
+      - notExists:
+          path: data.GCP_BILLING_ENABLED
+      - notExists:
+          path: data.GCP_BILLING_PROJECT
+      - notExists:
+          path: data.GCP_BILLING_TABLE
+      - notExists:
+          path: data.GCP_BILLING_LOCATION
+
+  - it: does not require GCP billing fields when disabled
+    set:
+      gcpBilling.enabled: false
+      gcpBilling.project: null
+      gcpBilling.table: " \t\n"
+      gcpBilling.location: ""
+    asserts: *gcpBillingDisabled
+
+  - it: trims enabled GCP billing strings and keeps the query and table projects separate
+    set: &gcpBillingEnabled
+      gcpBilling.enabled: true
+      gcpBilling.project: " query-project "
+      gcpBilling.table: " billing-project.billing_export.gcp_billing_export_resource_v1_012345_ABCDEF_678901 "
+      gcpBilling.location: " US\n"
+    asserts:
+      - equal:
+          path: data.GCP_BILLING_ENABLED
+          value: "true"
+      - equal:
+          path: data.GCP_BILLING_PROJECT
+          value: query-project
+      - equal:
+          path: data.GCP_BILLING_TABLE
+          value: billing-project.billing_export.gcp_billing_export_resource_v1_012345_ABCDEF_678901
+      - equal:
+          path: data.GCP_BILLING_LOCATION
+          value: US
+
+  - it: requires a query project when GCP billing is enabled
+    set:
+      gcpBilling.enabled: true
+      gcpBilling.table: billing-project.billing_export.gcp_billing_export_resource_v1_012345_ABCDEF_678901
+      gcpBilling.location: US
+    asserts:
+      - failedTemplate:
+          errorMessage: gcpBilling.project is required when gcpBilling.enabled is true
+
+  - it: requires a table when GCP billing is enabled
+    set:
+      gcpBilling.enabled: true
+      gcpBilling.project: query-project
+      gcpBilling.location: US
+    asserts:
+      - failedTemplate:
+          errorMessage: gcpBilling.table is required when gcpBilling.enabled is true
+
+  - it: requires a location when GCP billing is enabled
+    set:
+      gcpBilling.enabled: true
+      gcpBilling.project: query-project
+      gcpBilling.table: billing-project.billing_export.gcp_billing_export_resource_v1_012345_ABCDEF_678901
+    asserts:
+      - failedTemplate:
+          errorMessage: gcpBilling.location is required when gcpBilling.enabled is true
+
+  - it: rejects a null query project when GCP billing is enabled
+    set:
+      <<: *gcpBillingEnabled
+      gcpBilling.project: null
+    asserts:
+      - failedTemplate:
+          errorMessage: gcpBilling.project is required when gcpBilling.enabled is true
+
+  - it: rejects a null table when GCP billing is enabled
+    set:
+      <<: *gcpBillingEnabled
+      gcpBilling.table: null
+    asserts:
+      - failedTemplate:
+          errorMessage: gcpBilling.table is required when gcpBilling.enabled is true
+
+  - it: rejects a null location when GCP billing is enabled
+    set:
+      <<: *gcpBillingEnabled
+      gcpBilling.location: null
+    asserts:
+      - failedTemplate:
+          errorMessage: gcpBilling.location is required when gcpBilling.enabled is true
+
+  - it: rejects a whitespace-only query project when GCP billing is enabled
+    set:
+      <<: *gcpBillingEnabled
+      gcpBilling.project: " \t\n"
+    asserts:
+      - failedTemplate:
+          errorMessage: gcpBilling.project is required when gcpBilling.enabled is true
+
+  - it: rejects a whitespace-only table when GCP billing is enabled
+    set:
+      <<: *gcpBillingEnabled
+      gcpBilling.table: " \t\n"
+    asserts:
+      - failedTemplate:
+          errorMessage: gcpBilling.table is required when gcpBilling.enabled is true
+
+  - it: rejects a whitespace-only location when GCP billing is enabled
+    set:
+      <<: *gcpBillingEnabled
+      gcpBilling.location: " \t\n"
+    asserts:
+      - failedTemplate:
+          errorMessage: gcpBilling.location is required when gcpBilling.enabled is true

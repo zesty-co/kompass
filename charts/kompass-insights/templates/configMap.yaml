@@ -49,6 +49,12 @@ data:
   ATHENA_WORKGROUP: "{{ .Values.awsAthena.athenaWorkgroup }}"
   ATHENA_CATALOG: "{{ .Values.awsAthena.athenaCatalog }}"
   {{- end }}
+  {{- if .Values.gcpBilling.enabled }}
+  GCP_BILLING_ENABLED: {{ .Values.gcpBilling.enabled | quote }}
+  GCP_BILLING_PROJECT: {{ .Values.gcpBilling.project | default "" | trim | required "gcpBilling.project is required when gcpBilling.enabled is true" | quote }}
+  GCP_BILLING_TABLE: {{ .Values.gcpBilling.table | default "" | trim | required "gcpBilling.table is required when gcpBilling.enabled is true" | quote }}
+  GCP_BILLING_LOCATION: {{ .Values.gcpBilling.location | default "" | trim | required "gcpBilling.location is required when gcpBilling.enabled is true" | quote }}
+  {{- end }}
   {{- if .Values.assumeRole.enabled }}
   MASTER_PAYER_ARN: "{{ .Values.assumeRole.masterRoleArn }}"
   MASTER_ROLE_EXTERNALID: "{{ .Values.assumeRole.masterExternalID }}"

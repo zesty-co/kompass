@@ -6,11 +6,15 @@ templates:
   - templates/metrics-exporter/role.yaml
 tests:
   - it: grants namespaced list access to Kompass workload controllers
+    documentIndex: 1
     values:
       - ../render/fixtures/cxlogging-on-values.yaml
     asserts:
       - isKind:
-          of: ClusterRole
+          of: Role
+      - equal:
+          path: metadata.namespace
+          value: zesty-system
       - contains:
           path: rules
           content:

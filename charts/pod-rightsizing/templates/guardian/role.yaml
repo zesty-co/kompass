@@ -16,6 +16,10 @@ rules:
     resourceNames: ["kompass-insights-secret"]
     verbs: ["list", "watch"]
   - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: [{{ .Values.global.supportedKindsSecretName | quote }}]
+    verbs: ["get"]
+  - apiGroups: [""]
     resources: ["events"]
     verbs: ["create", "patch"]
   - apiGroups: [""]
@@ -43,9 +47,7 @@ rules:
   - apiGroups: ["rightsizing.kompass.zesty.co"]
     resources: ["actions/status"]
     verbs: ["update"]
-  # Guardian resolves arbitrary namespaced OwnerReference chains directly from
-  # the API. Every Guardian write remains explicitly constrained above.
-  - apiGroups: ["*"]
-    resources: ["*"]
+  - apiGroups: ["batch"]
+    resources: ["jobs", "cronjobs"]
     verbs: ["get"]
 {{- end }}

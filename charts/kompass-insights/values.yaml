@@ -87,6 +87,15 @@ awsAthena:
   athenaTable: ~
   athenaWorkgroup: ~
   athenaCatalog: ~
+gcpBilling:
+  # -- (bool) Enable GCP billing queries. Requires a compatible Insights agent image.
+  enabled: false
+  # -- (string) Project that runs BigQuery jobs; it can differ from the table's project.
+  project: ""
+  # -- (string) Fully qualified detailed billing export table: project.dataset.table.
+  table: ""
+  # -- (string) BigQuery dataset location, for example US or europe-west1.
+  location: ""
 assumeRole:
   enabled: false
   masterRoleArn: ~
@@ -113,8 +122,6 @@ insights:
   annotations: {}
   affinity: {}
   automountServiceAccountToken: ~
-  clusterRole:
-    fullRO: true
   imagePullSecrets: ~
   podAnnotations: {}
   podLabels: {}

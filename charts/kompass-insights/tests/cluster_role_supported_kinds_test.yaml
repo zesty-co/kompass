@@ -1,0 +1,58 @@
+suite: Insights supported resource permissions
+templates:
+  - templates/clusterRole.yaml
+tests:
+  - it: grants wildcard reads in cluster scope
+    set:
+      global.readScope: cluster
+    asserts:
+      - contains:
+          path: rules
+          content: {apiGroups: ['*'], resources: ['*'], verbs: [get, list, watch]}
+  - it: grants reads for both lists and derives resource names in supportedKinds scope
+    set:
+      global.readScope: supportedKinds
+      global.supportedKinds:
+        - Group: example.io
+          Kind: Widget
+        - Group: example.io
+          Kind: Person
+          Resource: people
+      global.additionalSupportedKinds:
+        - Group: other.io
+          Kind: Gadget
+    asserts:
+      - notContains:
+          path: rules
+          content: {apiGroups: ['*'], resources: ['*'], verbs: [get, list, watch]}
+      - contains:
+          path: rules
+          content: {apiGroups: [example.io], resources: [widgets], verbs: [get, list, watch]}
+      - contains:
+          path: rules
+          content: {apiGroups: [example.io], resources: [people], verbs: [get, list, watch]}
+      - contains:
+          path: rules
+          content: {apiGroups: [other.io], resources: [gadgets], verbs: [get, list, watch]}
+      - contains:
+          path: rules
+          content: {apiGroups: [''], resources: [pods/log], verbs: [get]}
+      - contains:
+          path: rules
+          content: {apiGroups: [metrics.k8s.io], resources: [pods, nodes], verbs: [get, list]}
+      - contains:
+          path: rules
+          content: {apiGroups: [apps], resources: [deployments, replicasets, daemonsets, statefulsets], verbs: [get, list, watch]}
+  - it: also grants configured kinds with cluster scope
+    set:
+      global.readScope: cluster
+      global.additionalSupportedKinds:
+        - Group: other.io
+          Kind: Gadget
+    asserts:
+      - contains:
+          path: rules
+          content: {apiGroups: ['*'], resources: ['*'], verbs: [get, list, watch]}
+      - contains:
+          path: rules
+          content: {apiGroups: [other.io], resources: [gadgets], verbs: [get, list, watch]}

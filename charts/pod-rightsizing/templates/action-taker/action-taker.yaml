@@ -120,6 +120,7 @@ spec:
             - --server-port={{ .Values.actionTaker.serverPort }}
             - --image-tag={{ .Values.actionTaker.image.tag }}
             - --rightsizing-enabled={{ .Values.enabled }}
+            - --read-scope={{ .Values.global.readScope | default "cluster" }}
             {{- if .Values.actionTaker.image.args }}
             {{- range .Values.actionTaker.image.args }}
             - {{ . }}
@@ -227,6 +228,8 @@ spec:
                   fieldPath: spec.serviceAccountName
             - name: RIGHTSIZING_SECRET_NAME
               value: {{ .Values.secret }}
+            - name: SUPPORTED_KINDS_SECRET_NAME
+              value: {{ .Values.global.supportedKindsSecretName | quote }}
             - name: JVM_RIGHTSIZING_ENABLED
               value: {{ .Values.jvmRightsizingEnabled | default false | quote }}
             {{- if .Values.actionTaker.env }}

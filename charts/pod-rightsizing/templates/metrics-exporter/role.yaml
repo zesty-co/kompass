@@ -17,23 +17,18 @@ rules:
   verbs:
   - get
   - list
-- apiGroups:
-  - apps
-  resources:
-  - deployments
-  - statefulsets
-  - daemonsets
-  verbs:
-  - list
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  resourceNames:
-  - kompass-insights-secret
-  verbs:
-  - get
-  - list
-  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: metrics-exporter-secret-role
+  namespace: {{ .Release.Namespace }}
+rules:
+- apiGroups: [apps]
+  resources: [deployments, statefulsets, daemonsets]
+  verbs: [list]
+- apiGroups: [""]
+  resources: [secrets]
+  resourceNames: [kompass-insights-secret]
+  verbs: [get, list, watch]
 {{- end }}
-  

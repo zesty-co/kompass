@@ -175,3 +175,11 @@ rules:
 ```
 
 One gauge per current CR uses `metadata.generation`; its numeric value is not an activation flag. `cr_kind` distinguishes Action from ClusterAction. `namespace` is explicitly empty for ClusterAction. `workload_kind`/`workload_name` identify the target; `phase`, `rightsizing_policy`, and `horizontal_scaling_policy` describe current status activations. Missing activation paths become empty labels. The intended Grafana consumer constructs `namespace;name;lowercase-kind` for Action and `name;lowercase-kind` for ClusterAction. Its intended activation precedence is: a `Completed` or `Failed` CR is Inactive, even if `rightsizing_policy` is nonempty; otherwise, a nonempty `rightsizing_policy` means Active; otherwise, an unactivated `Pending`/`InProgress` CR means Pending. An absent CR is Inactive. The Grafana consumer implementation is outside this repository, so its behavior has not been verified against this precedence. Deleted CRs cease to indicate management after ordinary scrape staleness.
+
+Insights uses `global.readScope` (default `cluster`) to control wildcard reads.
+`cluster` enables wildcard reads; `supportedKinds` omits the wildcard. In both
+modes, Insights retains its explicit discovery permissions and grants get, list,
+and watch for `global.supportedKinds` and `global.additionalSupportedKinds`.
+Each entry may specify `Resource`; otherwise the resource name is formed by
+lowercasing `Kind` and appending `s`. Set `Resource` for irregular plurals.
+The former `insights.clusterRole.fullRO` value no longer controls these permissions.

@@ -247,3 +247,22 @@ Kompass Pod Rightsizing includes Grafana dashboards for monitoring the performan
    1. The default service account name is "kompass-rightsizing"
    2. You can customize it using `serviceAccount.name`
    3. Make sure the service account has the necessary RBAC permissions
+
+## Pod info node metadata
+
+Recommendation Maker adds `node_resource_id` and `capacity_type` to
+`kompass_pod_info`. On the first metrics scrape it uses the existing `POD_NAME` and `POD_NAMESPACE`
+environment variables to read its Pod and hosting Node from the controller-runtime
+cache. It determines the provider from `spec.providerID` (`aws://`, `azure://`,
+`gce://`, or an Oracle instance OCID) and retains that value in the application
+after discovery. No Secret lookup or cloud metadata
+request is needed.
+
+Each pod's node is read from the controller-runtime cache to derive the two
+labels using insights-agent's provider-specific ID and capacity parsing rules.
+Missing or deleted nodes yield empty labels. If discovery fails or the
+provider ID is empty or unsupported, node labels
+remain empty while discovery retries on each metrics scrape. The first successful
+result is retained for the process lifetime; the application continues serving pod metrics.
+There is no separate metadata cache, deleted-node retention, or direct API fallback.
+The existing workload `resource_id` and historical samples are unchanged.
