@@ -13,104 +13,104 @@ global:
   supportedKindsSecretName: kompass-supported-kinds
   additionalSupportedKinds: []
   supportedKinds:
-    - Group: "apps"
-      Version: "v1"
-      Kind: "Deployment"
-      Alias: "deployment"
+    - Group: apps
+      Version: v1
+      Kind: Deployment
+      Alias: deployment
       Properties:
         - Native
         - Standalone
         - Virtual
         - Builtin
-    - Group: "apps"
-      Version: "v1"
-      Kind: "StatefulSet"
-      Alias: "statefulset"
+    - Group: apps
+      Version: v1
+      Kind: StatefulSet
+      Alias: statefulset
       Properties:
         - Native
         - Standalone
         - Virtual
         - Builtin
-    - Group: "apps"
-      Version: "v1"
-      Kind: "DaemonSet"
-      Alias: "daemonset"
+    - Group: apps
+      Version: v1
+      Kind: DaemonSet
+      Alias: daemonset
       Properties:
         - Native
         - Standalone
         - Virtual
         - Builtin
-    - Group: "apps"
-      Version: "v1"
-      Kind: "ReplicaSet"
-      Alias: "replicaset"
+    - Group: apps
+      Version: v1
+      Kind: ReplicaSet
+      Alias: replicaset
       Properties:
         - Native
         - Standalone
         - Virtual
         - Builtin
-    - Group: "batch"
-      Version: "v1"
-      Kind: "Job"
-      Alias: "job"
+    - Group: batch
+      Version: v1
+      Kind: Job
+      Alias: job
       Properties:
         - Virtual
         - Builtin
-    - Group: "batch"
-      Version: "v1"
-      Kind: "CronJob"
-      Alias: "cronjob"
+    - Group: batch
+      Version: v1
+      Kind: CronJob
+      Alias: cronjob
       Properties:
         - Native
         - Standalone
         - Virtual
         - Builtin
     # Custom
-    - Group: "argoproj.io"
-      Version: "v1alpha1"
-      Kind: "Rollout"
-      Alias: "rollout"
+    - Group: argoproj.io
+      Version: v1alpha1
+      Kind: Rollout
+      Alias: rollout
       Properties:
         - Native
         - Standalone
         - Virtual
-    - Group: "argoproj.io"
-      Version: "v1alpha1"
-      Kind: "Workflow"
-      Alias: "workflow"
+    - Group: argoproj.io
+      Version: v1alpha1
+      Kind: Workflow
+      Alias: workflow
       Properties:
         - Virtual
-    - Group: "keda.sh"
-      Version: "v1alpha1"
-      Kind: "ScaledJob"
-      Alias: "scaledjob"
+    - Group: keda.sh
+      Version: v1alpha1
+      Kind: ScaledJob
+      Alias: scaledjob
       Properties:
         - Standalone
         - Virtual
-    - Group: "sparkoperator.k8s.io"
-      Version: "v1beta2"
-      Kind: "SparkApplication"
-      Alias: "sparkapplication"
+    - Group: sparkoperator.k8s.io
+      Version: v1beta2
+      Kind: SparkApplication
+      Alias: sparkapplication
       Properties:
         - Virtual
     - Group: ""
-      Version: "v1"
-      Kind: "Pod"
-      Alias: "pod"
+      Version: v1
+      Kind: Pod
+      Alias: pod
       Properties:
         - Native
         - Virtual
         - Builtin
-    - Group: "kompass.zesty.co"
-      Version: "v1alpha1"
-      Kind: "VirtualWorkload"
-      Alias: "virtualworkload"
+    - Group: kompass.zesty.co
+      Version: v1alpha1
+      Kind: VirtualWorkload
+      Alias: virtualworkload
       Properties:
         - Standalone
-    - Group: "kompass.zesty.co"
-      Version: "v1alpha1"
-      Kind: "ClusterVirtualWorkload"
-      Alias: "clustervirtualworkload"
+    - Group: kompass.zesty.co
+      Version: v1alpha1
+      Kind: ClusterVirtualWorkload
+      Alias: clustervirtualworkload
       Properties:
         - Standalone
   # -- (object) KWOK test-cluster integration.
@@ -178,33 +178,33 @@ global:
       bridge:
         bridge:
           cpuRequest: "1"
-          memoryRequest: "1Gi"
+          memoryRequest: 1Gi
       insights:
         kompass-insights:
           cpuRequest: "3"
-          memoryRequest: "25Gi"
+          memoryRequest: 25Gi
         manager:
-          cpuRequest: "100m"
-          memoryRequest: "128Mi"
+          cpuRequest: 100m
+          memoryRequest: 128Mi
       podPlacement:
         pod-placement:
           cpuRequest: "2"
-          memoryRequest: "10Gi"
+          memoryRequest: 10Gi
       actionTaker:
         kube-rbac-proxy:
           cpuRequest: "0.5"
-          memoryRequest: "256Mi"
+          memoryRequest: 256Mi
         action-taker:
           cpuRequest: "9"
-          memoryRequest: "20Gi"
+          memoryRequest: 20Gi
       recommendationsMaker:
         recommendations-maker:
           cpuRequest: "5"
-          memoryRequest: "20Gi"
+          memoryRequest: 20Gi
       gpuMetrics:
         exporter:
           cpuRequest: "0.25"
-          memoryRequest: "256Mi"
+          memoryRequest: 256Mi
   # -- (object) Kompass Bridge service
   kompass-bridge:
     # -- (bool) Enable or disable the Kompass Bridge component.
@@ -387,15 +387,15 @@ victoriaMetrics:
     fullnameOverride: kompass-victoria-metrics
     persistentVolume:
       mountPath: /victoria-metrics-data
-      size: "30Gi"
+      size: 30Gi
       storageClassName: *storageClassName
     resources:
       requests:
-        memory: "688Mi"
-        cpu: "200m"
+        memory: 688Mi
+        cpu: 200m
       limits:
-        memory: "864Mi"
-        cpu: "300m"
+        memory: 864Mi
+        cpu: 300m
     extraArgs:
       retentionPeriod: 1w
       storageDataPath: /victoria-metrics-data
@@ -465,11 +465,11 @@ victoriaMetricsCluster:
     replicaCount: 2
     resources:
       requests:
-        memory: "640Mi"
-        cpu: "530m"
+        memory: 640Mi
+        cpu: 530m
       limits:
-        memory: "896Mi"
-        cpu: "689m"
+        memory: 896Mi
+        cpu: 689m
   vminsert:
     env:
       - name: GOMAXPROCS
@@ -520,11 +520,11 @@ victoriaMetricsCluster:
     replicaCount: 2
     resources:
       requests:
-        memory: "300Mi"
-        cpu: "100m"
+        memory: 300Mi
+        cpu: 100m
       limits:
-        memory: "420Mi"
-        cpu: "130m"
+        memory: 420Mi
+        cpu: 130m
   vmstorage:
     env:
       - name: GOMAXPROCS
@@ -579,11 +579,11 @@ victoriaMetricsCluster:
     replicaCount: 2
     resources:
       requests:
-        memory: "1000Mi"
-        cpu: "500m"
+        memory: 1000Mi
+        cpu: 500m
       limits:
-        memory: "1400Mi"
-        cpu: "650m"
+        memory: 1400Mi
+        cpu: 650m
   vmauth:
     image:
       variant: scratch
@@ -734,10 +734,12 @@ victoriaMetricsAgent:
     - url: *vmRemoteWritePrometheusUrl
   rbac:
     extraRules:
-      - apiGroups: [""]
+      - apiGroups:
+          - ""
         resources:
           - nodes/proxy
-        verbs: ["get"]
+        verbs:
+          - get
 victoriaMetricsAlert:
   enabled: true
   global:
@@ -771,8 +773,8 @@ victoriaMetricsAlert:
     extraArgs:
       configCheckInterval: 1m
       rule:
-        - '/config/*.{yaml,yml}' # Keep loading the legacy rules until all products provide their own recording rules.
-        - '/config/recording-rules/*.{yaml,yml}'
+        - /config/*.{yaml,yml} # Keep loading the legacy rules until all products provide their own recording rules.
+        - /config/recording-rules/*.{yaml,yml}
       evaluationInterval: 30s
       enableTCP6: true
     configMap: kompass-vm-custom-recording-rules
@@ -904,21 +906,43 @@ kubeStateMetrics:
             commonLabels:
               cr_kind: Action
             labelsFromPath:
-              namespace: [metadata, namespace]
-              horizontal_scaling_policy: [status, activations, horizontalScaling, policyName]
-              rightsizing_policy: [status, activations, rightsizing, policyName]
-              phase: [status, phase]
-              workload_name: [spec, workload, name]
-              workload_kind: [spec, workload, kind]
-              action_type: [spec, actionType]
+              namespace:
+                - metadata
+                - namespace
+              horizontal_scaling_policy:
+                - status
+                - activations
+                - horizontalScaling
+                - policyName
+              rightsizing_policy:
+                - status
+                - activations
+                - rightsizing
+                - policyName
+              phase:
+                - status
+                - phase
+              workload_name:
+                - spec
+                - workload
+                - name
+              workload_kind:
+                - spec
+                - workload
+                - kind
+              action_type:
+                - spec
+                - actionType
             errorLogV: 10
             metrics:
               - name: action_info
-                help: "Current Kompass Action activation and workload identity; gauge is CR generation"
+                help: Current Kompass Action activation and workload identity; gauge is CR generation
                 each:
                   type: Gauge
                   gauge:
-                    path: [metadata, generation]
+                    path:
+                      - metadata
+                      - generation
           - groupVersionKind:
               group: rightsizing.kompass.zesty.co
               kind: ClusterAction
@@ -928,20 +952,40 @@ kubeStateMetrics:
               cr_kind: ClusterAction
               namespace: ""
             labelsFromPath:
-              horizontal_scaling_policy: [status, activations, horizontalScaling, policyName]
-              rightsizing_policy: [status, activations, rightsizing, policyName]
-              phase: [status, phase]
-              workload_name: [spec, workload, name]
-              workload_kind: [spec, workload, kind]
-              action_type: [spec, actionType]
+              horizontal_scaling_policy:
+                - status
+                - activations
+                - horizontalScaling
+                - policyName
+              rightsizing_policy:
+                - status
+                - activations
+                - rightsizing
+                - policyName
+              phase:
+                - status
+                - phase
+              workload_name:
+                - spec
+                - workload
+                - name
+              workload_kind:
+                - spec
+                - workload
+                - kind
+              action_type:
+                - spec
+                - actionType
             errorLogV: 10
             metrics:
               - name: action_info
-                help: "Current Kompass Action activation and workload identity; gauge is CR generation"
+                help: Current Kompass Action activation and workload identity; gauge is CR generation
                 each:
                   type: Gauge
                   gauge:
-                    path: [metadata, generation]
+                    path:
+                      - metadata
+                      - generation
   rbac:
     # Required for Action and ClusterAction CRD scraping by kube-state-metrics customResourceState.
     # If kubeStateMetrics.enabled=false, grant this list/watch permission to your
@@ -968,7 +1012,7 @@ grafana:
       memory: 600Mi
   extraLabels:
     app.kubernetes.io/part-of: kompass
-  fullnameOverride: "kompass-grafana"
+  fullnameOverride: kompass-grafana
   # Pod-level security context applied to the Grafana pod.
   # Ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
   securityContext: {}
@@ -994,7 +1038,7 @@ grafana:
   deployDashboard: true
   persistence:
     enabled: true
-    type: "statefulset"
+    type: statefulset
     size: 1Gi
     storageClassName: *storageClassName
   # Use ConfigMaps for datasources and dashboards
@@ -1050,7 +1094,7 @@ cert-manager:
       app.kubernetes.io/part-of: kompass
   crds:
     enabled: true
-  fullnameOverride: "kompass-cert-manager"
+  fullnameOverride: kompass-cert-manager
   # Add post-upgrade hook to make sure we are not getting into a race condition
   startupapicheck:
     jobAnnotations:
@@ -1077,7 +1121,7 @@ kompass-bridge:
     # -- (string) Image tag. When empty, falls back to .Chart.AppVersion.
     # This chart requires a Bridge image supporting license-backed Kafka configuration;
     # main releases pin the newest published RC or stable Bridge release before packaging.
-    tag: "v0.4.0"
+    tag: v0.4.0
     # -- (string) Image pull policy.
     pullPolicy: Always
   # -- Actor cleanup requires a Bridge image containing the cleanup controller.

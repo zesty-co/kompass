@@ -1,25 +1,28 @@
 # pod\-rightsizing release notes
 
-Version: v0.9.6 → v0.10.0
+Version: v0.10.0 → v0.10.1
 
 ## Changelog
 
-### Features
-
-- **Rightsizing:** feat: send saving to bridge
-
 ### Bug fixes
 
-- **Rightsizing:** fix: retry Guardian recovery workload updates on conflict
-- **Rightsizing:** fix: preserve virtual workload group types in snapshots
-- **Rightsizing:** fix: add missing job and cronjob permissions to guardian
+- **Rightsizing:** fix: use nodes informer to keep track of inplace support
+- **Rightsizing:** fix: align Guardian leader election timings with Action Taker
+- **Rightsizing:** fix: register Action indexes before manager startup on all replicas
+- **Rightsizing:** fix: horizontal scaling activation bind type
+- **Rightsizing:** fix: prevent rounding\-induced memory resize loops
 
 ### Other changes
 
-- **Rightsizing:** Updated values.yaml key \`jvmConfig.jvmHeapTargetEnvVar\`.
-- **Rightsizing:** Improve Workloads dashboard performance
-- **Rightsizing:** Updated values.yaml key \`additionalSupportedKinds\`.
-- **Rightsizing:** replace wildcard manager reads with supported\-kind RBAC
-- **Rightsizing:** Apply JVM heap targets with append\-only injection
-- **Rightsizing:** Update dashboard default time ranges and refresh intervals
-- **Rightsizing:** Use Action metric for workload policy columns
+- **Rightsizing:** Updated values.yaml key \`metricsExporter.image.tag\`.
+- **Rightsizing:** bot \- pod\-rightsizing \- change  version to 602c6c31
+- **Rightsizing:** bot \- pod\-rightsizing \- change  version to 8accc7ca
+- **Rightsizing:** Updated values.yaml key \`guardian.image.tag\`.
+- **Rightsizing:** bot \- pod\-rightsizing \- change  version to v0.10.1\-rc1
+- **Rightsizing:** Updated values.yaml key \`bridgeDataExporter.image.tag\`.
+- **Rightsizing:** bot \- pod\-rightsizing \- change  version to f730ab70
+- **Rightsizing:** Updated values.yaml key \`recommendationsMaker.image.tag\`.
+- **Rightsizing:** Updated values.yaml key \`actionTaker.image.tag\`.
+- **Rightsizing:** bot \- pod\-rightsizing \- change  version to 05cacc01
+- **Rightsizing:** Updated Chart.yaml key \`appVersion\`.
+- **Rightsizing:** bot \- pod\-rightsizing \- change  version to 3f0a9d17

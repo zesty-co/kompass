@@ -145,7 +145,7 @@ manager:
   repository: "672188301118.dkr.ecr.eu-west-1.amazonaws.com/zesty-k8s/kompass-manager"
   pullPolicy: Always
   # -- Manager image tag; defaults to image.tag, or Chart.AppVersion when image.tag is unset.
-  tag: v0.0.4
+  tag: v0.0.5-rc2
   # -- False runs Manager as an Insights sidecar; true runs a separate host-networked Deployment.
   hostNetwork: false
   # -- (array) additional command-line arguments for the manager container
