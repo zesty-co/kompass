@@ -732,46 +732,57 @@ kubeStateMetrics:
               kind: Action
               version: *actionCustomResourceVersion
             metricNamePrefix: kompass_rs
+            commonLabels:
+              cr_kind: Action
             labelsFromPath:
-              namespace:
-                - metadata
-                - namespace
-              policy:
-                - spec
-                - policy
-              horizontal_scaling_policy:
-                - spec
-                - horizontalScalingPolicy
-              workload_name:
-                - spec
-                - workload
-                - name
-              action_type:
-                - spec
-                - actionType
-              source_apc:
-                - spec
-                - sourceAPC
-              execution_method:
-                - spec
-                - executionMethod
+              namespace: [metadata, namespace]
+              horizontal_scaling_policy: [status, activations, horizontalScaling, policyName]
+              rightsizing_policy: [status, activations, rightsizing, policyName]
+              phase: [status, phase]
+              workload_name: [spec, workload, name]
+              workload_kind: [spec, workload, kind]
+              action_type: [spec, actionType]
             errorLogV: 10
             metrics:
               - name: action_info
-                help: "Kompass Rightsizing action CRD info"
+                help: "Current Kompass Action activation and workload identity; gauge is CR generation"
+                each:
+                  type: Gauge
+                  gauge:
+                    path: [metadata, generation]
+          - groupVersionKind:
+              group: rightsizing.kompass.zesty.co
+              kind: ClusterAction
+              version: *actionCustomResourceVersion
+            metricNamePrefix: kompass_rs
+            commonLabels:
+              cr_kind: ClusterAction
+              namespace: ""
+            labelsFromPath:
+              horizontal_scaling_policy: [status, activations, horizontalScaling, policyName]
+              rightsizing_policy: [status, activations, rightsizing, policyName]
+              phase: [status, phase]
+              workload_name: [spec, workload, name]
+              workload_kind: [spec, workload, kind]
+              action_type: [spec, actionType]
+            errorLogV: 10
+            metrics:
+              - name: action_info
+                help: "Current Kompass Action activation and workload identity; gauge is CR generation"
                 each:
                   type: Gauge
                   gauge:
                     path: [metadata, generation]
   rbac:
-    # Required for Action CRD scraping by kube-state-metrics customResourceState.
+    # Required for Action and ClusterAction CRD scraping by kube-state-metrics customResourceState.
     # If kubeStateMetrics.enabled=false, grant this list/watch permission to your
-    # external kube-state-metrics for rightsizing.kompass.zesty.co/actions.
+    # external kube-state-metrics for rightsizing.kompass.zesty.co actions and clusteractions.
     extraRules:
       - apiGroups:
           - rightsizing.kompass.zesty.co
         resources:
           - actions
+          - clusteractions
         verbs:
           - list
           - watch
@@ -861,7 +872,7 @@ kompass-bridge:
     repository: zesty-k8s/kompass-bridge
     # -- (string) Image tag. When empty, falls back to .Chart.AppVersion.
     # This chart requires a Bridge image supporting license-backed Kafka configuration;
-    # main releases pin the newest published RC Bridge release before packaging.
+    # main releases pin the newest published RC or stable Bridge release before packaging.
     tag: "v0.3.0"
     # -- (string) Image pull policy.
     pullPolicy: Always
