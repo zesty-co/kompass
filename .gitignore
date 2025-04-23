@@ -1,0 +1,3 @@
+# Helm generated files
+*.tgz
+Chart.lock
