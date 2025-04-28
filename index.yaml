@@ -3,6 +3,31 @@ entries:
   kompass:
   - apiVersion: v2
     appVersion: 1.16.0
+    created: "2025-04-28T09:29:38.846324162Z"
+    dependencies:
+    - alias: insights
+      name: kompass-insights
+      repository: https://zesty-co.github.io/kompass-insights
+      version: 2.1.4
+    - alias: rightsizing
+      condition: rightsizing.enabled
+      name: pod-rightsizing
+      repository: https://zesty-co.github.io/kompass-pod-rightsizing
+      version: 0.1.3
+    - alias: disk
+      condition: disk.enabled
+      name: zesty
+      repository: https://zesty-co.github.io/zesty-helm
+      version: 1.7.0
+    description: Helm chart for Kompass
+    digest: 84f6efce422deb9084ba5ccdd3d516e70498c7f32f5804171ae8c4825806a810
+    name: kompass
+    type: application
+    urls:
+    - https://github.com/zesty-co/kompass/releases/download/kompass-0.1.2/kompass-0.1.2.tgz
+    version: 0.1.2
+  - apiVersion: v2
+    appVersion: 1.16.0
     created: "2025-04-28T09:24:53.554060424Z"
     dependencies:
     - alias: insights
@@ -26,4 +51,4 @@ entries:
     urls:
     - https://github.com/zesty-co/kompass/releases/download/kompass-0.1.1/kompass-0.1.1.tgz
     version: 0.1.1
-generated: "2025-04-28T09:24:53.55407473Z"
+generated: "2025-04-28T09:29:38.846338468Z"
