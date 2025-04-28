@@ -1,4 +1,12 @@
 insights:
+  # -- (string) REQUIRED: Your Zesty organization ID.
+  # Provided during the onboarding process. This value MUST be set.
+  orgID: ""
+
+  # -- (string) REQUIRED: Your Zesty encrypted credentials.
+  # Provided during the onboarding process. This value MUST be set.
+  encryptedCredentials: ""
+
   admission:
     # -- (bool) Enable or disable the Zesty Kompass mutating webhook for admission control.
     # Required for certain features such as Spot Management.
@@ -8,14 +16,6 @@ insights:
     # -- (bool) Override for deprecated functionality related to specific AWS cluster handling.
     # Consult Zesty documentation before enabling this option. Generally should remain false.
     enabled: false
-
-  # -- (string) REQUIRED: Your Zesty organization ID.
-  # Provided during the onboarding process. This value MUST be set.
-  orgID: ""
-
-  # -- (string) REQUIRED: Your Zesty encrypted credentials.
-  # Provided during the onboarding process. This value MUST be set.
-  encryptedCredentials: ""
 
   persistence:
     spec:
