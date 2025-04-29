@@ -1,11 +1,11 @@
-name: trigger-lenkins
+name: trigger-jenkins
 
 on:
   pull_request:
 
 jobs:
   jenkins:
-    name: Trigger Jenkins Build and Wait
+    name: Trigger Jenkins
     runs-on: ubuntu-latest
 
     steps:
