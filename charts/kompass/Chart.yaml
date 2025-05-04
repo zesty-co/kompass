@@ -1,25 +1,50 @@
 apiVersion: v2
 name: kompass
-description: Helm chart for Kompass
+description: Zesty Kompass Helm Charts
 
 type: application
 version: 0.1.2
 appVersion: "1.16.0"
 
 dependencies:
+# zesty products
   - name: kompass-insights
-    version: "2.1.4"
     alias: insights
     repository: "https://zesty-co.github.io/kompass-insights"
+    version: "2.1.7"
 
   - name: pod-rightsizing
-    version: 0.1.3
     alias: rightsizing
-    repository: "https://zesty-co.github.io/kompass-pod-rightsizing"
     condition: rightsizing.enabled
+    repository: "https://zesty-co.github.io/kompass-pod-rightsizing"
+    version: 0.1.3
 
   - name: zesty
-    version: 1.7.0
     alias: disk
-    repository: "https://zesty-co.github.io/zesty-helm"
     condition: disk.enabled
+    repository: "https://zesty-co.github.io/zesty-helm"
+    version: 1.7.0
+
+# mutual dependencies
+  - name: victoria-metrics-single
+    alias: victoriaMetrics
+    condition: victoriaMetrics.enabled
+    repository: https://victoriametrics.github.io/helm-charts
+    version: 0.14.3
+
+  - name: victoria-metrics-agent
+    alias: victoriaMetricsAgent
+    condition: victoriaMetrics.enabled
+    repository: https://victoriametrics.github.io/helm-charts
+    version: 0.16.2
+
+  - name: kube-state-metrics
+    alias: kubeStateMetrics
+    condition: kubeStateMetrics.enabled
+    repository: https://prometheus-community.github.io/helm-charts
+    version: ">=5.28.0"
+
+  - name: grafana
+    condition: grafana.enabled
+    repository: https://grafana.github.io/helm-charts
+    version: 8.10.4

@@ -58,3 +58,74 @@ disk:
     # -- (string) REQUIRED if disk.enabled is true: The Zesty API Key for disk agent management.
     # Provided during the onboarding process.
     apiKey: ""
+
+victoriaMetrics:
+  enabled: false
+  serviceAccount:
+    name: zesty-kompass-victoria-metrics
+  server:
+    fullnameOverride: zesty-kompass-victoria-metrics
+    persistentVolume:
+      mountPath: /victoria-metrics-data
+      size: "30Gi"
+      storageClassName: "ebs-sc"
+    resources:
+      requests:
+        memory: "3Gi"
+        cpu: "0.5"
+    extraArgs:
+      retentionPeriod: 1w
+      storageDataPath: /victoria-metrics-data
+      search.maxStalenessInterval: 5m
+      search.minStalenessInterval: 30s
+      search.maxQueryDuration: 2m
+      search.disableCache: true
+      memory.allowedPercent: 60
+      dedup.minScrapeInterval: 30s
+
+victoriaMetricsAgent:
+  fullnameOverride: zesty-kompass-victoria-metrics-agent
+  serviceAccount:
+    name: zesty-kompass-victoria-metrics-agent
+  service:
+    type: ClusterIP
+  extraArgs:
+    promscrape.config: /etc/vmagent-config/vmagent-config.yaml
+  remoteWrite:
+    - url: http://zesty-kompass-victoria-metrics.zesty-system:8428/api/v1/write
+  extraVolumes:
+    - name: config
+      configMap:
+        name: vmagent-config
+  extraVolumeMounts:
+    - name: config
+      mountPath: /etc/vmagent-config
+
+kubeStateMetrics:
+  enabled: false
+  serviceName: ""
+  nameOverride: kube-state-metrics
+  fullnameOverride: zesty-kompass-kube-state-metrics
+  extraArgs:
+    - --metric-annotations-allowlist=pods=[*]
+
+grafana:
+  enabled: false
+  fullnameOverride: "zesty-kompass-grafana"
+  deployDataSource: true
+  deployDashboard: true
+  persistence:
+    enabled: true
+    type: "statefulset"
+    size: 1Gi
+    storageClassName: "ebs-sc"
+  # Use ConfigMaps for datasources and dashboards
+  sidecar:
+    datasources:
+      enabled: true
+      label: grafana_datasource
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+  adminUser: admin
+  adminPassword: password
