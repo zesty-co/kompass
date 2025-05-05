@@ -5,6 +5,8 @@ on:
 
 jobs:
   jenkins:
+    permissions:
+      contents: read
     name: Trigger Jenkins
     runs-on: gh-runner-staging
     container:

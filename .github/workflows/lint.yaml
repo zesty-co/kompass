@@ -8,6 +8,8 @@ on:
 
 jobs:
   lint:
+    permissions:
+      contents: read
     name: Helm Lint
     runs-on: ubuntu-latest
 
