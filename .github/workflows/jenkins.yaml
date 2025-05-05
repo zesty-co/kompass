@@ -22,5 +22,5 @@ jobs:
           url: ${{ secrets.JENKINS_URL }}
           user: ${{ secrets.JENKINS_USER }}
           token: ${{ secrets.JENKINS_API_TOKEN }}
-          job: "Run_Test_Flow"
+          job: "Run_Unified_Installation_pipline"
           parameters: UNIFIED_INSTALLATION_BRANCH=${{ github.head_ref }}
