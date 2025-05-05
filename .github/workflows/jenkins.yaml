@@ -6,7 +6,7 @@ on:
 jobs:
   jenkins:
     name: Trigger Jenkins
-    runs-on: ubuntu-latest
+    runs-on: gh-runner-staging
 
     steps:
       - name: checkout
