@@ -16,7 +16,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: trigger single Job
+      - name: trigger installation pipeline
         uses: appleboy/jenkins-action@master
         with:
           url: ${{ secrets.JENKINS_URL }}
