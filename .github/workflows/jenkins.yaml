@@ -7,6 +7,8 @@ jobs:
   jenkins:
     name: Trigger Jenkins
     runs-on: gh-runner-staging
+    container:
+      image: ubuntu:25.04
 
     steps:
       - name: checkout
