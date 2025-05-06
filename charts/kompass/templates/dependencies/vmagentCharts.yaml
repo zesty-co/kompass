@@ -65,6 +65,14 @@ data:
             regex: '.*'
             action: keep
 
+{{- if .Values.rightsizing.enabled }}
+      # for collecting Pilot metrics
+      - job_name: 'pilot'
+        scrape_interval: 30s
+        static_configs:
+          - targets: ['http://{{ include "recommendations-maker.name" . }}.{{ .Release.Namespace }}:{{ .Values.rightsizing.recommendationsMaker.port }}']
+{{- end -}}
+
       # for collecting VM metrics
       - job_name: 'vmetrics'
         scrape_interval: 30s
