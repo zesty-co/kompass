@@ -20,7 +20,7 @@ jobs:
         id: trigger
         run: |
           TRIGGER_URL="${{ secrets.JENKINS_URL }}/job/Run_Unified_Installation_pipline/buildWithParameters?UNIFIED_INSTALLATION_BRANCH=${{ github.head_ref }}"
-          QUEUE_ITEM_URL=$(curl --fail -sS -X POST "$TRIGGER_URL" -u "${{ secrets.JENKINS_USER}}:${{ secrets.JENKINS_TOKEN }}" --dump-header - | grep -i Location | awk '{print $2}' | tr -d '\r')
+          QUEUE_ITEM_URL=$(curl --fail -sS -X POST "$TRIGGER_URL" -u "${{ secrets.JENKINS_USER}}:${{ secrets.JENKINS_API_TOKEN }}" --dump-header - | grep -i Location | awk '{print $2}' | tr -d '\r')
 
           if [ -z "$QUEUE_ITEM_URL" ]; then
             echo "::error::Failed to trigger Jenkins job or get queue item URL."
@@ -41,7 +41,7 @@ jobs:
           END_TIME=$((SECONDS + TIMEOUT_SECONDS))
 
           while [ $SECONDS -lt $END_TIME ]; do
-            QUEUE_RESPONSE=$(curl --fail -sS -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }}" "${QUEUE_URL}api/json")
+            QUEUE_RESPONSE=$(curl --fail -sS -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_API_TOKEN }}" "${QUEUE_URL}api/json")
             BUILD_URL=$(echo "$QUEUE_RESPONSE" | jq -r '.executable.url // empty')
 
             if [ -n "$BUILD_URL" ]; then
@@ -74,7 +74,7 @@ jobs:
           END_TIME=$((SECONDS + TIMEOUT_SECONDS))
 
           while [ $SECONDS -lt $END_TIME ]; do
-            BUILD_RESPONSE=$(curl --fail -sS -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }}" "${BUILD_URL}api/json")
+            BUILD_RESPONSE=$(curl --fail -sS -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_API_TOKEN }}" "${BUILD_URL}api/json")
             BUILDING=$(echo "$BUILD_RESPONSE" | jq -r '.building // false')
             RESULT=$(echo "$BUILD_RESPONSE" | jq -r '.result // empty')
 
