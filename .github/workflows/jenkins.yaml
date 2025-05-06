@@ -11,20 +11,94 @@ jobs:
     runs-on: gh-runner-staging
     container:
       image: ubuntu:25.04
+    outputs:
+      build_status: ${{ steps.check_build.outputs.build_status }}
 
     steps:
-      - name: checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: trigger installation pipeline
-        uses: joshlk/jenkins-githubaction@master
-        with:
-          url: ${{ secrets.JENKINS_URL }}
-          job_name: "Run_Unified_Installation_pipline"
-          user: ${{ secrets.JENKINS_USER }}
-          token: ${{ secrets.JENKINS_TOKEN }}
-          parameters: '{"UNIFIED_INSTALLATION_BRANCH": "${{ github.head_ref }}"}'
-          interval: 30
-          timeout: "20000"
+      - name: Trigger Jenkins Build
+        id: trigger
+        run: |
+          TRIGGER_URL="${{ secrets.JENKINS_URL }}/job/Run_Unified_Installation_pipline/buildWithParameters?UNIFIED_INSTALLATION_BRANCH=${{ github.head_ref }}"
+          QUEUE_ITEM_URL=$(curl --fail -sS -X POST "$TRIGGER_URL" -u "${{ secrets.JENKINS_USER}}:${{ secrets.JENKINS_TOKEN }" --dump-header - | grep -i Location | awk '{print $2}' | tr -d '\r')
+
+          if [ -z "$QUEUE_ITEM_URL" ]; then
+            echo "::error::Failed to trigger Jenkins job or get queue item URL."
+            exit 1
+          fi
+
+          echo "Job added to queue: $QUEUE_ITEM_URL"
+          echo "queue_url=$QUEUE_ITEM_URL" >> $GITHUB_OUTPUT
+
+      - name: Wait for Build to Start and Get Build Number
+        id: get_build_number
+        run: |
+          QUEUE_URL=${{ steps.trigger.outputs.queue_url }}
+          BUILD_URL=""
+          echo "Waiting for build to start..."
+          TIMEOUT_SECONDS=1200
+          INTERVAL_SECONDS=30
+          END_TIME=$((SECONDS + TIMEOUT_SECONDS))
+
+          while [ $SECONDS -lt $END_TIME ]; do
+            QUEUE_RESPONSE=$(curl --fail -sS -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }" "${QUEUE_URL}api/json")
+            BUILD_URL=$(echo "$QUEUE_RESPONSE" | jq -r '.executable.url // empty')
+
+            if [ -n "$BUILD_URL" ]; then
+              echo "Build started: $BUILD_URL"
+              echo "build_url=$BUILD_URL" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+
+            CANCELLED=$(echo "$QUEUE_RESPONSE" | jq -r '.cancelled // false')
+            if [ "$CANCELLED" == "true" ]; then
+              echo "::error::Build was cancelled in the queue."
+              exit 1
+            fi
+
+            echo "Still in queue, waiting ${INTERVAL_SECONDS}s..."
+            sleep $INTERVAL_SECONDS
+          done
+
+          echo "::error::Timeout waiting for build to start from queue item $QUEUE_URL"
+          exit 1
+
+      - name: Wait for Build Completion
+        id: check_build
+        run: |
+          BUILD_URL=${{ steps.get_build_number.outputs.build_url }}
+          BUILD_STATUS=""
+          echo "Waiting for build at $BUILD_URL to complete..."
+          TIMEOUT_SECONDS=1200
+          INTERVAL_SECONDS=30
+          END_TIME=$((SECONDS + TIMEOUT_SECONDS))
+
+          while [ $SECONDS -lt $END_TIME ]; do
+            BUILD_RESPONSE=$(curl --fail -sS -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }" "${BUILD_URL}api/json")
+            BUILDING=$(echo "$BUILD_RESPONSE" | jq -r '.building // false')
+            RESULT=$(echo "$BUILD_RESPONSE" | jq -r '.result // empty')
+
+            if [ "$BUILDING" == "false" ] && [ -n "$RESULT" ]; then
+              BUILD_STATUS=$RESULT
+              echo "Build finished with status: $BUILD_STATUS"
+              echo "build_status=$BUILD_STATUS" >> $GITHUB_OUTPUT
+              if [ "$BUILD_STATUS" == "SUCCESS" ]; then
+                exit 0
+              else
+                echo "::error::Jenkins build finished with status: $BUILD_STATUS"
+                exit 1
+              fi
+            fi
+
+            echo "Build still in progress, waiting ${INTERVAL_SECONDS}s..."
+            sleep $INTERVAL_SECONDS
+          done
+
+          echo "::error::Timeout waiting for Jenkins build at $BUILD_URL to complete."
+          exit 1
+
+      - name: Show Jenkins Build Status
+        if: always()
+        run: echo "Jenkins build final status: ${{ steps.check_build.outputs.build_status }}"
