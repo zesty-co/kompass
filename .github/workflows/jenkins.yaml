@@ -13,7 +13,7 @@ jobs:
       image: ubuntu:25.04
 
     steps:
-      - name: Install jq
+      - name: Install dependencies
         run: apt-get update && apt-get install -y curl jq
 
       - name: Trigger Jenkins Build
