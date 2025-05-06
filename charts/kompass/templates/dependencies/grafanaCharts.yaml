@@ -4,10 +4,10 @@ kind: ConfigMap
 metadata:
   name: {{ include "name" . }}-grafana-dashboard
   labels:
-    {{- include "zesty-k8s.labels" . | nindent 4 }}
+    {{- include "kompass.labels" . | nindent 4 }}
     grafana_dashboard: "1"
 data:
-  zesty-k8s-grafana-dashboard.json: |-
+  kompass-grafana-dashboard.json: |-
 {{ .Files.Get "files/grafana-dashboard.json" | indent 4 }}
 {{- end }}
 ---
@@ -17,7 +17,7 @@ kind: ConfigMap
 metadata:
   name: {{ include "name" . }}-grafana-datasource
   labels:
-    {{- include "zesty-k8s.labels" . | nindent 4 }}
+    {{- include "kompass.labels" . | nindent 4 }}
     grafana_datasource: "1"
 data:
   datasource.yaml: |-
