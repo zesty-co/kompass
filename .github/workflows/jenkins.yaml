@@ -19,10 +19,12 @@ jobs:
           fetch-depth: 0
 
       - name: trigger installation pipeline
-        uses: appleboy/jenkins-action@master
+        uses: joshlk/jenkins-githubaction@master
         with:
           url: ${{ secrets.JENKINS_URL }}
+          job_name: "Run_Unified_Installation_pipline"
           user: ${{ secrets.JENKINS_USER }}
-          token: ${{ secrets.JENKINS_API_TOKEN }}
-          job: "Run_Unified_Installation_pipline"
-          parameters: UNIFIED_INSTALLATION_BRANCH=${{ github.head_ref }}
+          token: ${{ secrets.JENKINS_TOKEN }}
+          parameters: {"UNIFIED_INSTALLATION_BRANCH": "${{ github.head_ref }}"}
+          interval: 30
+          timeout: "20000"
