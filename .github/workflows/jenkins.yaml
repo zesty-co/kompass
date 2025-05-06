@@ -11,8 +11,6 @@ jobs:
     runs-on: gh-runner-staging
     container:
       image: ubuntu:25.04
-    outputs:
-      build_status: ${{ steps.check_build.outputs.build_status }}
 
     steps:
       - name: Install jq
@@ -83,7 +81,6 @@ jobs:
             if [ "$BUILDING" == "false" ] && [ -n "$RESULT" ]; then
               BUILD_STATUS=$RESULT
               echo "Build finished with status: $BUILD_STATUS"
-              echo "build_status=$BUILD_STATUS" >> $GITHUB_OUTPUT
               if [ "$BUILD_STATUS" == "SUCCESS" ]; then
                 exit 0
               else
@@ -98,7 +95,3 @@ jobs:
 
           echo "::error::Timeout waiting for Jenkins build at $BUILD_URL to complete."
           exit 1
-
-      - name: Show Jenkins Build Status
-        if: always()
-        run: echo "Jenkins build final status: ${{ steps.check_build.outputs.build_status }}"
