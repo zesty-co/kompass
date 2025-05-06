@@ -20,7 +20,7 @@ jobs:
         id: trigger
         run: |
           TRIGGER_URL="${{ secrets.JENKINS_URL }}/job/Run_Unified_Installation_pipline/buildWithParameters?UNIFIED_INSTALLATION_BRANCH=${{ github.head_ref }}"
-          QUEUE_ITEM_URL=$(curl --fail -sS -X POST "$TRIGGER_URL" -u "${{ secrets.JENKINS_USER}}:${{ secrets.JENKINS_API_TOKEN }}" --dump-header - | grep -i Location | awk '{print $2}' | tr -d '\r')
+          QUEUE_ITEM_URL=$(curl --fail -sS -X POST "$TRIGGER_URL" -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_API_TOKEN }}" --dump-header - | grep -i Location | awk '{print $2}' | tr -d '\r')
 
           if [ -z "$QUEUE_ITEM_URL" ]; then
             echo "::error::Failed to trigger Jenkins job or get queue item URL."
