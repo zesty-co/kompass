@@ -100,5 +100,4 @@ jobs:
           exit 1
 
       - name: Show Jenkins Build Status
-        if: always()
         run: echo "Jenkins build final status: ${{ steps.check_build.outputs.build_status }}"
