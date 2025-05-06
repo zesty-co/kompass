@@ -2,10 +2,14 @@ name: helm-lint
 
 on:
   push:
+    branches:
+      - main
   pull_request:
 
 jobs:
   lint:
+    permissions:
+      contents: read
     name: Helm Lint
     runs-on: ubuntu-latest
 
