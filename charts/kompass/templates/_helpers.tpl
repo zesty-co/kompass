@@ -5,12 +5,12 @@ Helper Templates for Kompass Insights
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "zesty-k8s.name" -}}
+{{- define "kompass.name" -}}
   {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{- define "prefix.name" -}}
-  {{- default "zesty-k8s" .Values.prefix | trunc 63 | trimSuffix "-" }}
+  {{- default "kompass" .Values.prefix | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{- define "name" -}}
@@ -22,7 +22,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "zesty-k8s.fullname" -}}
+{{- define "kompass.fullname" -}}
   {{- if .Values.fullnameOverride }}
     {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
   {{- else }}
@@ -38,7 +38,7 @@ If release name contains chart name it will be used as a full name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "zesty-k8s.chart" -}}
+{{- define "kompass.chart" -}}
   {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -50,9 +50,9 @@ Create chart name and version as used by the chart label.
   {{- end }}
 {{- end }}
 
-{{- define "zesty-k8s.labels" -}}
-helm.sh/chart: {{ include "zesty-k8s.chart" . }}
-{{ include "zesty-k8s.selectorLabels" . }}
+{{- define "kompass.labels" -}}
+helm.sh/chart: {{ include "kompass.chart" . }}
+{{ include "kompass.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -62,7 +62,7 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "zesty-k8s.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "zesty-k8s.name" . }}
+{{- define "kompass.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "kompass.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
