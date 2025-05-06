@@ -14,7 +14,7 @@ jobs:
 
     steps:
       - name: Install jq
-        run: apt-get update && apt-get install -y jq
+        run: apt-get update && apt-get install -y curl jq
 
       - name: Trigger Jenkins Build
         id: trigger
