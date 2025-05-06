@@ -20,20 +20,15 @@ jobs:
         id: trigger
         run: |
           TRIGGER_URL="${{ secrets.JENKINS_URL }}/job/Run_Unified_Installation_pipline/buildWithParameters?UNIFIED_INSTALLATION_BRANCH=${{ github.head_ref }}"
-          QUEUE_ITEM_URL=$(curl --fail -sS -X POST "$TRIGGER_URL" -u "${{ secrets.JENKINS_USER}}:${{ secrets.JENKINS_TOKEN }" --dump-header - | grep -i Location | awk '{print $2}' | tr -d '\r')
+          QUEUE_URL=$(curl --fail -sS -X POST "$TRIGGER_URL" -u "${{ secrets.JENKINS_USER}}:${{ secrets.JENKINS_TOKEN }" --dump-header - | grep -i Location | awk '{print $2}' | tr -d '\r')
 
-          if [ -z "$QUEUE_ITEM_URL" ]; then
+          if [ -z "$QUEUE_URL" ]; then
             echo "::error::Failed to trigger Jenkins job or get queue item URL."
             exit 1
           fi
 
-          echo "Job added to queue: $QUEUE_ITEM_URL"
-          echo "queue_url=$QUEUE_ITEM_URL" >> $GITHUB_OUTPUT
+          echo "Job added to queue: $QUEUE_URL"
 
-      - name: Wait for Build to Start and Get Build Number
-        id: get_build_number
-        run: |
-          QUEUE_URL=${{ steps.trigger.outputs.queue_url }}
           BUILD_URL=""
           echo "Waiting for build to start..."
           TIMEOUT_SECONDS=1200
@@ -47,7 +42,7 @@ jobs:
             if [ -n "$BUILD_URL" ]; then
               echo "Build started: $BUILD_URL"
               echo "build_url=$BUILD_URL" >> $GITHUB_OUTPUT
-              exit 0
+              break
             fi
 
             CANCELLED=$(echo "$QUEUE_RESPONSE" | jq -r '.cancelled // false')
@@ -60,18 +55,8 @@ jobs:
             sleep $INTERVAL_SECONDS
           done
 
-          echo "::error::Timeout waiting for build to start from queue item $QUEUE_URL"
-          exit 1
-
-      - name: Wait for Build Completion
-        id: check_build
-        run: |
-          BUILD_URL=${{ steps.get_build_number.outputs.build_url }}
           BUILD_STATUS=""
           echo "Waiting for build at $BUILD_URL to complete..."
-          TIMEOUT_SECONDS=1200
-          INTERVAL_SECONDS=30
-          END_TIME=$((SECONDS + TIMEOUT_SECONDS))
 
           while [ $SECONDS -lt $END_TIME ]; do
             BUILD_RESPONSE=$(curl --fail -sS -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }" "${BUILD_URL}api/json")
