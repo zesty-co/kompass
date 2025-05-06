@@ -33,7 +33,7 @@ jobs:
       - name: Wait for Build to Start and Get Build Number
         id: get_build_number
         run: |
-          QUEUE_URL=${{ steps.trigger.outputs.queue_url }}
+          QUEUE_URL="${{ steps.trigger.outputs.queue_url }}"
           BUILD_URL=""
           echo "Waiting for build to start..."
           TIMEOUT_SECONDS=1200
@@ -41,7 +41,7 @@ jobs:
           END_TIME=$((SECONDS + TIMEOUT_SECONDS))
 
           while [ $SECONDS -lt $END_TIME ]; do
-            QUEUE_RESPONSE=$(curl --fail -sS -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }" "${QUEUE_URL}api/json")
+            QUEUE_RESPONSE=$(curl --fail -sS -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }}" "${QUEUE_URL}api/json")
             BUILD_URL=$(echo "$QUEUE_RESPONSE" | jq -r '.executable.url // empty')
 
             if [ -n "$BUILD_URL" ]; then
@@ -66,7 +66,7 @@ jobs:
       - name: Wait for Build Completion
         id: check_build
         run: |
-          BUILD_URL=${{ steps.get_build_number.outputs.build_url }}
+          BUILD_URL="${{ steps.get_build_number.outputs.build_url }}"
           BUILD_STATUS=""
           echo "Waiting for build at $BUILD_URL to complete..."
           TIMEOUT_SECONDS=1200
@@ -74,7 +74,7 @@ jobs:
           END_TIME=$((SECONDS + TIMEOUT_SECONDS))
 
           while [ $SECONDS -lt $END_TIME ]; do
-            BUILD_RESPONSE=$(curl --fail -sS -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }" "${BUILD_URL}api/json")
+            BUILD_RESPONSE=$(curl --fail -sS -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_TOKEN }}" "${BUILD_URL}api/json")
             BUILDING=$(echo "$BUILD_RESPONSE" | jq -r '.building // false')
             RESULT=$(echo "$BUILD_RESPONSE" | jq -r '.result // empty')
 
