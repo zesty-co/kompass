@@ -3,7 +3,7 @@ name: kompass
 description: Zesty Kompass Helm Charts
 
 type: application
-version: 0.1.4
+version: 0.1.5
 appVersion: "1.16.0"
 
 dependencies:
@@ -11,13 +11,13 @@ dependencies:
   - name: kompass-insights
     alias: insights
     repository: "https://zesty-co.github.io/kompass-insights"
-    version: "2.1.6"
+    version: "2.1.14"
 
   - name: pod-rightsizing
     alias: rightsizing
     condition: rightsizing.enabled
     repository: "https://zesty-co.github.io/kompass-pod-rightsizing"
-    version: 0.1.3
+    version: 0.1.4
 
   - name: zesty
     alias: disk
