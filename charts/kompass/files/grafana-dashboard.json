@@ -56,7 +56,7 @@
           "uid": "VictoriaMetrics"
         },
         "enable": true,
-        "expr": "changes(pilot_recommendations{container=\"$container\", type=\"orchestration\"}[1m])",
+        "expr": "changes(pilot_recommendations{container=\"$container\", type=\"orchestration\", mode=\"live\"}[1m])",
         "hide": false,
         "iconColor": "blue",
         "name": "Orchestrations",
@@ -70,7 +70,7 @@
           "uid": "VictoriaMetrics"
         },
         "enable": true,
-        "expr": "changes(pilot_recommendations{container=\"$container\", type=\"rollback\"}[1m])",
+        "expr": "changes(pilot_recommendations{container=\"$container\", type=\"rollback\", mode=\"live\"}[1m])",
         "hide": false,
         "iconColor": "red",
         "name": "Rollbacks",
@@ -285,7 +285,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "avg(pilot_recommendations{container=\"$container\", resource_type=\"cpu\"}[15s:15s])[1d]",
+          "expr": "avg(pilot_recommendations{container=\"$container\", resource_type=\"cpu\", mode=\"live\",resource_source=\"desired\"}[15s:15s])[1d]",
           "hide": false,
           "instant": false,
           "legendFormat": "Desired: {{container}}",
@@ -545,7 +545,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "avg(pilot_recommendations{container=\"$container\", resource_type=\"memory\"}[15s:15s])[1d] / 1024 / 1024",
+          "expr": "avg(pilot_recommendations{container=\"$container\", resource_type=\"memory\", mode=\"live\",resource_source=\"desired\"}[15s:15s])[1d] / 1024 / 1024",
           "format": "time_series",
           "hide": false,
           "instant": false,
