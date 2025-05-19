@@ -73,6 +73,14 @@ data:
           - targets: ['http://{{ include "recommendations-maker.name" . }}.{{ .Release.Namespace }}:{{ .Values.rightsizing.recommendationsMaker.port }}']
 {{- end -}}
 
+{{- if .Values.insights.enabled }}
+      # for collecting insights metrics
+      - job_name: 'kompass-insights'
+        scrape_interval: 30s
+        static_configs:
+          - targets: ['http://{{ include ".Values.insights.admission.insights.service" . }}.{{ .Release.Namespace }}:{{ .Values.insights.metricsPort }}']
+{{- end -}}
+
       # for collecting VM metrics
       - job_name: 'vmetrics'
         scrape_interval: 30s
