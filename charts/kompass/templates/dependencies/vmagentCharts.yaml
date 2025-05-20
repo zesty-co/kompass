@@ -71,21 +71,19 @@ data:
         scrape_interval: 30s
         static_configs:
           - targets: ['http://{{ include "recommendations-maker.name" . }}.{{ .Release.Namespace }}:{{ .Values.rightsizing.recommendationsMaker.port }}']
-{{- end -}}
+{{- end }}
 
-{{- if .Values.insights.enabled }}
       # for collecting insights metrics
       - job_name: 'kompass-insights'
         scrape_interval: 30s
         static_configs:
-          - targets: ['http://{{ include ".Values.insights.admission.insights.service" . }}.{{ .Release.Namespace }}:{{ .Values.insights.metricsPort }}']
-{{- end -}}
+          - targets: ['http://{{ .Values.insights.admission.insights.service }}.{{ .Release.Namespace }}:{{ .Values.insights.metricsPort }}']
 
       # for collecting VM metrics
       - job_name: 'vmetrics'
         scrape_interval: 30s
         static_configs:
-          - targets: ['{{ .Values.victoriaMetrics.server.fullnameOverride}}.{{ .Release.Namespace }}:8428']
+          - targets: ['{{ .Values.victoriaMetrics.server.fullnameOverride }}.{{ .Release.Namespace }}:8428']
 
       # For pod and node metrics
       - job_name: 'kube-state-metrics'
@@ -99,5 +97,14 @@ data:
         metric_relabel_configs:
           - source_labels: [__name__]
             regex: '.*'
+            action: keep
+
+      # prometheus node exporter scraping for additional node metrics
+      - job_name: node-exporter
+        kubernetes_sd_configs:
+          - role: pod
+        relabel_configs:
+          - source_labels: [ __meta_kubernetes_pod_container_name ]
+            regex: node-exporter
             action: keep
 {{- end -}}
