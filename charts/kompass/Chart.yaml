@@ -13,7 +13,7 @@ dependencies:
   - name: kompass-insights
     alias: insights
     repository: "https://zesty-co.github.io/kompass-insights"
-    version: "2.1.16"
+    version: "2.1.18"
 
   - name: pod-rightsizing
     alias: rightsizing
