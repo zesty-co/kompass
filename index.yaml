@@ -3,6 +3,50 @@ entries:
   kompass:
   - apiVersion: v2
     appVersion: 1.16.0
+    created: "2025-05-21T08:50:21.787100372Z"
+    dependencies:
+    - alias: insights
+      name: kompass-insights
+      repository: https://zesty-co.github.io/kompass-insights
+      version: 2.1.18
+    - alias: rightsizing
+      condition: rightsizing.enabled
+      name: pod-rightsizing
+      repository: https://zesty-co.github.io/kompass-pod-rightsizing
+      version: 0.1.4
+    - alias: disk
+      condition: disk.enabled
+      name: zesty
+      repository: https://zesty-co.github.io/zesty-helm
+      version: 1.7.0
+    - alias: victoriaMetrics
+      condition: victoriaMetrics.enabled
+      name: victoria-metrics-single
+      repository: https://victoriametrics.github.io/helm-charts
+      version: 0.14.3
+    - alias: victoriaMetricsAgent
+      condition: victoriaMetrics.enabled
+      name: victoria-metrics-agent
+      repository: https://victoriametrics.github.io/helm-charts
+      version: 0.16.2
+    - alias: kubeStateMetrics
+      condition: kubeStateMetrics.enabled
+      name: kube-state-metrics
+      repository: https://prometheus-community.github.io/helm-charts
+      version: '>=5.28.0'
+    - condition: grafana.enabled
+      name: grafana
+      repository: https://grafana.github.io/helm-charts
+      version: 8.10.4
+    description: Zesty Kompass Helm Charts
+    digest: e1a7116ab3e282b3b921a8f445f98808f6223611127736b07b41ecc118d983f7
+    name: kompass
+    type: application
+    urls:
+    - https://github.com/zesty-co/kompass/releases/download/kompass-0.1.7/kompass-0.1.7.tgz
+    version: 0.1.7
+  - apiVersion: v2
+    appVersion: 1.16.0
     created: "2025-05-20T09:20:57.487699991Z"
     dependencies:
     - alias: insights
@@ -208,4 +252,4 @@ entries:
     urls:
     - https://github.com/zesty-co/kompass/releases/download/kompass-0.1.1/kompass-0.1.1.tgz
     version: 0.1.1
-generated: "2025-05-20T09:20:57.487720169Z"
+generated: "2025-05-21T08:50:21.787143272Z"
