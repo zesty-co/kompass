@@ -26,7 +26,7 @@ of them separately:
 
 1. Add the Kompass helm chart repo to your client configuration
 ```sh
-helm repo add zesty https://zesty-co.github.io/kompass
+helm repo add kompass https://zesty-co.github.io/kompass
 helm repo update
 ```
 2. Search the repo to make sure it's set up
