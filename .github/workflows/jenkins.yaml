@@ -71,7 +71,7 @@ jobs:
           BUILD_URL="${{ steps.get_build_number.outputs.build_url }}"
           BUILD_STATUS=""
           echo "Waiting for build at $BUILD_URL to complete..."
-          TIMEOUT_SECONDS=1200
+          TIMEOUT_SECONDS=1800
           INTERVAL_SECONDS=30
           END_TIME=$((SECONDS + TIMEOUT_SECONDS))
 
