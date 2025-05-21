@@ -82,7 +82,7 @@ victoriaMetrics:
       search.disableCache: true
       memory.allowedPercent: 60
       dedup.minScrapeInterval: 30s
-      search.cacheTimestampOffset: 7d
+      search.cacheTimestampOffset: 168h
 
 victoriaMetricsAgent:
   fullnameOverride: zesty-kompass-victoria-metrics-agent
