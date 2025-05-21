@@ -73,11 +73,17 @@ data:
           - targets: ['http://{{ include "recommendations-maker.name" . }}.{{ .Release.Namespace }}:{{ .Values.rightsizing.recommendationsMaker.port }}']
 {{- end }}
 
+      # for collecting insights metrics
+      - job_name: 'kompass-insights'
+        scrape_interval: 30s
+        static_configs:
+          - targets: ['http://{{ .Values.insights.admission.insights.service }}.{{ .Release.Namespace }}:{{ .Values.insights.metricsPort }}']
+
       # for collecting VM metrics
       - job_name: 'vmetrics'
         scrape_interval: 30s
         static_configs:
-          - targets: ['{{ .Values.victoriaMetrics.server.fullnameOverride}}.{{ .Release.Namespace }}:8428']
+          - targets: ['{{ .Values.victoriaMetrics.server.fullnameOverride }}.{{ .Release.Namespace }}:8428']
 
       {{- if .Values.insights.recommendations.enabled }}
       # for collecting recommendations
@@ -100,4 +106,12 @@ data:
           - source_labels: [__name__]
             regex: '.*'
             action: keep
+
+      # prometheus node exporter scraping for additional node metrics
+      - job_name: node-exporter
+        kubernetes_sd_configs:
+          - role: pod
+            selectors:
+              - role: pod
+                label: "app.kubernetes.io/name=prometheus-node-exporter"
 {{- end -}}
