@@ -111,8 +111,7 @@ data:
       - job_name: node-exporter
         kubernetes_sd_configs:
           - role: pod
-        relabel_configs:
-          - source_labels: [ __meta_kubernetes_pod_container_name ]
-            regex: node-exporter
-            action: keep
+            selectors:
+              - role: pod
+                label: "app.kubernetes.io/name=prometheus-node-exporter"
 {{- end -}}
