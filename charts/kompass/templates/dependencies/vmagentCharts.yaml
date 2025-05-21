@@ -71,13 +71,21 @@ data:
         scrape_interval: 30s
         static_configs:
           - targets: ['http://{{ include "recommendations-maker.name" . }}.{{ .Release.Namespace }}:{{ .Values.rightsizing.recommendationsMaker.port }}']
-{{- end -}}
+{{- end }}
 
       # for collecting VM metrics
       - job_name: 'vmetrics'
         scrape_interval: 30s
         static_configs:
           - targets: ['{{ .Values.victoriaMetrics.server.fullnameOverride}}.{{ .Release.Namespace }}:8428']
+
+      {{- if .Values.insights.recommendations.enabled }}
+      # for collecting recommendations
+      - job_name: 'recommendations'
+        scrape_interval: 30s
+        static_configs:
+          - targets: ['http://{{ include "zesty-k8s.recommendations.fullname" (dict "Values" .Values.insights "Release" .Release "Chart" (dict "Name" "insights")) }}.{{ .Release.Namespace }}:{{ .Values.insights.recommendations.http.port }}']
+      {{- end }}
 
       # For pod and node metrics
       - job_name: 'kube-state-metrics'
