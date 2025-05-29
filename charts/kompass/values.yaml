@@ -82,6 +82,7 @@ victoriaMetrics:
       search.disableCache: true
       memory.allowedPercent: 60
       dedup.minScrapeInterval: 30s
+      search.cacheTimestampOffset: 168h
 
 victoriaMetricsAgent:
   fullnameOverride: zesty-kompass-victoria-metrics-agent
@@ -108,6 +109,10 @@ kubeStateMetrics:
   fullnameOverride: zesty-kompass-kube-state-metrics
   extraArgs:
     - --metric-annotations-allowlist=pods=[*]
+
+prometheusNodeExporter:
+  enabled: false
+  fullnameOverride: zesty-kompass-prometheus-node-exporter
 
 grafana:
   enabled: false
