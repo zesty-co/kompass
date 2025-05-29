@@ -6,7 +6,7 @@ metadata:
 data:
   monitoring_config: |
     rightsizing:
-        enabled: {{ .Values.rightsizing.enabled | quote }}
+        enabled: {{ .Values.rightsizing.enabled }}
         deployments:
         - app.kubernetes.io/name: pod-rightsizing
         - app.kubernetes.io/name: kube-state-metrics
@@ -18,27 +18,27 @@ data:
         - app.kubernetes.io/name: pod-rightsizing
         - app.kubernetes.io/name: grafana
     storage:
-        enabled: {{ .Values.disk.enabled | quote }} # Has a problem with component names being calculated in the chart and will break on change
+        enabled: {{ .Values.disk.enabled }} # Has a problem with component names being calculated in the chart and will break on change
         deployments:
         - app.kubernetes.io/name: "kompass-storage"
         statefulsets: []
     victoria_metrics_agent:
-      enabled: {{ .Values.victoriaMetrics.enabled | quote }}
+      enabled: {{ .Values.victoriaMetrics.enabled }}
       deployments:
       - app.kubernetes.io/name: victoriaMetricsAgent
       statefulsets: []
     victoria_metrics:
-      enabled: {{ .Values.victoriaMetrics.enabled | quote }}
+      enabled: {{ .Values.victoriaMetrics.enabled }}
       deployments: []
       statefulsets:
       - app.kubernetes.io/name: victoriaMetrics
     kube_state_metrics:
-        enabled: {{ .Values.kubeStateMetrics.enabled | quote }}
+        enabled: {{ .Values.kubeStateMetrics.enabled }}
         deployments:
         - app.kubernetes.io/name: {{ .Values.kubeStateMetrics.nameOverride | default "kube-state-metrics" | quote }}
         statefulsets: []
     grafana:
-        enabled: {{ .Values.grafana.enabled | quote }}
+        enabled: {{ .Values.grafana.enabled }}
         deployments: []
         statefulsets:
         - app.kubernetes.io/name: {{ .Values.grafana.nameOverride | default "grafana" | quote }}
