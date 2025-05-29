@@ -1,4 +1,3 @@
-# app.kubernetes.io/name: victoriaMetricsAgent
 apiVersion: v1
 kind: ConfigMap
 metadata:
