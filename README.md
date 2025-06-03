@@ -26,14 +26,14 @@ of them separately:
 
 1. Add the Kompass helm chart repo to your client configuration
 ```sh
-helm repo add zesty https://zesty-co.github.io/kompass
+helm repo add kompass https://zesty-co.github.io/kompass
 helm repo update
 ```
 2. Search the repo to make sure it's set up
 ```
-$ helm search repo zesty
+$ helm search repo kompass
 NAME                    CHART VERSION   APP VERSION     DESCRIPTION
-zesty/kompass           0.1.0           1.16.0          Helm chart for Kompass
+kompass/kompass         0.1.8           1.16.0          Helm chart for Kompass
 ```
 3. Install the chart
 ```sh
