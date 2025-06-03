@@ -1,3 +1,14 @@
+cxLogging: &cxLogging
+  # Configuration for sending CX logs.
+  # -- (bool) Enable or disable sending CX logs to Zesty.
+  enabled: false
+  # -- (string) REQUIRED if cxLogging.enabled is true: A descriptive name for your cluster.
+  # This name will appear in the Zesty platform associated with the logs.
+  clusterName: ""
+  # -- (string) REQUIRED if cxLogging.enabled is true: The API Key for CX logging.
+  # Provided during the onboarding process specifically for CX logging.
+  apiKey: ""
+
 insights:
   # -- (string) REQUIRED: Your Zesty organization ID.
   # Provided during the onboarding process. This value MUST be set.
@@ -35,20 +46,13 @@ insights:
     # Provided during the onboarding process to prevent confused deputy problems.
     zestyExternalID: ~
 
+  cxLogging: *cxLogging
+
 rightsizing:
   # -- (bool) Enable or disable the Zesty rightsizing feature components.
-  enabled: false
+  enabled: true
 
-  cxLogging:
-    # Configuration for sending CX logs. Requires 'rightsizing.enabled: true'.
-    # -- (bool) Enable or disable sending CX logs to Zesty.
-    enabled: false
-    # -- (string) REQUIRED if cxLogging.enabled is true: A descriptive name for your cluster.
-    # This name will appear in the Zesty platform associated with the logs.
-    clusterName: ""
-    # -- (string) REQUIRED if cxLogging.enabled is true: The API Key for CX logging.
-    # Provided during the onboarding process specifically for CX logging.
-    apiKey: ""
+  cxLogging: *cxLogging
 
 disk:
   # -- (bool) Enable or disable the Zesty disk optimization feature components.
