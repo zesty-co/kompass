@@ -3,6 +3,55 @@ entries:
   kompass:
   - apiVersion: v2
     appVersion: 1.16.0
+    created: "2025-06-03T14:18:26.044111731Z"
+    dependencies:
+    - alias: insights
+      name: kompass-insights
+      repository: https://zesty-co.github.io/kompass-insights
+      version: 2.1.18
+    - alias: rightsizing
+      condition: rightsizing.enabled
+      name: pod-rightsizing
+      repository: https://zesty-co.github.io/kompass-pod-rightsizing
+      version: 0.1.4
+    - alias: disk
+      condition: disk.enabled
+      name: zesty
+      repository: https://zesty-co.github.io/zesty-helm
+      version: 1.7.0
+    - alias: victoriaMetrics
+      condition: victoriaMetrics.enabled
+      name: victoria-metrics-single
+      repository: https://victoriametrics.github.io/helm-charts
+      version: 0.14.3
+    - alias: victoriaMetricsAgent
+      condition: victoriaMetrics.enabled
+      name: victoria-metrics-agent
+      repository: https://victoriametrics.github.io/helm-charts
+      version: 0.16.2
+    - alias: kubeStateMetrics
+      condition: kubeStateMetrics.enabled
+      name: kube-state-metrics
+      repository: https://prometheus-community.github.io/helm-charts
+      version: '>=5.28.0'
+    - condition: prometheusNodeExporter.enabled
+      name: prometheus-node-exporter
+      repository: https://prometheus-community.github.io/helm-charts
+      version: 4.46.0
+    - condition: grafana.enabled
+      name: grafana
+      repository: https://grafana.github.io/helm-charts
+      version: 8.10.4
+    description: Zesty Kompass Helm Charts
+    digest: d685bfccf8684cf8b51e506ef4177e8f5daafba972b1b256d46eca9ab0de20c4
+    icon: https://zesty.co/wp-content/uploads/2024/05/favicon-150x150.png
+    name: kompass
+    type: application
+    urls:
+    - https://github.com/zesty-co/kompass/releases/download/kompass-0.1.9/kompass-0.1.9.tgz
+    version: 0.1.9
+  - apiVersion: v2
+    appVersion: 1.16.0
     created: "2025-05-21T09:59:20.872252565Z"
     dependencies:
     - alias: insights
@@ -301,4 +350,4 @@ entries:
     urls:
     - https://github.com/zesty-co/kompass/releases/download/kompass-0.1.1/kompass-0.1.1.tgz
     version: 0.1.1
-generated: "2025-05-21T09:59:20.872294523Z"
+generated: "2025-06-03T14:18:26.044139182Z"
