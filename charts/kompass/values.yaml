@@ -50,7 +50,7 @@ insights:
 
 rightsizing:
   # -- (bool) Enable or disable the Zesty rightsizing feature components.
-  enabled: true
+  enabled: false
 
   cxLogging: *cxLogging
 
