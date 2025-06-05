@@ -43,7 +43,7 @@ data:
     scrape_configs:
       # For container CPU and memory metrics
       - job_name: 'kubelet'
-        scrape_interval: 30s
+        scrape_interval: {{ include "kompass.scrapeInterval" . }}
         scheme: https
         tls_config:
           insecure_skip_verify: true
@@ -68,34 +68,34 @@ data:
 {{- if .Values.rightsizing.enabled }}
       # for collecting Pilot metrics
       - job_name: 'pilot'
-        scrape_interval: 30s
+        scrape_interval: {{ include "kompass.scrapeInterval" . }}
         static_configs:
-          - targets: ['http://{{ include "recommendations-maker.name" . }}.{{ .Release.Namespace }}:{{ .Values.rightsizing.recommendationsMaker.port }}']
+          - targets: ['http://{{- include "rightsizing.recommendationsMaker.name" . -}}.{{ .Release.Namespace }}:{{ .Values.rightsizing.recommendationsMaker.port }}']
 {{- end }}
 
       # for collecting insights metrics
       - job_name: 'kompass-insights'
-        scrape_interval: 30s
+        scrape_interval: {{ include "kompass.scrapeInterval" . }}
         static_configs:
           - targets: ['http://{{ .Values.insights.admission.insights.service }}.{{ .Release.Namespace }}:{{ .Values.insights.metricsPort }}']
 
       # for collecting VM metrics
       - job_name: 'vmetrics'
-        scrape_interval: 30s
+        scrape_interval: {{ include "kompass.scrapeInterval" . }}
         static_configs:
           - targets: ['{{ .Values.victoriaMetrics.server.fullnameOverride }}.{{ .Release.Namespace }}:8428']
 
       {{- if .Values.insights.recommendations.enabled }}
       # for collecting recommendations
       - job_name: 'recommendations'
-        scrape_interval: 30s
+        scrape_interval: {{ include "kompass.scrapeInterval" . }}
         static_configs:
           - targets: ['http://{{ include "zesty-k8s.recommendations.fullname" (dict "Values" .Values.insights "Release" .Release "Chart" (dict "Name" "insights")) }}.{{ .Release.Namespace }}:{{ .Values.insights.recommendations.http.port }}']
       {{- end }}
 
       # For pod and node metrics
       - job_name: 'kube-state-metrics'
-        scrape_interval: 30s
+        scrape_interval: {{ include "kompass.scrapeInterval" . }}
         kubernetes_sd_configs:
           - role: service
         relabel_configs:
