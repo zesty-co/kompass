@@ -18,7 +18,9 @@ dependencies:
   - name: pod-rightsizing
     alias: rightsizing
     condition: rightsizing.enabled
-    repository: "git+ssh://git@gitlab.com/zestyco/kompass/pod-rightsizing@helm/pod-rightsizing?ref=test-unified-chart"
+    repository: "https://zesty-co.github.io/kompass-pod-rightsizing"
+    # In order to deploy RS dev version use the commented line
+    # repository: "git+ssh://git@gitlab.com/zestyco/kompass/pod-rightsizing@helm/pod-rightsizing?ref=test-unified-chart"
     version: 0.1.0
 
   - name: zesty

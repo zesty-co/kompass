@@ -51,14 +51,10 @@ rightsizing:
   actionTaker:
     fullnameOverride: ~
     name: "action-taker"
-    image:
-      tag: "test-unified-chart"
 
   recommendationsMaker:
     fullnameOverride: ~
     name: "recommendations-maker"
-    image:
-      tag: "test-unified-chart"
     port: 8088
 
   cxLogging:
@@ -93,8 +89,8 @@ victoriaMetrics:
       storageClassName: "ebs-sc"
     resources:
       requests:
-        memory: "1Gi"
-        cpu: "0.1"
+        memory: "3Gi"
+        cpu: "0.5"
     extraArgs:
       retentionPeriod: 1w
       storageDataPath: /victoria-metrics-data
@@ -120,7 +116,7 @@ victoriaMetricsAgent:
   extraVolumes:
     - name: config
       configMap:
-        name: vmagent-config
+        name: kompass-vmagent-config
   extraVolumeMounts:
     - name: config
       mountPath: /etc/vmagent-config
@@ -137,15 +133,9 @@ victoriaMetricsAlert:
         url: *vmRemoteUrl
     extraArgs:
       rule:
-        - /etc/vmalert-config/*.yaml
+        - /config/*.yaml
       evaluationInterval: 30s
-  extraVolumes:
-    - name: config
-      configMap:
-        name: vm-custom-recording-rules
-  extraVolumeMounts:
-    - name: config
-      mountPath: /etc/vmalert-config
+    configMap: kompass-vm-custom-recording-rules
 
 kubeStateMetrics:
   enabled: true
