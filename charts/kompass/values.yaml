@@ -1,6 +1,18 @@
+# -- Global values that are applied across multiple components of the Kompass chart.
+# These values often use YAML anchors (&anchorName) to define a value once and reuse it (*anchorName) elsewhere.
 global:
+  # -- (string) Overrides the name of the VictoriaMetrics service.
+  # This value is referenced by the YAML anchor '&vmName'.
+  # IMPORTANT: If you change this value, you MUST also update 'victoriaMetricsRemoteUrl'
+  # and 'victoriaMetricsRemoteWriteUrl' below to reflect the new service name.
   victoriaMetricsNameOverride: &vmName kompass-victoria-metrics
+  # -- (string) The internal cluster URL for VictoriaMetrics query access.
+  # This value is referenced by the YAML anchor '&vmRemoteUrl'.
+  # It typically depends on 'victoriaMetricsNameOverride'.
   victoriaMetricsRemoteUrl: &vmRemoteUrl http://kompass-victoria-metrics:8428
+  # -- (string) The internal cluster URL for VictoriaMetrics remote write endpoint.
+  # This value is referenced by the YAML anchor '&vmRemoteWriteUrl'.
+  # It typically depends on 'victoriaMetricsNameOverride'.
   victoriaMetricsRemoteWriteUrl: &vmRemoteWriteUrl http://kompass-victoria-metrics:8428/api/v1/write
 
 insights:
@@ -10,7 +22,7 @@ insights:
 
   # -- (string) REQUIRED: Your Zesty encrypted credentials.
   # Provided during the onboarding process. This value MUST be set.
-  encryptedCredentials: "bla"
+  encryptedCredentials: ""
 
   admission:
     # -- (bool) Enable or disable the Zesty Kompass mutating webhook for admission control.
@@ -49,22 +61,6 @@ rightsizing:
     enabled: true
     # -- (string) Override the full name of the cert-manager release.
     fullnameOverride: "kompass-cert-manager"
-
-  actionTaker:
-    # -- (string) Override the full name of the actionTaker component.
-    # By default, it's derived from the chart name and release name.
-    fullnameOverride: ~
-    # -- (string) The base name for the actionTaker component (e.g., used in constructing the default fullname).
-    name: "action-taker"
-
-  recommendationsMaker:
-    # -- (string) Override the full name of the recommendationsMaker component.
-    # By default, it's derived from the chart name and release name.
-    fullnameOverride: ~
-    # -- (string) The base name for the recommendationsMaker component (e.g., used in constructing the default fullname).
-    name: "recommendations-maker"
-    # -- (int) The port on which the recommendationsMaker service will listen.
-    port: 8088
 
   cxLogging:
     # Configuration for sending CX logs. Requires 'rightsizing.enabled: true'.
