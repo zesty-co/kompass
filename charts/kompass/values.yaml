@@ -54,7 +54,7 @@ insights:
 
 rightsizing:
   # -- (bool) Enable or disable the Zesty rightsizing feature components.
-  enabled: true
+  enabled: false
 
   cert-manager:
     # -- (bool) Enable or disable the cert-manager dependency for rightsizing.
