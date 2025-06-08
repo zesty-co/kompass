@@ -1,9 +1,11 @@
+{{- if .Values.rightsizing.enabled }}
 ---
 # Service Account for the validation job
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: aws-ebs-csi-validator
+  namespace: {{ .Release.Namespace }}
   annotations:
     "helm.sh/hook": pre-install,pre-upgrade
     "helm.sh/hook-weight": "-10"  # Run before the validation job
@@ -52,6 +54,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: aws-ebs-csi-validation
+  namespace: {{ .Release.Namespace }}
   annotations:
     "helm.sh/hook": pre-install,pre-upgrade
     "helm.sh/hook-weight": "-5"  # Run after the service account is created
@@ -61,6 +64,9 @@ spec:
   template:
     metadata:
       name: aws-ebs-csi-validation
+      labels:
+        app.kubernetes.io/name: aws-ebs-csi-validation
+        app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
       serviceAccountName: aws-ebs-csi-validator
       containers:
@@ -165,3 +171,4 @@ spec:
           echo "🎉 All validations passed! Your cluster is ready for Zesty Kompass Pod-RightSizing installation."
       restartPolicy: Never
   backoffLimit: 0
+{{- end }}

@@ -45,16 +45,25 @@ rightsizing:
   enabled: true
 
   cert-manager:
+    # -- (bool) Enable or disable the cert-manager dependency for rightsizing.
     enabled: true
+    # -- (string) Override the full name of the cert-manager release.
     fullnameOverride: "kompass-cert-manager"
 
   actionTaker:
+    # -- (string) Override the full name of the actionTaker component.
+    # By default, it's derived from the chart name and release name.
     fullnameOverride: ~
+    # -- (string) The base name for the actionTaker component (e.g., used in constructing the default fullname).
     name: "action-taker"
 
   recommendationsMaker:
+    # -- (string) Override the full name of the recommendationsMaker component.
+    # By default, it's derived from the chart name and release name.
     fullnameOverride: ~
+    # -- (string) The base name for the recommendationsMaker component (e.g., used in constructing the default fullname).
     name: "recommendations-maker"
+    # -- (int) The port on which the recommendationsMaker service will listen.
     port: 8088
 
   cxLogging:
