@@ -26,7 +26,7 @@ cxLogging: &cxLogging
   # Provided during the onboarding process specifically for CX logging.
   apiKey: ""
 
-insights:
+kompass-insights:
   # -- (string) REQUIRED: Your Zesty organization ID.
   # Provided during the onboarding process. This value MUST be set.
   orgID: ""
