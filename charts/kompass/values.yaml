@@ -160,7 +160,7 @@ prometheusNodeExporter:
   fullnameOverride: kompass-prometheus-node-exporter
 
 grafana:
-  enabled: true
+  enabled: false
   fullnameOverride: "kompass-grafana"
   deployDataSource: true
   deployDashboard: true
