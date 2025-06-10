@@ -36,14 +36,14 @@ subjects:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: vmagent-config
+  name: kompass-vmagent-config
   namespace: {{ .Release.Namespace }}
 data:
   vmagent-config.yaml: |
     scrape_configs:
       # For container CPU and memory metrics
       - job_name: 'kubelet'
-        scrape_interval: 30s
+        scrape_interval: {{ include "kompass.scrapeInterval" . }}
         scheme: https
         tls_config:
           insecure_skip_verify: true
@@ -68,34 +68,34 @@ data:
 {{- if .Values.rightsizing.enabled }}
       # for collecting Pilot metrics
       - job_name: 'pilot'
-        scrape_interval: 30s
+        scrape_interval: {{ include "kompass.scrapeInterval" . }}
         static_configs:
-          - targets: ['http://{{ include "recommendations-maker.name" . }}.{{ .Release.Namespace }}:{{ .Values.rightsizing.recommendationsMaker.port }}']
+          - targets: ['http://{{- include "rightsizing.recommendationsMaker.name" . -}}.{{ .Release.Namespace }}:{{ .Values.rightsizing.recommendationsMaker.port }}']
 {{- end }}
 
       # for collecting insights metrics
       - job_name: 'kompass-insights'
-        scrape_interval: 30s
+        scrape_interval: {{ include "kompass.scrapeInterval" . }}
         static_configs:
-          - targets: ['http://{{ .Values.insights.admission.insights.service }}.{{ .Release.Namespace }}:{{ .Values.insights.metricsPort }}']
+          - targets: ['http://{{ (index .Values "kompass-insights").admission.insights.service }}.{{ .Release.Namespace }}:{{ (index .Values "kompass-insights").metricsPort }}']
 
       # for collecting VM metrics
       - job_name: 'vmetrics'
-        scrape_interval: 30s
+        scrape_interval: {{ include "kompass.scrapeInterval" . }}
         static_configs:
           - targets: ['{{ .Values.victoriaMetrics.server.fullnameOverride }}.{{ .Release.Namespace }}:8428']
 
-      {{- if .Values.insights.recommendations.enabled }}
+      {{- if (index .Values "kompass-insights").recommendations.enabled }}
       # for collecting recommendations
       - job_name: 'recommendations'
-        scrape_interval: 30s
+        scrape_interval: {{ include "kompass.scrapeInterval" . }}
         static_configs:
-          - targets: ['http://{{ include "zesty-k8s.recommendations.fullname" (dict "Values" .Values.insights "Release" .Release "Chart" (dict "Name" "insights")) }}.{{ .Release.Namespace }}:{{ .Values.insights.recommendations.http.port }}']
+          - targets: ['http://{{ include "zesty-k8s.recommendations.fullname" (dict "Values" (index .Values "kompass-insights") "Release" .Release "Chart" (dict "Name" "kompass-insights")) }}.{{ .Release.Namespace }}:{{ (index .Values "kompass-insights").recommendations.http.port }}']
       {{- end }}
 
       # For pod and node metrics
       - job_name: 'kube-state-metrics'
-        scrape_interval: 30s
+        scrape_interval: {{ include "kompass.scrapeInterval" . }}
         kubernetes_sd_configs:
           - role: service
         relabel_configs:
@@ -114,4 +114,15 @@ data:
             selectors:
               - role: pod
                 label: "app.kubernetes.io/name=prometheus-node-exporter"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kompass-vm-custom-recording-rules
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kompass.labels" . | nindent 4 }}
+data:
+  custom-rules.yaml: |
+{{ .Files.Get "files/custom-vm-recording-rules.yaml" | indent 4 }}
 {{- end -}}

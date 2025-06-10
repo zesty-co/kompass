@@ -1,0 +1,7 @@
+groups:
+  - name: custom_rules
+    rules:
+      - record: kompass_container_cpu_usage_max_rate
+        expr: max(rate(container_cpu_usage_seconds_total{container!="", pod!=""}[1m])) by (container, namespace)
+      - record: kompass_container_memory_usage_max
+        expr: max(container_memory_usage_bytes{container!="",pod!=""}) by (container, namespace)
