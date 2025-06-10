@@ -77,7 +77,7 @@ data:
       - job_name: 'kompass-insights'
         scrape_interval: {{ include "kompass.scrapeInterval" . }}
         static_configs:
-          - targets: ['http://{{ .Values.kompassInsights.admission.insights.service }}.{{ .Release.Namespace }}:{{ .Values.kompassInsights.metricsPort }}']
+          - targets: ['http://{{ (index .Values "kompass-insights").admission.insights.service }}.{{ .Release.Namespace }}:{{ (index .Values "kompass-insights").metricsPort }}']
 
       # for collecting VM metrics
       - job_name: 'vmetrics'
@@ -85,12 +85,12 @@ data:
         static_configs:
           - targets: ['{{ .Values.victoriaMetrics.server.fullnameOverride }}.{{ .Release.Namespace }}:8428']
 
-      {{- if .Values.kompassInsights.recommendations.enabled }}
+      {{- if (index .Values "kompass-insights").recommendations.enabled }}
       # for collecting recommendations
       - job_name: 'recommendations'
         scrape_interval: {{ include "kompass.scrapeInterval" . }}
         static_configs:
-          - targets: ['http://{{ include "zesty-k8s.recommendations.fullname" (dict "Values" .Values.kompassInsights "Release" .Release "Chart" (dict "Name" "kompass-insights")) }}.{{ .Release.Namespace }}:{{ .Values.kompassInsights.recommendations.http.port }}']
+          - targets: ['http://{{ include "zesty-k8s.recommendations.fullname" (dict "Values" (index .Values "kompass-insights") "Release" .Release "Chart" (dict "Name" "kompass-insights")) }}.{{ .Release.Namespace }}:{{ (index .Values "kompass-insights").recommendations.http.port }}']
       {{- end }}
 
       # For pod and node metrics
