@@ -1,3 +1,20 @@
+# -- Global values that are applied across multiple components of the Kompass chart.
+# These values often use YAML anchors (&anchorName) to define a value once and reuse it (*anchorName) elsewhere.
+global:
+  # -- (string) Overrides the name of the VictoriaMetrics service.
+  # This value is referenced by the YAML anchor '&vmName'.
+  # IMPORTANT: If you change this value, you MUST also update 'victoriaMetricsRemoteUrl'
+  # and 'victoriaMetricsRemoteWriteUrl' below to reflect the new service name.
+  victoriaMetricsNameOverride: &vmName kompass-victoria-metrics
+  # -- (string) The internal cluster URL for VictoriaMetrics query access.
+  # This value is referenced by the YAML anchor '&vmRemoteUrl'.
+  # It typically depends on 'victoriaMetricsNameOverride'.
+  victoriaMetricsRemoteUrl: &vmRemoteUrl http://kompass-victoria-metrics:8428
+  # -- (string) The internal cluster URL for VictoriaMetrics remote write endpoint.
+  # This value is referenced by the YAML anchor '&vmRemoteWriteUrl'.
+  # It typically depends on 'victoriaMetricsNameOverride'.
+  victoriaMetricsRemoteWriteUrl: &vmRemoteWriteUrl http://kompass-victoria-metrics:8428/api/v1/write
+
 cxLogging: &cxLogging
   # Configuration for sending CX logs.
   # -- (bool) Enable or disable sending CX logs to Zesty.
@@ -52,6 +69,12 @@ rightsizing:
   # -- (bool) Enable or disable the Zesty rightsizing feature components.
   enabled: false
 
+  cert-manager:
+    # -- (bool) Enable or disable the cert-manager dependency for rightsizing.
+    enabled: true
+    # -- (string) Override the full name of the cert-manager release.
+    fullnameOverride: "kompass-cert-manager"
+
   cxLogging: *cxLogging
 
 disk:
@@ -64,11 +87,11 @@ disk:
     apiKey: ""
 
 victoriaMetrics:
-  enabled: false
+  enabled: true
   serviceAccount:
-    name: zesty-kompass-victoria-metrics
+    name: *vmName
   server:
-    fullnameOverride: zesty-kompass-victoria-metrics
+    fullnameOverride: *vmName
     persistentVolume:
       mountPath: /victoria-metrics-data
       size: "30Gi"
@@ -89,38 +112,56 @@ victoriaMetrics:
       search.cacheTimestampOffset: 168h
 
 victoriaMetricsAgent:
-  fullnameOverride: zesty-kompass-victoria-metrics-agent
+  fullnameOverride: kompass-victoria-metrics-agent
+  scrapeInterval: 30s
   serviceAccount:
-    name: zesty-kompass-victoria-metrics-agent
+    name: kompass-victoria-metrics-agent
   service:
     type: ClusterIP
   extraArgs:
     promscrape.config: /etc/vmagent-config/vmagent-config.yaml
   remoteWrite:
-    - url: http://zesty-kompass-victoria-metrics.zesty-system:8428/api/v1/write
+    - url: *vmRemoteWriteUrl
   extraVolumes:
     - name: config
       configMap:
-        name: vmagent-config
+        name: kompass-vmagent-config
   extraVolumeMounts:
     - name: config
       mountPath: /etc/vmagent-config
 
+victoriaMetricsAlert:
+  fullnameOverride: kompass-victoria-metrics-alert
+  server:
+    datasource:
+      url: *vmRemoteUrl
+    remote:
+      write:
+        url: *vmRemoteUrl
+      read:
+        url: *vmRemoteUrl
+    extraArgs:
+      rule:
+        - /config/*.yaml
+      evaluationInterval: 30s
+    configMap: kompass-vm-custom-recording-rules
+
 kubeStateMetrics:
-  enabled: false
+  enabled: true
+  force: true
   serviceName: ""
   nameOverride: kube-state-metrics
-  fullnameOverride: zesty-kompass-kube-state-metrics
+  fullnameOverride: kompass-kube-state-metrics
   extraArgs:
     - --metric-annotations-allowlist=pods=[*]
 
 prometheusNodeExporter:
   enabled: false
-  fullnameOverride: zesty-kompass-prometheus-node-exporter
+  fullnameOverride: kompass-prometheus-node-exporter
 
 grafana:
   enabled: false
-  fullnameOverride: "zesty-kompass-grafana"
+  fullnameOverride: "kompass-grafana"
   deployDataSource: true
   deployDashboard: true
   persistence:

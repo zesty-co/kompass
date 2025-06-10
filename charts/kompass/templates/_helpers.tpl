@@ -66,3 +66,64 @@ Selector labels
 app.kubernetes.io/name: {{ include "kompass.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
+
+{{- define "kompass.scrapeInterval" -}}
+{{- default "30s" .Values.victoriaMetricsAgent.scrapeInterval -}}
+{{- end }}
+
+{{/*
+Create the name of the recommendations-maker
+*/}}
+{{- define "rightsizing.recommendationsMaker.name" -}}
+{{/* Capture the parent context ('.') passed to this helper */}}
+{{- $parentContext := . -}}
+{{/* Extract the 'recommendationsMaker' specific values from the 'rightsizing' section of the parent's values */}}
+{{- $makerValues := $parentContext.Values.rightsizing.recommendationsMaker -}}
+
+{{/* Initialize an empty dictionary to build the context for the 'name' sub-helper */}}
+{{- $nameHelperContext := dict -}}
+
+{{/* Attempt to retrieve the 'rightsizing' subchart object from the parent's .Subcharts */}}
+{{- $rightsizingSubchart := get $parentContext.Subcharts "rightsizing" -}}
+
+{{/*
+  Determine the .Chart and .Values for the 'name' sub-helper.
+  Prefer the subchart's .Chart and .Values if the subchart is present and properly loaded.
+  Otherwise, fall back to the parent chart's .Chart and .Values.
+  This ensures 'include "name"' behaves as if called from within the subchart's scope when possible.
+*/}}
+{{- if and $rightsizingSubchart $rightsizingSubchart.Chart $rightsizingSubchart.Values -}}
+{{- $_ := set $nameHelperContext "Chart" $rightsizingSubchart.Chart -}}
+{{- $_ := set $nameHelperContext "Values" $rightsizingSubchart.Values -}}
+{{- else -}}
+{{- $_ := set $nameHelperContext "Chart" $parentContext.Chart -}}
+{{- $_ := set $nameHelperContext "Values" $parentContext.Values -}}
+{{- end -}}
+
+{{/* Add global Helm objects (.Release, .Capabilities) and parent .Name to the 'name' sub-helper's context */}}
+{{- $_ := set $nameHelperContext "Release" $parentContext.Release -}}
+{{- $_ := set $nameHelperContext "Capabilities" $parentContext.Capabilities -}}
+{{- $_ := set $nameHelperContext "Name" $parentContext.Name -}}
+
+{{/*
+  Call the 'name' helper (expected to be defined in the rightsizing subchart, or a common library)
+  using the constructed context. Trim any leading/trailing whitespace from its output.
+  This $baseName is typically the chart name, like 'kompass' or 'pod-rightsizing'.
+*/}}
+{{- $baseName := include "name" $nameHelperContext | trim -}}
+
+{{/*
+  Construct the default full name for the recommendationsMaker component.
+  This usually follows the pattern '<baseName>-<componentName>', e.g., 'pod-rightsizing-recommendations-maker'.
+  The result is trimmed, truncated to 63 chars, and any trailing hyphen is removed.
+*/}}
+{{- $defaultFullName := printf "%s-%s" $baseName $makerValues.name | trim | trunc 63 | trimSuffix "-" -}}
+
+{{/*
+  Determine the final name:
+  - Use 'recommendationsMaker.fullnameOverride' if provided in the values.
+  - Otherwise, use the $defaultFullName constructed above.
+  The final result is also trimmed to ensure cleanliness.
+*/}}
+{{- $makerValues.fullnameOverride | default $defaultFullName | trim -}}
+{{- end -}}

@@ -22,6 +22,13 @@ jobs:
       - name: setup helm
         uses: azure/setup-helm@v4
 
+      - name: setup helm plugins
+        run: |
+          helm plugin install https://github.com/aslafy-z/helm-git --version 0.11.1
+
+      - name: helm dependency update
+        run: helm dependency update ./charts/kompass
+
       - name: validate Chart.yaml version changed in PR
         if: github.event_name == 'pull_request'
         run: |
@@ -49,4 +56,4 @@ jobs:
           echo "✅ Chart version bump detected."
 
       - name: helm lint
-        run: helm lint ./charts/*
+        run: helm lint ./charts/kompass
