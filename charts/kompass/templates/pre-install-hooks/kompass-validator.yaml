@@ -199,7 +199,7 @@ spec:
           #########################################
           
           echo "Validating metrics-server installation..."
-          METRICS_SERVER_ENABLED="{{ index .Values "insights" "metricsServer" "enabled" | default "false" }}"
+          METRICS_SERVER_ENABLED="{{ index .Values "kompass-insights" "metricsServer" "enabled" | default "false" }}"
 
           # Check if metrics-server exists in the cluster
           if kubectl get deployment metrics-server -n kube-system &> /dev/null; then
@@ -208,7 +208,7 @@ spec:
             # If metrics-server is not found and not enabled in values
             if [ "$METRICS_SERVER_ENABLED" != "true" ]; then
               echo "❌ metrics-server is not installed in the cluster"
-              echo "⚠️ Please set insights.metricsServer.enabled=true in your values file to install metrics-server"
+              echo "⚠️ Please set kompass-insights.metricsServer.enabled=true in your values file to install metrics-server"
               exit 1
             else
               echo "⚠️ metrics-server is not installed, but will be deployed as part of Zesty Kompass installation"
