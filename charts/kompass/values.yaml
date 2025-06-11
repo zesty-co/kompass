@@ -14,6 +14,10 @@ global:
   # This value is referenced by the YAML anchor '&vmRemoteWriteUrl'.
   # It typically depends on 'victoriaMetricsNameOverride'.
   victoriaMetricsRemoteWriteUrl: &vmRemoteWriteUrl http://kompass-victoria-metrics:8428/api/v1/write
+  # -- (string) The default storage class name for persistent volumes.
+  # Set to a specific storage class name or leave as null (~) to use cluster default.
+  # This value is referenced by the YAML anchor '&storageClassName'.
+  storageClassName: &storageClassName ~
 
 cxLogging: &cxLogging
   # Configuration for sending CX logs.
@@ -50,7 +54,7 @@ kompass-insights:
       # -- (string) Specify the StorageClass to use for PersistentVolumeClaims.
       # If set to null (~), the cluster's default StorageClass will be used (if one exists).
       # Example: "gp2", "standard", "managed-premium"
-      storageClassName: ~
+      storageClassName: *storageClassName
 
   assumeRole:
     # -- (bool) Configuration for using AWS IAM Role.
@@ -95,7 +99,7 @@ victoriaMetrics:
     persistentVolume:
       mountPath: /victoria-metrics-data
       size: "30Gi"
-      storageClassName: "ebs-sc"
+      storageClassName: *storageClassName
     resources:
       requests:
         memory: "3Gi"
@@ -168,7 +172,7 @@ grafana:
     enabled: true
     type: "statefulset"
     size: 1Gi
-    storageClassName: "ebs-sc"
+    storageClassName: *storageClassName
   # Use ConfigMaps for datasources and dashboards
   sidecar:
     datasources:
