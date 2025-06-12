@@ -91,7 +91,7 @@ disk:
     apiKey: ""
 
 victoriaMetrics:
-  enabled: false
+  enabled: true
   serviceAccount:
     name: *vmName
   server:
@@ -151,7 +151,7 @@ victoriaMetricsAlert:
     configMap: kompass-vm-custom-recording-rules
 
 kubeStateMetrics:
-  enabled: false
+  enabled: true
   force: false
   serviceName: ""
   nameOverride: kube-state-metrics
