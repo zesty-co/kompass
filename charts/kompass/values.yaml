@@ -152,7 +152,7 @@ victoriaMetricsAlert:
 
 kubeStateMetrics:
   enabled: false
-  force: true
+  force: false
   serviceName: ""
   nameOverride: kube-state-metrics
   fullnameOverride: kompass-kube-state-metrics
