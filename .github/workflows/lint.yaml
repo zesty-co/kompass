@@ -8,6 +8,7 @@ on:
 
 jobs:
   lint:
+    if: "!startsWith(github.event.pull_request.title, 'chore:')"
     permissions:
       contents: read
     name: Helm Lint
