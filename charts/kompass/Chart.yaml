@@ -12,7 +12,7 @@ dependencies:
 # zesty products
   - name: kompass-insights
     repository: "https://zesty-co.github.io/kompass-insights"
-    version: "2.1.22"
+    version: "2.1.23"
 
   - name: pod-rightsizing
     alias: rightsizing
