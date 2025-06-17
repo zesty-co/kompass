@@ -5,7 +5,7 @@ icon: https://zesty.co/wp-content/uploads/2024/05/favicon-150x150.png
 
 
 type: application
-version: 0.1.16
+version: 0.1.17
 appVersion: "1.16.0"
 
 dependencies:
@@ -53,7 +53,7 @@ dependencies:
     condition: kubeStateMetrics.enabled
     repository: https://prometheus-community.github.io/helm-charts
     version: ">=5.28.0"
-
+7
   - name: prometheus-node-exporter
     alias: prometheusNodeExporter
     condition: prometheusNodeExporter.enabled
