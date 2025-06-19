@@ -5,6 +5,7 @@ on:
 
 jobs:
   jenkins:
+    if: "!startsWith(github.event.pull_request.title, 'chore:')"
     permissions:
       contents: read
     name: Trigger Jenkins
