@@ -267,6 +267,6 @@ spec:
           fi
           echo ""
 
-          echo "🎉 All validations passed! Your cluster is ready for Zesty Kompass Pod-RightSizing installation."
+          echo "🎉 All validations passed! Your cluster is ready for Zesty Kompass installation."
       restartPolicy: Never
   backoffLimit: 0
