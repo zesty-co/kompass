@@ -5,7 +5,7 @@ icon: https://zesty.co/wp-content/uploads/2024/05/favicon-150x150.png
 
 
 type: application
-version: 0.1.20
+version: 0.1.21
 appVersion: "1.16.0"
 
 dependencies:
