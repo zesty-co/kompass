@@ -159,10 +159,6 @@ kubeStateMetrics:
   extraArgs:
     - --metric-annotations-allowlist=pods=[*]
 
-prometheusNodeExporter:
-  enabled: true
-  fullnameOverride: kompass-prometheus-node-exporter
-
 grafana:
   enabled: false
   fullnameOverride: "kompass-grafana"

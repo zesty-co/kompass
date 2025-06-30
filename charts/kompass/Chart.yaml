@@ -54,12 +54,6 @@ dependencies:
     repository: https://prometheus-community.github.io/helm-charts
     version: ">=5.28.0"
 
-  - name: prometheus-node-exporter
-    alias: prometheusNodeExporter
-    condition: prometheusNodeExporter.enabled
-    repository: https://prometheus-community.github.io/helm-charts
-    version: 4.46.0
-
   - name: grafana
     condition: grafana.enabled
     repository: https://grafana.github.io/helm-charts
