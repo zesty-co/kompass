@@ -70,7 +70,7 @@ spec:
       serviceAccountName: kompass-validatior
       containers:
       - name: kompass-validatior
-        image: bitnami/kubectl:latest
+        image: {{ .Values.validator.image.registry }}/{{ .Values.validator.image.repository }}:{{ .Values.validator.image.tag }}
         command:
         - /bin/bash
         - -c
