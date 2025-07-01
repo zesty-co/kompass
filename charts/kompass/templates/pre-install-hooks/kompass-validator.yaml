@@ -194,50 +194,6 @@ spec:
           fi
           echo ""
 
-          #############################################
-          # Validate prometheus-node-exporter installation  #
-          #############################################
-
-          PNE_ENABLED="{{ index .Values "prometheusNodeExporter" "enabled" }}"
-          
-          if [ "$PNE_ENABLED" = "true" ]; then
-            echo "Validating prometheus-node-exporter installation..."
-            PNE_FORCE="{{ index .Values "prometheusNodeExporter" "force" }}"
-      
-            if [ "$PNE_FORCE" = "true" ]; then
-              echo "⚠️ prometheusNodeExporter.force is set to true — prometheus-node-exporter will be installed even if it already exists"
-              echo "✅ Skipping prometheus-node-exporter validation"
-            else
-              # Find the namespace where prometheus-node-exporter is installed
-              PNE_NAMESPACE=$(kubectl get daemonset --all-namespaces -l app.kubernetes.io/name=prometheus-node-exporter -o jsonpath='{.items[0].metadata.namespace}')
-              if [ -z "$PNE_NAMESPACE" ]; then
-                echo "✅ prometheus-node-exporter deployment not found in any namespace - it will be installed as part of Zesty Kompass Pod-RightSizing"
-              else
-                echo "✅ prometheus-node-exporter deployment found in namespace: $PNE_NAMESPACE"
-                PNE_EXISTS=true
-              fi
-              
-              if [ -n "$PNE_EXISTS" ] && [ "$PNE_NAMESPACE" != "{{ .Release.Namespace }}" ]; then
-                # Retrieve the prometheus-node-exporter service details
-                PNE_SVC=$(kubectl get svc -n $PNE_NAMESPACE -l app.kubernetes.io/name=prometheus-node-exporter -o jsonpath='{.items[0].metadata.name}')
-                if [ -n "$PNE_SVC" ]; then
-                    echo "✅ prometheus-node-exporter service found: $PNE_SVC in namespace: $PNE_NAMESPACE"
-                    echo ""
-                    echo "⚠️ Please add to the values file prometheusNodeExporter.enabled: false AND prometheusNodeExporter.serviceName: $PNE_SVC OR use prometheusNodeExporter.force: true"
-                    exit 1
-                else
-                    echo "⚠️ prometheus-node-exporter service not found in namespace: $PNE_NAMESPACE"
-                    exit 1
-                fi
-              fi
-            fi
-          else
-            PNE_SVC_NAME="{{ index .Values "prometheusNodeExporter" "serviceName" | default "" }}"
-            echo "⚠️ prometheusNodeExporter.enabled is set to false — prometheus-node-exporter will not be installed, going to use the existing service: $PNE_SVC_NAME"
-            echo "✅ Skipping prometheus-node-exporter validation"
-          fi
-          echo ""
-
           #########################################
           # Validate metrics-server installation  #
           #########################################
