@@ -124,6 +124,7 @@ victoriaMetricsAgent:
     type: ClusterIP
   extraArgs:
     promscrape.config: /etc/vmagent-config/vmagent-config.yaml
+    promscrape.maxScrapeSize: 32MB
   remoteWrite:
     - url: *vmRemoteWriteUrl
   extraVolumes:
