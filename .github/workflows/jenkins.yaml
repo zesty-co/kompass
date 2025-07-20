@@ -6,6 +6,9 @@ on:
 jobs:
   jenkins:
     if: "!startsWith(github.event.pull_request.title, 'chore:')"
+    concurrency:
+      group: jenkins-ci
+      cancel-in-progress: false
     permissions:
       contents: read
     name: Trigger Jenkins
