@@ -12,6 +12,8 @@ jobs:
     env:
       AWS_WEB_IDENTITY_TOKEN_FILE: /var/run/secrets/eks.amazonaws.com/serviceaccount/token
       AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+    permissions:
+      contents: read
     volumes:
       - /var/run/secrets/eks.amazonaws.com/serviceaccount/token:/var/run/secrets/eks.amazonaws.com/serviceaccount/token
 
