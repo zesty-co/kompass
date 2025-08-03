@@ -1,0 +1,124 @@
+name: ECR Pull-Through Cache Check
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  ecr-check:
+    if: "!startsWith(github.event.head_commit.message, 'chore:')"
+    runs-on: ubuntu-latest
+    volumes:
+      - /var/run/secrets/eks.amazonaws.com/serviceaccount/token:/var/run/secrets/eks.amazonaws.com/serviceaccount/token
+
+    strategy:
+      matrix:
+        region: [us-east-1, eu-west-1, us-west-2]
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials to Zesty Production
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ matrix.region }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-duration-seconds: 3600
+          role-session-name: ci-build-images
+          web-identity-token-file: "/var/run/secrets/eks.amazonaws.com/serviceaccount/token"
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y skopeo helm docker.io
+
+      - name: Log in to ECR
+        run: |
+          aws ecr get-login-password --region ${{ matrix.region }} | \
+            docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID}}.dkr.ecr.${{ matrix.region }}.amazonaws.com
+
+      - name: Run ECR cache script
+        run: |
+          SOURCE_REGION="eu-west-1"
+          CHART_IMAGES=$(helm template ./charts/kompass \
+            --set rightsizing.enabled=true \
+            --set disk.enabled=true \
+            --set grafana.enabled=true \
+            | grep -E '(^|\s)-?\s*image:' \
+            | sed -E 's/.*image:[[:space:]]*"?([^"]+)"?/\1/' | sort -u)
+
+          echo "$CHART_IMAGES" | while read -r image; do
+              [ -z "$image" ] && continue
+              echo "🔍 Checking image: $image"
+
+              registry=$(echo "$image" | cut -d/ -f1)
+              remainder=$(echo "$image" | cut -d/ -f2-)
+              name_and_tag=$(basename "$remainder")
+              repo_path=$(dirname "$remainder")
+              name=$(echo "$name_and_tag" | cut -d: -f1)
+              tag=$(echo "$name_and_tag" | cut -s -d: -f2)
+
+              if [ "$repo_path" = "." ]; then
+                  full_image_name="$name"
+              else
+                  full_image_name="$repo_path/$name"
+              fi
+
+              [ -z "$tag" ] && tag="latest"
+
+              if echo "$registry" | grep -q "${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr"; then
+                  name_and_prefix="$full_image_name"
+              else
+                  case "$registry" in
+                      "registry.k8s.io") name_and_prefix="k8s/$full_image_name" ;;
+                      "quay.io") name_and_prefix="quay/$full_image_name" ;;
+                      "ghcr.io") name_and_prefix="github/$full_image_name" ;;
+                      "public.ecr.aws") name_and_prefix="ecr-public/$full_image_name" ;;
+                      "registry-1.docker.io"|"docker.io") name_and_prefix="docker-hub/$full_image_name" ;;
+                      "gcr.io") name_and_prefix="gcr/$full_image_name" ;;
+                      *) 
+                          echo "❓ Unknown registry: $registry"
+                          name_and_prefix="docker-hub/$registry/$full_image_name"
+                          ;;
+                  esac
+              fi
+
+              echo "name_and_prefix: $name_and_prefix"
+
+              set +e
+              aws ecr describe-images --region "${{ matrix.region }}" \
+                  --repository-name "$name_and_prefix" \
+                  --image-ids imageTag="$tag" > /dev/null 2>&1
+              exists=$?
+              set -e
+              echo "exists: $exists"
+
+              if [ $exists -eq 0 ]; then
+                  echo "✅ Image already exists in ${{ matrix.region }}"
+                  continue
+              fi
+
+              if echo "$registry" | grep -q "${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr"; then
+                  echo "🟡 ECR image detected, replicating from $SOURCE_REGION"
+                  skopeo copy -a --src-creds AWS:$(aws ecr get-login-password --region $SOURCE_REGION) \
+                              --dest-creds AWS:$(aws ecr get-login-password --region ${{ matrix.region }}) \
+                              docker://${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$SOURCE_REGION.amazonaws.com/$name_and_prefix:$tag \
+                              docker://${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ matrix.region }}.amazonaws.com/$name_and_prefix:$tag
+                  continue
+              fi
+
+              echo "⏳ Triggering pull-through cache for $name_and_prefix:$tag in ${{ matrix.region }}..."
+              docker pull "${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ matrix.region }}.amazonaws.com/$name_and_prefix:$tag" &
+              PULL_PID=$!
+              sleep 2
+              kill -INT $PULL_PID 2>/dev/null || true
+              echo "✅ Cache trigger attempted for $name_and_prefix:$tag"
+
+          done
