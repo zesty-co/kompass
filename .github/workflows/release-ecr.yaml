@@ -1,0 +1,39 @@
+name: Deploy Chart To ECR
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    if: "!startsWith(github.event.head_commit.message, 'chore:')"
+    runs-on: [gh-runner-production]
+    env:
+      AWS_WEB_IDENTITY_TOKEN_FILE: /var/run/secrets/eks.amazonaws.com/serviceaccount/token
+      AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+    permissions:
+      contents: read
+    volumes:
+      - /var/run/secrets/eks.amazonaws.com/serviceaccount/token:/var/run/secrets/eks.amazonaws.com/serviceaccount/token
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Package Chart
+        run: |
+          cd charts/kompass
+          helm dep update
+          helm dep build . 
+          helm package .
+
+      - name: Deploy Chart To ECR
+        run: |
+          for region in $(echo $AVAILABLE_ECR_REGIONS | tr "," "\n")
+          do
+            aws ecr get-login-password --region $region | helm registry login --username AWS --password-stdin  ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$region.amazonaws.com
+
+            helm push charts/kompass/kompass-*.tgz --registry oci://${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$region.amazonaws.com/
+          done
