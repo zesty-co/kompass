@@ -97,6 +97,12 @@ data:
         scrape_interval: {{ include "kompass.scrapeInterval" . }}
         static_configs:
           - targets: ['http://{{- include "rightsizing.recommendationsMaker.name" . -}}.{{ .Release.Namespace }}:{{ .Values.rightsizing.recommendationsMaker.port }}']
+        
+      - job_name: 'rightsizing_managed_workloads'
+        scrape_interval: 1m
+        metrics_path: '/managed_workloads_metrics'
+        static_configs:
+          - targets: ['http://{{- include "rightsizing.recommendationsMaker.name" . -}}.{{ .Release.Namespace }}:{{ .Values.rightsizing.recommendationsMaker.port }}']
 {{- end }}
 
       # for collecting insights metrics
