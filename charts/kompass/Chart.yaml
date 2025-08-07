@@ -19,11 +19,11 @@ dependencies:
     repository: "https://zesty-co.github.io/kompass-pod-rightsizing"
     version: 0.1.17
 
-  - name: zesty
+  - name: kompass-storage
     alias: disk
     condition: disk.enabled
     repository: "https://zesty-co.github.io/zesty-helm"
-    version: 1.7.0
+    version: 1.7.3
 
   # mutual dependencies
   - name: victoria-metrics-single
