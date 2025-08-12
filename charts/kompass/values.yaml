@@ -78,13 +78,6 @@ kompass-insights:
 rightsizing:
   # -- (bool) Enable or disable the Zesty rightsizing feature components.
   enabled: false
-
-  cert-manager:
-    # -- (bool) Enable or disable the cert-manager dependency for rightsizing.
-    enabled: true
-    # -- (string) Override the full name of the cert-manager release.
-    fullnameOverride: "kompass-cert-manager"
-
   cxLogging: *cxLogging
 
 disk:
@@ -186,3 +179,22 @@ grafana:
       label: grafana_dashboard
   adminUser: admin
   adminPassword: password
+
+cert-manager:
+  enabled: true
+  crds:
+    enabled: true
+  fullnameOverride: "kompass-cert-manager"
+
+  # Add post-upgrade hook to make sure we are not getting into a race condition
+  startupapicheck:
+    jobAnnotations:
+      helm.sh/hook: post-install,post-upgrade
+    rbac:
+      annotations:
+        helm.sh/hook: post-install,post-upgrade
+    serviceAccount:
+      annotations:
+        helm.sh/hook: post-install,post-upgrade
+
+useHelmPriorityHooks: true
