@@ -1,4 +1,4 @@
-name: ECR Pull-Through Cache Check
+name: Replicate Used Images
 
 on:
   workflow_dispatch:
@@ -10,8 +10,10 @@ jobs:
   ecr-check:
     if: "!startsWith(github.event.head_commit.message, 'chore:')"
     runs-on: [gh-runner-production]
-    volumes:
-      - /var/run/secrets/eks.amazonaws.com/serviceaccount/token:/var/run/secrets/eks.amazonaws.com/serviceaccount/token
+    container:
+      image: ubuntu:22.04
+      volumes:
+        - /var/run/secrets/eks.amazonaws.com/serviceaccount/token:/var/run/secrets/eks.amazonaws.com/serviceaccount/token
 
     strategy:
       matrix:
@@ -34,10 +36,23 @@ jobs:
           role-session-name: ci-build-images
           web-identity-token-file: "/var/run/secrets/eks.amazonaws.com/serviceaccount/token"
 
-      - name: Install dependencies
+      - name: Install Requirements
         run: |
-          sudo apt-get update
-          sudo apt-get install -y skopeo helm docker.io
+          set -euo pipefail
+          apt-get update
+          apt-get install -y curl ca-certificates tar gzip jq gnupg lsb-release unzip docker.io skopeo unzip
+          # Install Helm
+          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          # Install AWS CLI v2
+          ARCH="$(uname -m)"
+          case "$ARCH" in
+            x86_64) ARCH=x86_64 ;;
+            aarch64) ARCH=aarch64 ;;
+            *) echo "Unsupported arch: $ARCH" >&2; exit 1 ;;
+          esac
+          curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-${ARCH}.zip" -o /tmp/awscliv2.zip
+          unzip -q /tmp/awscliv2.zip -d /tmp
+          /tmp/aws/install
 
       - name: Log in to ECR
         run: |
