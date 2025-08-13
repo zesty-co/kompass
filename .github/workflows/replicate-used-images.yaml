@@ -1,4 +1,4 @@
-name: ECR Pull-Through Cache Check
+name: Replicate Used Images
 
 on:
   workflow_dispatch:
