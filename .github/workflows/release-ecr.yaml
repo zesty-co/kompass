@@ -10,17 +10,27 @@ jobs:
   deploy:
     if: "!startsWith(github.event.head_commit.message, 'chore:')"
     runs-on: [gh-runner-production]
-    env:
-      AWS_WEB_IDENTITY_TOKEN_FILE: /var/run/secrets/eks.amazonaws.com/serviceaccount/token
-      AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+    container:
+      image: amazon/aws-cli:2.28.8
+      env:
+        AWS_WEB_IDENTITY_TOKEN_FILE: /var/run/secrets/eks.amazonaws.com/serviceaccount/token
+        AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+      volumes:
+        - /var/run/secrets/eks.amazonaws.com/serviceaccount/token:/var/run/secrets/eks.amazonaws.com/serviceaccount/token
     permissions:
       contents: read
-    volumes:
-      - /var/run/secrets/eks.amazonaws.com/serviceaccount/token:/var/run/secrets/eks.amazonaws.com/serviceaccount/token
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Install Utilites
+        run: |
+          yum -y install curl tar gzip
+
+      - name: Install Helm
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
       - name: Package Chart
         run: |
