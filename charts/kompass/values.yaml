@@ -189,6 +189,7 @@ cert-manager:
   crds:
     enabled: true
   fullnameOverride: "kompass-cert-manager"
+  namespace: zesty-system
 
   # Add post-upgrade hook to make sure we are not getting into a race condition
   startupapicheck:
