@@ -20,6 +20,8 @@ global:
   storageClassName: &storageClassName ~
   # -- (string) The name for zesty's self-signed certificate issuer
   clusterIssuerName: kompass-selfsigned-issuer
+  # -- (bool)
+  useHelmPriorityHooks: true
 
 validator:
   image:
