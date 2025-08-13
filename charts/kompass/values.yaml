@@ -18,7 +18,7 @@ global:
   # Set to a specific storage class name or leave as null (~) to use cluster default.
   # This value is referenced by the YAML anchor '&storageClassName'.
   storageClassName: &storageClassName ~
-  # -- (string)
+  # -- (string) The name for zesty's self-signed certificate issuer
   clusterIssuerName: kompass-selfsigned-issuer
 
 validator:
@@ -80,7 +80,6 @@ kompass-insights:
 rightsizing:
   # -- (bool) Enable or disable the Zesty rightsizing feature components.
   enabled: false
-  # -- (string) the name for the tls certificate of the rightsizing mutating webhook
   cxLogging: *cxLogging
 
 disk:
