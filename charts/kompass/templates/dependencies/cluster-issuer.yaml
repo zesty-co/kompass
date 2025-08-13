@@ -3,7 +3,7 @@ kind: ClusterIssuer
 metadata:
   name: kompass-selfsigned-issuer
   annotations:
-  {{ if .Values.useHelmPriorityHooks }}
+  {{ if and .Values.global .Values.global.useHelmPriorityHooks | default true }}
     helm.sh/hook: post-install,post-upgrade
     helm.sh/hook-weight: "15"
   {{ end }}
