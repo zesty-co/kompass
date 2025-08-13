@@ -85,7 +85,6 @@ rightsizing:
   enabled: false
   # -- (string) the name for the tls certificate of the rightsizing mutating webhook
   mutatingWebhookCertificateName: kompass-pod-rightsizing-mutating-webhook-cert
-  דבה
   cxLogging: *cxLogging
 
 disk:
