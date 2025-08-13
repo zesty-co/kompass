@@ -18,6 +18,8 @@ global:
   # Set to a specific storage class name or leave as null (~) to use cluster default.
   # This value is referenced by the YAML anchor '&storageClassName'.
   storageClassName: &storageClassName ~
+  # -- (string)
+  clusterIssuerName: kompass-selfsigned-issuer
 
 validator:
   image:
