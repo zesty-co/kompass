@@ -76,7 +76,7 @@ jobs:
             "docker-hub/kiwigrid/k8s-sidecar" \
             "k8s/kube-state-metrics/kube-state-metrics" \
             "kubebuilder/kube-rbac-proxy" \
-            "quay/prometheus/node-exporter" \
+            "quay.io/prometheus/node-exporter" \
             | sort -u)
 
           echo "$CHART_IMAGES" | while read -r image; do
