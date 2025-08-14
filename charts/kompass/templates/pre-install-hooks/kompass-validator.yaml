@@ -218,7 +218,36 @@ spec:
               echo "⚠️ Please set kompass-insights.metricsServer.enabled=true in your values file to install metrics-server"
               exit 1
             else
-              echo "⚠️ metrics-server is not installed, but will be deployed as part of Zesty Kompass installation"
+              echo "⚠️ metrics-server is not installed, it will be deployed as part of Zesty Kompass installation"
+            fi
+          fi
+          echo ""
+
+          #########################################
+          # Validate cert-manager installation  #
+          #########################################
+          
+          echo "Validating cert-manager installation..."
+          CERT_MANAGER_ENABLED="{{ index .Values "cert-manager" "enabled" | default "false" }}"
+
+          # Check if cert-manager exists in the cluster using labels
+          # First try with the k8s-app label which is standard in most distributions
+          if kubectl get deployment --all-namespaces -l app=cert-manager --no-headers 2>/dev/null | grep -q ""; then
+            echo "✅ cert-manager is installed in the cluster (found via app=cert-manager label)"
+          # Then try with the app.kubernetes.io/name label which is recommended
+          elif kubectl get deployment --all-namespaces -l app.kubernetes.io/name=cert-manager --no-headers 2>/dev/null | grep -q ""; then
+            echo "✅ cert-manager is installed in the cluster (found via app.kubernetes.io/name label)"
+          # Finally fall back to checking for the standard deployment name
+          elif kubectl get deployment cert-manager -n kube-system &> /dev/null; then
+            echo "✅ cert-manager is installed in the cluster (found via standard name)"
+          else
+            # If cert-manager is not found and not enabled in values
+            if [ "$CERT_MANAGER_ENABLED" != "true" ]; then
+              echo "❌ cert-manager is not installed in the cluster"
+              echo "⚠️ Please set cert-manager.enabled=true in your values file to install cert-manager"
+              exit 1
+            else
+              echo "⚠️ cert-manager is not installed, it will be deployed as part of Zesty Kompass installation"
             fi
           fi
           echo ""
