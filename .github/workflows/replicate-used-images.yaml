@@ -72,10 +72,9 @@ jobs:
             | sed -E 's/.*image:[[:space:]]*"?([^"]+)"?/\1/' | sort -u)
 
           CHART_IMAGES=$(printf "%s\n%s\n%s\n%s\n%s\n%s\n" "$CHART_IMAGES" \
-            "docker-hub/bitnami/kube-rbac-proxy" \
-            "docker-hub/kiwigrid/k8s-sidecar" \
+            "bitnami/kube-rbac-proxy" \
+            "kiwigrid/k8s-sidecar" \
             "k8s/kube-state-metrics/kube-state-metrics" \
-            "kubebuilder/kube-rbac-proxy" \
             "quay.io/prometheus/node-exporter" \
             | sort -u)
 
