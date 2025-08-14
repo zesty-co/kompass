@@ -38,7 +38,7 @@ jobs:
 
       - name: Install Requirements
         run: |
-          set -euo pipefail
+          set -eu pipefail
           apt-get update
           apt-get install -y curl ca-certificates tar gzip jq gnupg lsb-release unzip docker.io skopeo unzip
           # Install Helm
