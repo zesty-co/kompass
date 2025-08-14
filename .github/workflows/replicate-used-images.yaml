@@ -74,7 +74,7 @@ jobs:
           CHART_IMAGES=$(printf "%s\n%s\n%s\n%s\n%s\n%s\n" "$CHART_IMAGES" \
             "bitnami/kube-rbac-proxy" \
             "kiwigrid/k8s-sidecar" \
-            "k8s/kube-state-metrics/kube-state-metrics" \
+            "registry.k8s.io/kube-state-metrics/kube-state-metrics" \
             "quay.io/prometheus/node-exporter" \
             | sort -u)
 
