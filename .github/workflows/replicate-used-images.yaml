@@ -38,7 +38,7 @@ jobs:
 
       - name: Install Requirements
         run: |
-          set -euo pipefail
+          set -eu pipefail
           apt-get update
           apt-get install -y curl ca-certificates tar gzip jq gnupg lsb-release unzip docker.io skopeo unzip
           # Install Helm
@@ -60,7 +60,9 @@ jobs:
             docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID}}.dkr.ecr.${{ matrix.region }}.amazonaws.com
 
       - name: Run ECR cache script
+        shell: bash
         run: |
+          helm dep build ./charts/kompass
           SOURCE_REGION="eu-west-1"
           CHART_IMAGES=$(helm template ./charts/kompass \
             --set rightsizing.enabled=true \
@@ -68,6 +70,13 @@ jobs:
             --set grafana.enabled=true \
             | grep -E '(^|\s)-?\s*image:' \
             | sed -E 's/.*image:[[:space:]]*"?([^"]+)"?/\1/' | sort -u)
+
+          CHART_IMAGES=$(printf "%s\n%s\n%s\n%s\n%s\n%s\n" "$CHART_IMAGES" \
+            "bitnami/kube-rbac-proxy" \
+            "kiwigrid/k8s-sidecar" \
+            "registry.k8s.io/kube-state-metrics/kube-state-metrics" \
+            "quay.io/prometheus/node-exporter" \
+            | sort -u)
 
           echo "$CHART_IMAGES" | while read -r image; do
               [ -z "$image" ] && continue
@@ -121,7 +130,26 @@ jobs:
               fi
 
               if echo "$registry" | grep -q "${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr"; then
+                  DEST_REPO="$name_and_prefix"
+                  DEST_REGION="${{ matrix.region }}"
+                  ACCOUNT_ID="${{ secrets.AWS_ACCOUNT_ID }}"
+
+                  # Check if the destination repository exists
+                  if ! aws ecr describe-repositories \
+                      --region "$DEST_REGION" \
+                      --repository-names "$DEST_REPO" \
+                      --output text >/dev/null 2>&1; then
+                      echo "🔧 Destination repository '$DEST_REPO' not found in region $DEST_REGION. Creating..."
+                      aws ecr create-repository \
+                          --region "$DEST_REGION" \
+                          --repository-name "$DEST_REPO" \
+                          --image-scanning-configuration scanOnPush=true \
+                          --encryption-configuration encryptionType=AES256
+                  else
+                      echo "✅ Destination repository '$DEST_REPO' exists in region $DEST_REGION"
+                  fi
                   echo "🟡 ECR image detected, replicating from $SOURCE_REGION"
+
                   skopeo copy -a --src-creds AWS:$(aws ecr get-login-password --region $SOURCE_REGION) \
                               --dest-creds AWS:$(aws ecr get-login-password --region ${{ matrix.region }}) \
                               docker://${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$SOURCE_REGION.amazonaws.com/$name_and_prefix:$tag \
