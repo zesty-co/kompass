@@ -57,8 +57,9 @@ kompass-insights:
     # Required for certain features such as Spot Management.
     enabled: false
 
-    image:
-      tag: latest
+    deployment:
+      image:
+        tag: latest
 
   awsCluster:
     # -- (bool) Override for deprecated functionality related to specific AWS cluster handling.
