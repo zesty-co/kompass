@@ -1,4 +1,5 @@
 # Helm generated files
 *.tgz
 Chart.lock
+charts/kompass/charts
 private
