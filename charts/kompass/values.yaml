@@ -45,6 +45,9 @@ kompass-insights:
   # Provided during the onboarding process. This value MUST be set.
   orgID: ""
 
+  image:
+    tag: latest
+
   # -- (string) REQUIRED: Your Zesty encrypted credentials.
   # Provided during the onboarding process. This value MUST be set.
   encryptedCredentials: ""
