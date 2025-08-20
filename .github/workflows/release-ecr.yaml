@@ -21,12 +21,12 @@ jobs:
       contents: read
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Install Utilites
         run: |
           yum -y install curl tar gzip
+
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Install Helm
         run: |
