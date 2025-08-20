@@ -11,7 +11,7 @@ jobs:
     if: "!startsWith(github.event.head_commit.message, 'chore:')"
     runs-on: [gh-runner-production]
     container:
-      image: amazon/aws-cli:2.28.8
+      image: alpine:3.22.1
       env:
         AWS_WEB_IDENTITY_TOKEN_FILE: /var/run/secrets/eks.amazonaws.com/serviceaccount/token
         AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
@@ -21,16 +21,12 @@ jobs:
       contents: read
 
     steps:
-      - name: Install Utilites
-        run: |
-          yum -y install curl tar gzip
-
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Helm
+      - name: Install Utilites
         run: |
-          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          apk add --no-cache bash tar curl git aws-cli helm
 
       - name: Package Chart
         run: |
