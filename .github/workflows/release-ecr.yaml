@@ -9,37 +9,59 @@ on:
 jobs:
   deploy:
     if: "!startsWith(github.event.head_commit.message, 'chore:')"
-    runs-on: [gh-runner-production]
+    runs-on: [gh-runner-production] # your self-hosted label (arm64 is fine)
     container:
-      image: alpine:3.22.1
-      env:
-        AWS_WEB_IDENTITY_TOKEN_FILE: /var/run/secrets/eks.amazonaws.com/serviceaccount/token
-        AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+      image: ubuntu:22.04
       volumes:
         - /var/run/secrets/eks.amazonaws.com/serviceaccount/token:/var/run/secrets/eks.amazonaws.com/serviceaccount/token
     permissions:
       contents: read
+    env:
+      AWS_WEB_IDENTITY_TOKEN_FILE: /var/run/secrets/eks.amazonaws.com/serviceaccount/token
+      AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+      DEBIAN_FRONTEND: noninteractive
+      TZ: Etc/UTC
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Utilites
+      - name: Install Utilities
         run: |
-          apk add --no-cache bash tar curl git aws-cli helm
+          set -eu pipefail
+          export DEBIAN_FRONTEND=noninteractive
+          export TZ=Etc/UTC
+          ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime || true
+          apt-get update
+          apt-get install -y --no-install-recommends tzdata
+          dpkg-reconfigure -f noninteractive tzdata || true
+          apt-get install -y --no-install-recommends curl ca-certificates tar git awscli gpg
+          curl -fsSL https://baltocdn.com/helm/signing.asc | gpg --dearmor -o /usr/share/keyrings/helm.gpg
+          echo "deb [signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" > /etc/apt/sources.list.d/helm-stable-debian.list
+          apt-get update && apt-get install -y --no-install-recommends helm
+          rm -rf /var/lib/apt/lists/*
+
+      - name: Add Helm Repos
+        run: |
+          helm repo add zesty-insights https://zesty-co.github.io/kompass-insights
+          helm repo add zesty-rightsizing https://zesty-co.github.io/kompass-pod-rightsizing
+          helm repo add zesty-helm https://zesty-co.github.io/zesty-helm
+          helm repo add victoria https://victoriametrics.github.io/helm-charts
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm repo add grafana https://grafana.github.io/helm-charts
+          helm repo update
 
       - name: Package Chart
         run: |
           cd charts/kompass
           helm dep update
-          helm dep build . 
+          helm dep build .
           helm package .
 
       - name: Deploy Chart To ECR
         run: |
-          for region in $(echo $AVAILABLE_ECR_REGIONS | tr "," "\n")
-          do
-            aws ecr get-login-password --region $region | helm registry login --username AWS --password-stdin  ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$region.amazonaws.com
-
-            helm push charts/kompass/kompass-*.tgz --registry oci://${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$region.amazonaws.com/
+          for region in $(echo ${{ vars.AVAILABLE_ECR_REGIONS}} | tr "," "\n"); do
+            aws ecr get-login-password --region "$region" \
+              | helm registry login --username AWS --password-stdin  "${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$region.amazonaws.com"
+            helm push charts/kompass/kompass-*.tgz oci://${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$region.amazonaws.com/
           done
