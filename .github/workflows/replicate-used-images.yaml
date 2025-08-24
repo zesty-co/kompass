@@ -64,17 +64,20 @@ jobs:
         run: |
           helm dep build ./charts/kompass
           SOURCE_REGION="eu-west-1"
-          CHART_IMAGES=$(helm template ./charts/kompass \
-            --set cxLogging.enabled=true \
-            --set kompass-insights.cxLogging.enabled=true \
-            --set rightsizing.cxLogging.enabled=true \
-            --set cxLogging.clusterName=chart-template \
-            --set cxLogging.apiKey=apiKey \
-            --set rightsizing.enabled=true \
-            --set disk.enabled=true \
-            --set grafana.enabled=true \
-            | grep -E '(^|\s)-?\s*image:' \
-            | sed -E 's/.*image:[[:space:]]*"?([^"]+)"?/\1/' | sort -u)
+          CHART_IMAGES=$(
+            helm template ./charts/kompass \
+              --set cxLogging.enabled=true \
+              --set kompass-insights.cxLogging.enabled=true \
+              --set rightsizing.cxLogging.enabled=true \
+              --set cxLogging.clusterName=chart-template \
+              --set cxLogging.apiKey=apiKey \
+              --set rightsizing.enabled=true \
+              --set disk.enabled=true \
+              --set grafana.enabled=true |
+            grep -E '(^|\s)-?\s*image:' |
+            sed -E 's/.*image:[[:space:]]*"?([^"]+)"?/\1/' |
+            sort -u
+          )
 
           CHART_IMAGES=$(printf "%s\n%s\n%s\n%s\n%s\n%s\n%s\n" "$CHART_IMAGES" \
             "bitnami/kube-rbac-proxy" \
