@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - kps-2586-glg-changes
 
 jobs:
   release:
