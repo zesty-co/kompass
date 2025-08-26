@@ -18,6 +18,10 @@ global:
   # Set to a specific storage class name or leave as null (~) to use cluster default.
   # This value is referenced by the YAML anchor '&storageClassName'.
   storageClassName: &storageClassName ~
+  # -- (string) The name for zesty's self-signed certificate issuer
+  clusterIssuerName: kompass-selfsigned-issuer
+  # -- (bool)
+  useHelmPriorityHooks: true
 
 validator:
   image:
@@ -41,6 +45,9 @@ kompass-insights:
   # Provided during the onboarding process. This value MUST be set.
   orgID: ""
 
+  image:
+    tag: latest
+
   # -- (string) REQUIRED: Your Zesty encrypted credentials.
   # Provided during the onboarding process. This value MUST be set.
   encryptedCredentials: ""
@@ -49,6 +56,10 @@ kompass-insights:
     # -- (bool) Enable or disable the Zesty Kompass mutating webhook for admission control.
     # Required for certain features such as Spot Management.
     enabled: false
+
+    deployment:
+      image:
+        tag: latest
 
   awsCluster:
     # -- (bool) Override for deprecated functionality related to specific AWS cluster handling.
@@ -78,13 +89,6 @@ kompass-insights:
 rightsizing:
   # -- (bool) Enable or disable the Zesty rightsizing feature components.
   enabled: false
-
-  cert-manager:
-    # -- (bool) Enable or disable the cert-manager dependency for rightsizing.
-    enabled: true
-    # -- (string) Override the full name of the cert-manager release.
-    fullnameOverride: "kompass-cert-manager"
-
   cxLogging: *cxLogging
 
 disk:
@@ -186,3 +190,21 @@ grafana:
       label: grafana_dashboard
   adminUser: admin
   adminPassword: password
+
+cert-manager:
+  enabled: true
+  crds:
+    enabled: true
+  fullnameOverride: "kompass-cert-manager"
+  namespace: zesty-system
+
+  # Add post-upgrade hook to make sure we are not getting into a race condition
+  startupapicheck:
+    jobAnnotations:
+      helm.sh/hook: post-install,post-upgrade
+    rbac:
+      annotations:
+        helm.sh/hook: post-install,post-upgrade
+    serviceAccount:
+      annotations:
+        helm.sh/hook: post-install,post-upgrade

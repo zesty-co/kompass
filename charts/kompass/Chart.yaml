@@ -4,20 +4,20 @@ description: Zesty Kompass Helm Charts
 icon: https://zesty.co/wp-content/uploads/2024/05/favicon-150x150.png
 
 type: application
-version: 0.1.44
+version: 0.1.45
 appVersion: "1.16.0"
 
 dependencies:
   # zesty products
   - name: kompass-insights
     repository: "https://zesty-co.github.io/kompass-insights"
-    version: "2.1.49"
+    version: "2.1.51"
 
   - name: pod-rightsizing
     alias: rightsizing
     condition: rightsizing.enabled
     repository: "https://zesty-co.github.io/kompass-pod-rightsizing"
-    version: 0.1.17
+    version: 0.1.18
 
   - name: kompass-storage
     alias: disk
@@ -49,6 +49,11 @@ dependencies:
     condition: kubeStateMetrics.enabled
     repository: https://prometheus-community.github.io/helm-charts
     version: ">=5.28.0"
+
+  - name: cert-manager
+    repository: https://charts.jetstack.io
+    condition: cert-manager.enabled
+    version: ">=1.16.3"
 
   - name: grafana
     condition: grafana.enabled
