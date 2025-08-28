@@ -17,7 +17,7 @@ dependencies:
     alias: rightsizing
     condition: rightsizing.enabled
     repository: "https://zesty-co.github.io/kompass-pod-rightsizing"
-    version: 0.1.18
+    version: 0.1.19
 
   - name: kompass-storage
     alias: disk
