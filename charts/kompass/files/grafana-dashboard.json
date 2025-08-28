@@ -56,7 +56,7 @@
           "uid": "VictoriaMetrics"
         },
         "enable": true,
-        "expr": "changes(kompass_rs_recommendations{container=\"$container\", type=\"orchestration\", mode=\"live\"}[1m])",
+        "expr": "changes(kompass_rs_recommendations{workload_name=\"$workload_name\", container=\"$container\", type=\"orchestration\", mode=\"live\"}[1m])",
         "hide": false,
         "iconColor": "blue",
         "name": "Orchestrations",
@@ -70,7 +70,7 @@
           "uid": "VictoriaMetrics"
         },
         "enable": true,
-        "expr": "changes(kompass_rs_recommendations{container=\"$container\", type=\"rollback\", mode=\"live\"}[1m])",
+        "expr": "changes(kompass_rs_recommendations{workload_name=\"$workload_name\", container=\"$container\", type=\"rollback\", mode=\"live\"}[1m])",
         "hide": false,
         "iconColor": "red",
         "name": "Rollbacks",
@@ -273,8 +273,8 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "kompass_container_cpu_usage_max_rate{container=\"$container\", namespace=\"$namespace\"}",
-          "instant": true,
+          "expr": "kompass_container_cpu_usage_max_rate{container=\"$container\", namespace=\"$namespace\", created_by_name=\"$workload_name\"}",
+          "instant": false,
           "legendFormat": "Usage: {{container}}",
           "range": true,
           "refId": "Usage"
@@ -285,7 +285,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "avg(kompass_rs_recommendations{container=\"$container\", namespace=\"$namespace\", resource_type=\"cpu\", mode=\"live\",resource_source=\"desired\"}[15s:15s])[1d]",
+          "expr": "avg(kompass_rs_recommendations{workload_name=\"$workload_name\", container=\"$container\", namespace=\"$namespace\", resource_type=\"cpu\", mode=\"live\",resource_source=\"desired\"}[15s:15s])[1d]",
           "hide": false,
           "instant": false,
           "legendFormat": "Desired: {{container}}",
@@ -298,7 +298,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(avg(kube_pod_container_resource_requests{resource=\"cpu\", container=\"$container\", namespace=\"$namespace\"}) by(container, id))[5m]",
+          "expr": "(avg_over_time(avg(kube_pod_container_resource_requests{resource=\"cpu\", container=\"$container\", namespace=\"$namespace\"}) by(pod, namespace, container, id))[5m]) * on(pod, namespace) group_left(owner_name) kube_pod_owner{namespace=\"$namespace\", owner_name=\"$workload_name\"}",
           "hide": false,
           "instant": false,
           "legendFormat": "Requests: {{container}}",
@@ -311,7 +311,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "max_over_time(kompass_container_cpu_usage_max_rate{container=\"$container\", namespace=\"$namespace\"}[$LookbackPeriod]\n) * (\"$Strategy\" == 'Conservative' or \"$Strategy\" == 'All') * (1 + $BufferPercent/100)",
+          "expr": "max_over_time(kompass_container_cpu_usage_max_rate{container=\"$container\", namespace=\"$namespace\", created_by_name=\"$workload_name\"}[$LookbackPeriod]\n) * (\"$Strategy\" == 'Conservative' or \"$Strategy\" == 'All') * (1 + $BufferPercent/100)",
           "hide": false,
           "instant": false,
           "legendFormat": "Conservative Strategy: {{container}}",
@@ -324,7 +324,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "quantile_over_time(\n    0.95, kompass_container_cpu_usage_max_rate{container=\"$container\", namespace=\"$namespace\"}[$LookbackPeriod]\n) * (\"$Strategy\" == 'Default' or \"$Strategy\" == 'All') * (1 + $BufferPercent/100)",
+          "expr": "quantile_over_time(\n    0.95, kompass_container_cpu_usage_max_rate{container=\"$container\", namespace=\"$namespace\", created_by_name=\"$workload_name\"}[$LookbackPeriod]\n) * (\"$Strategy\" == 'Default' or \"$Strategy\" == 'All') * (1 + $BufferPercent/100)",
           "hide": false,
           "instant": false,
           "legendFormat": "Default Strategy: {{container}}",
@@ -337,7 +337,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "quantile_over_time(\n    0.50, kompass_container_cpu_usage_max_rate{container=\"$container\", namespace=\"$namespace\"}[$LookbackPeriod]\n) * (\"$Strategy\" == 'Aggressive' or \"$Strategy\" == 'All') * (1 + $BufferPercent/100)",
+          "expr": "quantile_over_time(\n    0.50, kompass_container_cpu_usage_max_rate{container=\"$container\", namespace=\"$namespace\", created_by_name=\"$workload_name\"}[$LookbackPeriod]\n) * (\"$Strategy\" == 'Aggressive' or \"$Strategy\" == 'All') * (1 + $BufferPercent/100)",
           "hide": false,
           "instant": false,
           "legendFormat": "Aggressive Strategy: {{container}}",
@@ -530,7 +530,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "kompass_container_memory_usage_max{container=\"$container\", namespace=\"$namespace\"} / 1024 / 1024",
+          "expr": "kompass_container_memory_usage_max{container=\"$container\", namespace=\"$namespace\", created_by_name=\"$workload_name\" } / 1024 / 1024",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -545,7 +545,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "avg(kompass_rs_recommendations{namespace=\"$namespace\", container=\"$container\", resource_type=\"memory\", mode=\"live\",resource_source=\"desired\"}[15s:15s])[1d] / 1024 / 1024",
+          "expr": "avg(kompass_rs_recommendations{namespace=\"$namespace\", container=\"$container\", resource_type=\"memory\", mode=\"live\", resource_source=\"desired\", workload_name=\"$workload_name\"}[15s:15s])[1d] / 1024 / 1024",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -560,7 +560,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "avg_over_time(avg(kube_pod_container_resource_requests{resource=\"memory\", container=\"$container\", namespace=\"$namespace\"}) by(container))[1m] / 1024 / 1024",
+          "expr": "(avg_over_time(kube_pod_container_resource_requests{resource=\"memory\", namespace=\"$namespace\", container=\"$container\"}[1m]) / 1024 / 1024) * on(pod, namespace) group_left(owner_name) kube_pod_owner{namespace=\"$namespace\", owner_name=\"$workload_name\"}",
           "hide": false,
           "instant": false,
           "legendFormat": "Requests: {{container}}",
@@ -573,7 +573,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "max_over_time(kompass_container_memory_usage_max{container=\"$container\", namespace=\"$namespace\"}[$LookbackPeriod]\n) * (\"$Strategy\" == 'Conservative' or \"$Strategy\" == 'All') / 1024 / 1024 * (1 + $BufferPercent/100)",
+          "expr": "max_over_time(kompass_container_memory_usage_max{container=\"$container\", namespace=\"$namespace\", created_by_name=\"$workload_name\"}[$LookbackPeriod]) * (\"$Strategy\" == 'Conservative' or \"$Strategy\" == 'All') / 1024 / 1024 * (1 + $BufferPercent/100)",
           "hide": false,
           "instant": false,
           "legendFormat": "Conservative Strategy: {{container}}",
@@ -586,7 +586,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "quantile_over_time(\n    0.99, kompass_container_memory_usage_max{container=\"$container\", namespace=\"$namespace\"}[$LookbackPeriod]\n) * (\"$Strategy\" == 'Default' or \"$Strategy\" == 'All') / 1024 / 1024 * (1 + $BufferPercent/100)",
+          "expr": "quantile_over_time(\n    0.99, kompass_container_memory_usage_max{container=\"$container\", namespace=\"$namespace\", created_by_name=\"$workload_name\"}[$LookbackPeriod]\n) * (\"$Strategy\" == 'Default' or \"$Strategy\" == 'All') / 1024 / 1024 * (1 + $BufferPercent/100)",
           "hide": false,
           "instant": false,
           "legendFormat": "Default Strategy: {{container}}",
@@ -599,7 +599,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "quantile_over_time(\n    0.50, kompass_container_memory_usage_max{container=\"$container\", namespace=\"$namespace\"}[$LookbackPeriod]\n) * (\"$Strategy\" == 'Aggressive' or \"$Strategy\" == 'All') / 1024 / 1024 * (1 + $BufferPercent/100)",
+          "expr": "quantile_over_time(\n    0.50, kompass_container_memory_usage_max{container=\"$container\", namespace=\"$namespace\", created_by_name=\"$workload_name\"}[$LookbackPeriod]\n) * (\"$Strategy\" == 'Aggressive' or \"$Strategy\" == 'All') / 1024 / 1024 * (1 + $BufferPercent/100)",
           "hide": false,
           "instant": false,
           "legendFormat": "Aggressive Strategy: {{container}}",
@@ -698,8 +698,8 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "count(kube_pod_container_info{container=\"$container\", namespace=\"$namespace\"})",
-          "instant": true,
+          "expr": "count(kube_pod_container_info{container=\"$container\", namespace=\"$namespace\"} * on (namespace, pod, container) group_left(workload_name) kompass_pod_info{workload_name=\"$workload_name\"})",
+          "instant": false,
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"
@@ -820,7 +820,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "sum(increase(container_cpu_cfs_throttled_seconds_total{container=\"$container\", namespace=\"$namespace\"}[5m]) * on (container, pod, namespace) group_left (created_by_name, created_by_kind) max(max_over_time(kompass_pod_info{container=\"$container\", namespace=\"$namespace\"}[5m])) by (container, pod, created_by_name, created_by_kind, namespace)) by (container, namespace, created_by_name, created_by_kind)",
+          "expr": "sum(increase(container_cpu_cfs_throttled_seconds_total{container=\"$container\", namespace=\"$namespace\"}[5m]) * on (container, pod, namespace) group_left (created_by_name, created_by_kind) max(max_over_time(kompass_pod_info{workload_name=\"$workload_name\", container=\"$container\", namespace=\"$namespace\"}[5m])) by (container, pod, created_by_name, created_by_kind, namespace)) by (container, namespace, created_by_name, created_by_kind)",
           "legendFormat": "__auto",
           "range": true,
           "refId": "CPU Throttling time"
@@ -831,7 +831,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "sum((delta(kube_pod_container_status_restarts_total{container=\"$container\", namespace=\"$namespace\"}[1m])  > 0) * on (pod, container, namespace) (kube_pod_container_status_last_terminated_reason{reason=\"OOMKilled\", container=\"$container\", namespace=\"$namespace\"}  > 0) * on (container, pod, namespace) group_left (created_by_name, created_by_kind) max(kompass_pod_info{container=\"$container\", namespace=\"$namespace\"}) by (container, pod, namespace, created_by_name, created_by_kind)) by (container, created_by_name, created_by_kind, namespace)",
+          "expr": "sum((delta(kube_pod_container_status_restarts_total{container=\"$container\", namespace=\"$namespace\"}[1m])  > 0) * on (pod, container, namespace) (kube_pod_container_status_last_terminated_reason{reason=\"OOMKilled\", container=\"$container\", namespace=\"$namespace\"}  > 0) * on (container, pod, namespace) group_left (created_by_name, created_by_kind) max(kompass_pod_info{workload_name=\"$workload_name\", container=\"$container\", namespace=\"$namespace\"}) by (container, pod, namespace, created_by_name, created_by_kind)) by (container, created_by_name, created_by_kind, namespace)",
           "hide": false,
           "instant": false,
           "legendFormat": "__auto",
@@ -984,7 +984,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "kompass_rs_recommendations{resource_type=\"hpa_cpu\", mode=\"live\", workload_name=\"$workload_name\", resource_source=\"desired\", namespace=\"$namespace\"}",
+          "expr": "kompass_rs_recommendations{workload_name=\"$workload_name\", resource_type=\"hpa_cpu\", mode=\"live\", workload_name=\"$workload_name\", resource_source=\"desired\", namespace=\"$namespace\"}",
           "hide": false,
           "instant": false,
           "legendFormat": "Desired Hpa CPU",
@@ -997,7 +997,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "kompass_rs_recommendations{resource_type=\"hpa_memory\", mode=\"live\", workload_name=\"$workload_name\", resource_source=\"desired\", namespace=\"$namespace\"}",
+          "expr": "kompass_rs_recommendations{workload_name=\"$workload_name\", resource_type=\"hpa_memory\", mode=\"live\", workload_name=\"$workload_name\", resource_source=\"desired\", namespace=\"$namespace\"}",
           "hide": false,
           "instant": false,
           "legendFormat": "Desired Hpa Memory",
@@ -1091,10 +1091,10 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "kompass_rs_recommendations{workload_name=\"$workload_name\", mode=\"live\", namespace=\"$namespace\"}[15:15]",
+          "expr": "kompass_rs_recommendations{workload_name=\"$workload_name\", mode=\"live\", namespace=\"$namespace\", container=\"$container\"}[$__range]",
           "format": "table",
           "legendFormat": "__auto",
-          "range": true,
+          "instant": true,
           "refId": "A"
         }
       ],
