@@ -109,7 +109,7 @@ data:
       - job_name: 'kompass-insights'
         scrape_interval: {{ include "kompass.scrapeInterval" . }}
         static_configs:
-          - targets: ['http://{{ (index .Values "kompass-insights").insights.service }}.{{ .Release.Namespace }}:{{ (index .Values "kompass-insights").metricsPort }}']
+          - targets: ['http://{{ (index .Values "kompass-insights").insights.service }}.{{ .Release.Namespace }}:{{ (index .Values "kompass-insights").insights.metrics.port }}']
 
       # for collecting VM metrics
       - job_name: 'vmetrics'
