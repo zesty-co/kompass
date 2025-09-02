@@ -49,6 +49,7 @@ jobs:
           helm repo add victoria https://victoriametrics.github.io/helm-charts
           helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
           helm repo add grafana https://grafana.github.io/helm-charts
+          helm repo add jetstack https://charts.jetstack.io
           helm repo update
 
       - name: Package Chart
