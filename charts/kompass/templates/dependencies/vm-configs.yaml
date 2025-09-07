@@ -91,13 +91,13 @@ data:
             target_label: __name__
             replacement: kubelet_resource_$1
 
-{{- if .Values.rightsizing.enabled }}
       # for collecting Pilot metrics
       - job_name: 'pilot'
         scrape_interval: {{ include "kompass.scrapeInterval" . }}
         static_configs:
           - targets: ['http://{{- include "rightsizing.recommendationsMaker.name" . -}}.{{ .Release.Namespace }}:{{ .Values.rightsizing.recommendationsMaker.port }}']
         
+{{- if .Values.rightsizing.enabled }}
       - job_name: 'rightsizing_managed_workloads'
         scrape_interval: 1m
         metrics_path: '/managed_workloads_metrics'
