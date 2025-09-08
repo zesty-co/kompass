@@ -4,7 +4,7 @@ description: Zesty Kompass Helm Charts
 icon: https://zesty.co/wp-content/uploads/2024/05/favicon-150x150.png
 
 type: application
-version: 0.1.50
+version: 0.1.51
 appVersion: "1.16.0"
 
 dependencies:
@@ -15,9 +15,8 @@ dependencies:
 
   - name: pod-rightsizing
     alias: rightsizing
-    condition: rightsizing.enabled
     repository: "https://zesty-co.github.io/kompass-pod-rightsizing"
-    version: 0.1.19
+    version: 0.1.20
 
   - name: kompass-storage
     alias: disk
