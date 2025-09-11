@@ -87,6 +87,20 @@ spec:
             if kubectl get storageclass $STORAGE_CLASS_NAME &> /dev/null; then
               echo "✅ StorageClass '$STORAGE_CLASS_NAME' exists"
               
+              # Check if PVC expansion is enabled and validate expansion support
+              PVC_EXPANSION_ENABLED="{{ .Values.pvcExpansion.enabled | default false }}"
+              if [ "$PVC_EXPANSION_ENABLED" = "true" ]; then
+                ALLOW_EXPANSION=$(kubectl get storageclass $STORAGE_CLASS_NAME -o jsonpath='{.allowVolumeExpansion}' 2>/dev/null || echo "false")
+                if [ "$ALLOW_EXPANSION" != "true" ]; then
+                  echo "❌ StorageClass '$STORAGE_CLASS_NAME' does not support volume expansion (allowVolumeExpansion: ${ALLOW_EXPANSION:-"not set"})"
+                  echo "PVC expansion is enabled but the StorageClass does not support it."
+                  echo "Please update the StorageClass to set 'allowVolumeExpansion: true' or disable PVC expansion."
+                  exit 1
+                else
+                  echo "✅ StorageClass '$STORAGE_CLASS_NAME' supports volume expansion"
+                fi
+              fi
+
               # Verify that the storage class uses the AWS EBS CSI provisioner
               PROVISIONER=$(kubectl get storageclass $STORAGE_CLASS_NAME -o jsonpath='{.provisioner}')
               if [ "$PROVISIONER" = "ebs.csi.aws.com" ]; then
@@ -251,6 +265,7 @@ spec:
             fi
           fi
           echo ""
+
 
           echo "🎉 All validations passed! Your cluster is ready for Zesty Kompass installation."
       restartPolicy: Never
