@@ -93,7 +93,7 @@ spec:
                 ALLOW_EXPANSION=$(kubectl get storageclass $STORAGE_CLASS_NAME -o jsonpath='{.allowVolumeExpansion}' 2>/dev/null || echo "false")
                 if [ "$ALLOW_EXPANSION" != "true" ]; then
                   echo "❌ StorageClass '$STORAGE_CLASS_NAME' does not support volume expansion (allowVolumeExpansion: ${ALLOW_EXPANSION:-"not set"})"
-                  echo "PVC expansion is enabled but the StorageClass does not support it."
+                  echo "Please use a storage class that supports volume expansion, or set the pvcExpansion.enabled value to false to acknowledge and accept the risk of data unavailability."
                   echo "Please update the StorageClass to set 'allowVolumeExpansion: true' or disable PVC expansion."
                   exit 1
                 else
