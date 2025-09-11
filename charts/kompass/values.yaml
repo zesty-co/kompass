@@ -76,15 +76,13 @@ kompass-insights:
     # Provided during the onboarding process to prevent confused deputy problems.
     zestyExternalID: ~
 
-
   pvcExpansion:
     # -- (bool) Configuration for using pvc expand.
     enabled: true
     # -- (int) OPTIONAL expand when PVC usage reaches 80%
-    threshold: 80  # Expand when PVC usage reaches 80%
+    threshold: 80 # Expand when PVC usage reaches 80%
     # -- (int) OPTIONAL amount to expand by
-    expansionSize: "20Gi"  # Amount to expand by
-
+    expansionSize: "20Gi" # Amount to expand by
 
   cxLogging: *cxLogging
 
