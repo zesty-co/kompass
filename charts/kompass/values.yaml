@@ -108,10 +108,13 @@ victoriaMetrics:
     fullnameOverride: *vmName
     persistentVolume:
       mountPath: /victoria-metrics-data
-      size: "30Gi"
+      size: "60Gi"
       storageClassName: *storageClassName
     resources:
       requests:
+        memory: "3Gi"
+        cpu: "0.5"
+      limits:
         memory: "3Gi"
         cpu: "0.5"
     extraArgs:

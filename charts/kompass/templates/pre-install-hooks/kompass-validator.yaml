@@ -88,7 +88,7 @@ spec:
               echo "✅ StorageClass '$STORAGE_CLASS_NAME' exists"
               
               # Check if PVC expansion is enabled and validate expansion support
-              PVC_EXPANSION_ENABLED="{{ .Values.kompass-insights.pvcExpansion.enabled | default false }}"
+              PVC_EXPANSION_ENABLED="{{ index .Values "kompass-insights" "pvcExpansion" "enabled" | default false }}"
               if [ "$PVC_EXPANSION_ENABLED" = "true" ]; then
                 ALLOW_EXPANSION=$(kubectl get storageclass $STORAGE_CLASS_NAME -o jsonpath='{.allowVolumeExpansion}' 2>/dev/null || echo "false")
                 if [ "$ALLOW_EXPANSION" != "true" ]; then
