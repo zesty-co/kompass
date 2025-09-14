@@ -35,10 +35,10 @@ jobs:
           apt-get update
           apt-get install -y --no-install-recommends tzdata
           dpkg-reconfigure -f noninteractive tzdata || true
-          apt-get install -y --no-install-recommends curl ca-certificates tar git awscli gpg
-          curl -fsSL https://baltocdn.com/helm/signing.asc | gpg --dearmor -o /usr/share/keyrings/helm.gpg
-          echo "deb [signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" > /etc/apt/sources.list.d/helm-stable-debian.list
-          apt-get update && apt-get install -y --no-install-recommends helm
+          apt-get install -y --no-install-recommends curl ca-certificates tar git awscli
+          # Install Helm (handles arm64 fine; installs to /usr/local/bin)
+          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          helm version
           rm -rf /var/lib/apt/lists/*
 
       - name: Add Helm Repos
