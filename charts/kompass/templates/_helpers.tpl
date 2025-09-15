@@ -127,3 +127,7 @@ Create the name of the recommendations-maker
 */}}
 {{- $makerValues.fullnameOverride | default $defaultFullName | trim -}}
 {{- end -}}
+
+{{- define "parent.chart_version" -}}
+    {{- .Chart.Version }}
+{{- end }}

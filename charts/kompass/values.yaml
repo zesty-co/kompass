@@ -23,7 +23,7 @@ global:
   # -- (bool)
   useHelmPriorityHooks: true
   # -- (string) The version of the parent chart
-  parentChartVersion: {{ .Chart.Version }}
+  parentChartVersion: ""
 
 validator:
   image:
