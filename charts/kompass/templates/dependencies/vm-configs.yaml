@@ -114,6 +114,10 @@ data:
           - source_labels: [__name__]
             regex: (kubelet_volume_stats_.*)
             action: keep
+        metric_relabel_configs:
+          - source_labels: [namespace]
+            regex: "{{ .Release.Namespace }}"
+            action: keep
 
 
       # for collecting Pilot metrics
