@@ -6,6 +6,9 @@ global:
   # IMPORTANT: If you change this value, you MUST also update 'victoriaMetricsRemoteUrl'
   # and 'victoriaMetricsRemoteWriteUrl' below to reflect the new service name.
   victoriaMetricsNameOverride: &vmName kompass-victoria-metrics
+  # -- (string) Overrides the name of the VictoriaMetrics persistent volume.
+  # This value is referenced by the YAML anchor '&vmPvcName'.
+  victoriaMetricsPvcNameOverride: &vmPvcName kompass-victoria-metrics-pvc
   # -- (string) The internal cluster URL for VictoriaMetrics query access.
   # This value is referenced by the YAML anchor '&vmRemoteUrl'.
   # It typically depends on 'victoriaMetricsNameOverride'.
@@ -102,6 +105,7 @@ victoriaMetrics:
       mountPath: /victoria-metrics-data
       size: "30Gi"
       storageClassName: *storageClassName
+      name: *vmPvcName
     resources:
       requests:
         memory: "3Gi"
