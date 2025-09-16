@@ -23,7 +23,6 @@ global:
   # -- (bool)
   useHelmPriorityHooks: true
 
-
 validator:
   image:
     registry: bitnami
