@@ -42,3 +42,4 @@ data:
         deployments: []
         statefulsets:
         - app.kubernetes.io/name: {{ .Values.grafana.nameOverride | default "grafana" | quote }}
+  kompass_chart_version: {{ include "kompass_chart_version" . }}
