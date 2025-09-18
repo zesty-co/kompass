@@ -23,6 +23,12 @@ global:
   # -- (bool)
   useHelmPriorityHooks: true
 
+validator:
+  image:
+    registry: 672188301118.dkr.ecr.eu-west-1.amazonaws.com/docker-hub/bitnami
+    repository: kubectl
+    tag: latest
+
 cxLogging: &cxLogging
   # Configuration for sending CX logs.
   # -- (bool) Enable or disable sending CX logs to Zesty.
