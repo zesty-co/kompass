@@ -25,7 +25,7 @@ global:
 
 validator:
   image:
-    registry: bitnami
+    registry: 672188301118.dkr.ecr.eu-west-1.amazonaws.com/docker-hub/bitnami
     repository: kubectl
     tag: latest
 
