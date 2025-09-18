@@ -25,9 +25,9 @@ global:
 
 validator:
   image:
-    registry: bitnami
+    registry: registry.k8s.io
     repository: kubectl
-    tag: latest
+    tag: v1.34.0
 
 cxLogging: &cxLogging
   # Configuration for sending CX logs.
