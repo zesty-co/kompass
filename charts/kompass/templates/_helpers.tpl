@@ -127,7 +127,3 @@ Create the name of the recommendations-maker
 */}}
 {{- $makerValues.fullnameOverride | default $defaultFullName | trim -}}
 {{- end -}}
-
-{{- define "kompass_chart_version" -}}
-    {{- .Chart.Version }}
-{{- end }}

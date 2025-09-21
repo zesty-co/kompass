@@ -22,6 +22,10 @@ global:
   clusterIssuerName: kompass-selfsigned-issuer
   # -- (bool)
   useHelmPriorityHooks: true
+  # -- (map) global node selector for Kompass components
+  nodeSelector: {}
+  # -- (array) global tolerations for Kompass components
+  tolerations: []
 
 validator:
   image:
