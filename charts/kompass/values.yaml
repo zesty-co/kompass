@@ -110,7 +110,7 @@ victoriaMetrics:
       requests:
         memory: "3Gi"
         cpu: "0.5"
-      limit:
+      limits:
         memory: "3Gi"
         cpu: "0.5"
     extraArgs:
