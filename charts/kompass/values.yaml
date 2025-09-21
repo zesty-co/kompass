@@ -110,6 +110,9 @@ victoriaMetrics:
       requests:
         memory: "3Gi"
         cpu: "0.5"
+      limit:
+        memory: "3Gi"
+        cpu: "0.5"
     extraArgs:
       retentionPeriod: 1w
       storageDataPath: /victoria-metrics-data
