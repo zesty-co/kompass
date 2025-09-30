@@ -203,35 +203,6 @@ spec:
           echo ""
 
           #########################################
-          # Validate metrics-server installation  #
-          #########################################
-          
-          echo "Validating metrics-server installation..."
-          METRICS_SERVER_ENABLED="{{ index .Values "kompass-insights" "metricsServer" "enabled" | default "false" }}"
-
-          # Check if metrics-server exists in the cluster using labels
-          # First try with the k8s-app label which is standard in most distributions
-          if kubectl get deployment --all-namespaces -l k8s-app=metrics-server --no-headers 2>/dev/null | grep -q ""; then
-            echo "✅ metrics-server is installed in the cluster (found via k8s-app label)"
-          # Then try with the app.kubernetes.io/name label which is recommended
-          elif kubectl get deployment --all-namespaces -l app.kubernetes.io/name=metrics-server --no-headers 2>/dev/null | grep -q ""; then
-            echo "✅ metrics-server is installed in the cluster (found via app.kubernetes.io/name label)"
-          # Finally fall back to checking for the standard deployment name
-          elif kubectl get deployment metrics-server -n kube-system &> /dev/null; then
-            echo "✅ metrics-server is installed in the cluster (found via standard name)"
-          else
-            # If metrics-server is not found and not enabled in values
-            if [ "$METRICS_SERVER_ENABLED" != "true" ]; then
-              echo "❌ metrics-server is not installed in the cluster"
-              echo "⚠️ Please set kompass-insights.metricsServer.enabled=true in your values file to install metrics-server"
-              exit 1
-            else
-              echo "⚠️ metrics-server is not installed, it will be deployed as part of Zesty Kompass installation"
-            fi
-          fi
-          echo ""
-
-          #########################################
           # Validate cert-manager installation  #
           #########################################
           
