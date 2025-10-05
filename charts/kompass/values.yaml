@@ -128,18 +128,11 @@ victoriaMetricsAgent:
     name: kompass-victoria-metrics-agent
   service:
     type: ClusterIP
+  configMap: kompass-vmagent-config
   extraArgs:
-    promscrape.config: /etc/vmagent-config/vmagent-config.yaml
     promscrape.maxScrapeSize: 128MB
   remoteWrite:
     - url: *vmRemoteWriteUrl
-  extraVolumes:
-    - name: config
-      configMap:
-        name: kompass-vmagent-config
-  extraVolumeMounts:
-    - name: config
-      mountPath: /etc/vmagent-config
 
 victoriaMetricsAlert:
   fullnameOverride: kompass-victoria-metrics-alert
