@@ -1,0 +1,387 @@
+# Minimal RBAC for validation
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kompass-post-validator
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "-10"
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kompass-post-validator
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "-10"
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "configmaps", "persistentvolumeclaims", "serviceaccounts", "secrets", "events"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "statefulsets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources: ["roles", "rolebindings"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["external-secrets.io"]
+  resources: ["externalsecrets"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kompass-post-validator
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "-10"
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kompass-post-validator
+subjects:
+- kind: ServiceAccount
+  name: kompass-post-validator
+  namespace: {{ .Release.Namespace }}
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kompass-post-validator
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
+  labels:
+    app.kubernetes.io/name: kompass-post-validator
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      name: kompass-post-validator
+      labels:
+        app.kubernetes.io/name: kompass-post-validator
+    spec:
+      restartPolicy: Never
+      serviceAccountName: kompass-post-validator
+      containers:
+      - name: post-install-validator
+        image: {{ .Values.validator.image.registry }}/{{ .Values.validator.image.repository }}:{{ .Values.validator.image.tag }}
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            set -e
+            echo "🔍 Starting post-installation validation for Zesty chart in namespace {{ .Release.Namespace }}..."
+            
+            # Define feature flags based on verified defaults
+            {{- $recommendationsEnabled := true }}
+            {{- $useExternalSecrets := true }}
+            {{- $awsClusterEnabled := false }}
+            {{- if hasKey .Values "kompass-insights" }}
+              {{- with index .Values "kompass-insights" }}
+                {{- if hasKey . "recommendations" }}
+                  {{- $recommendationsEnabled = .recommendations.enabled | default true }}
+                {{- end }}
+                {{- if ne (.encryptedCredentials | default "") "" }}
+                  {{- $useExternalSecrets = false }}
+                {{- end }}
+                {{- if hasKey . "awsCluster" }}
+                  {{- $awsClusterEnabled = .awsCluster.enabled | default false }}
+                {{- end }}
+              {{- end }}
+            {{- end }}
+            
+            # Export as environment variables for shell script
+            RECOMMENDATIONS_ENABLED={{ $recommendationsEnabled }}
+            USE_EXTERNAL_SECRETS={{ $useExternalSecrets }}
+            AWS_CLUSTER_ENABLED={{ $awsClusterEnabled }}
+            
+            validate_resource() {
+              local resource_type=$1
+              local resource_name=$2
+              local status_condition=$3
+              local label_selector=$4
+              local timeout=${5:-300}  # Default 5 minutes timeout
+              
+              echo "⌛ Validating $resource_type/$resource_name (timeout: ${timeout}s)..."
+              
+              # Check if resource exists
+              if ! kubectl get $resource_type $resource_name -n {{ .Release.Namespace }} >/dev/null 2>&1; then
+                echo "❌ VALIDATION FAILED: $resource_type/$resource_name not found in namespace {{ .Release.Namespace }}"
+                echo "📋 Available ${resource_type}s in namespace:"
+                kubectl get $resource_type -n {{ .Release.Namespace }} --no-headers 2>/dev/null || echo "  No ${resource_type}s found"
+                return 1
+              fi
+              
+              echo "✓ Resource $resource_type/$resource_name exists"
+              
+              # Check status condition if specified
+              if [ -n "$status_condition" ]; then
+                echo "  → Checking condition: $status_condition"
+                local wait_time=0
+                local check_interval=10
+                
+                while [ $wait_time -lt $timeout ]; do
+                  local current_status=$(kubectl get $resource_type $resource_name -n {{ .Release.Namespace }} -o jsonpath='{.status.conditions[?(@.type=="'$status_condition'")].status}' 2>/dev/null)
+                  
+                  if [ "$current_status" = "True" ]; then
+                    echo "  ✓ Condition $status_condition is True"
+                    break
+                  fi
+                  
+                  if [ $((wait_time % 30)) -eq 0 ]; then  # Log every 30 seconds
+                    echo "  ⏳ Waiting for $status_condition (${wait_time}/${timeout}s) - Current: ${current_status:-Unknown}"
+                  fi
+                  
+                  sleep $check_interval
+                  wait_time=$((wait_time + check_interval))
+                done
+                
+                if [ $wait_time -ge $timeout ]; then
+                  echo "❌ VALIDATION FAILED: $resource_type/$resource_name condition '$status_condition' not met after ${timeout}s"
+                  echo "📋 Resource details:"
+                  kubectl describe $resource_type $resource_name -n {{ .Release.Namespace }}
+                  echo "📋 Current status:"
+                  kubectl get $resource_type $resource_name -n {{ .Release.Namespace }} -o yaml | grep -A 20 "status:"
+                  return 1
+                fi
+              fi
+              
+              # Special handling for deployments: validate pods
+              if [ "$resource_type" = "deployment" ] && [ -n "$label_selector" ]; then
+                echo "  → Validating pods for deployment $resource_name..."
+                
+                # Get expected replica count
+                local expected_replicas=$(kubectl get deployment $resource_name -n {{ .Release.Namespace }} -o jsonpath='{.spec.replicas}')
+                echo "  → Expected replicas: $expected_replicas"
+                
+                # Wait for deployment to be ready with timeout
+                echo "  → Waiting for deployment rollout to complete..."
+                if ! kubectl rollout status deployment/$resource_name -n {{ .Release.Namespace }} --timeout=${timeout}s; then
+                  echo "❌ VALIDATION FAILED: Deployment $resource_name rollout failed or timed out"
+                  echo "📋 Deployment status:"
+                  kubectl get deployment $resource_name -n {{ .Release.Namespace }} -o wide
+                  echo "📋 Pod status:"
+                  kubectl get pods -l "$label_selector" -n {{ .Release.Namespace }} -o wide
+                  echo "📋 Recent events:"
+                  kubectl get events -n {{ .Release.Namespace }} --sort-by='.lastTimestamp' | tail -10
+                  return 1
+                fi
+                
+                # Get ready replica count
+                local ready_replicas=$(kubectl get deployment $resource_name -n {{ .Release.Namespace }} -o jsonpath='{.status.readyReplicas}')
+                ready_replicas=${ready_replicas:-0}
+                echo "  ✓ Ready replicas: $ready_replicas/$expected_replicas"
+                
+                # Check for any problematic pods
+                local failed_pods=$(kubectl get pods -l "$label_selector" -n {{ .Release.Namespace }} --field-selector=status.phase=Failed --no-headers 2>/dev/null | wc -l)
+                local pending_pods=$(kubectl get pods -l "$label_selector" -n {{ .Release.Namespace }} --field-selector=status.phase=Pending --no-headers 2>/dev/null | wc -l)
+                
+                if [ "$failed_pods" -gt 0 ]; then
+                  echo "❌ VALIDATION FAILED: Found $failed_pods failed pods for deployment $resource_name"
+                  echo "📋 Failed pods:"
+                  kubectl get pods -l "$label_selector" -n {{ .Release.Namespace }} --field-selector=status.phase=Failed -o wide
+                  echo "📋 Logs from failed pods:"
+                  kubectl get pods -l "$label_selector" -n {{ .Release.Namespace }} --field-selector=status.phase=Failed -o name | head -3 | while read pod; do
+                    echo "--- Logs for $pod ---"
+                    kubectl logs $pod -n {{ .Release.Namespace }} --tail=20 || echo "No logs available"
+                  done
+                  return 1
+                fi
+                
+                if [ "$pending_pods" -gt 0 ]; then
+                  echo "⚠️  Warning: Found $pending_pods pending pods for deployment $resource_name"
+                  echo "📋 Pending pods details:"
+                  kubectl describe pods -l "$label_selector" -n {{ .Release.Namespace }} --field-selector=status.phase=Pending
+                fi
+                
+                echo "  ✓ All $expected_replicas pods are running and ready"
+              fi
+              
+              # Special handling for PVCs: check bound status
+              if [ "$resource_type" = "pvc" ]; then
+                echo "  → Checking PVC binding status..."
+                local pvc_status=$(kubectl get pvc $resource_name -n {{ .Release.Namespace }} -o jsonpath='{.status.phase}')
+                if [ "$pvc_status" != "Bound" ]; then
+                  echo "❌ VALIDATION FAILED: PVC $resource_name is not Bound (status: $pvc_status)"
+                  echo "📋 PVC details:"
+                  kubectl describe pvc $resource_name -n {{ .Release.Namespace }}
+                  echo "📋 Available storage classes:"
+                  kubectl get storageclass
+                  return 1
+                fi
+                echo "  ✓ PVC is bound (status: $pvc_status)"
+              fi
+              
+              echo "✅ $resource_type/$resource_name validation completed successfully"
+              return 0
+            }
+            
+            # Enhanced error handling function
+            handle_validation_error() {
+              local step_name="$1"
+              local error_code="$2"
+              
+              echo ""
+              echo "💥 VALIDATION STEP FAILED: $step_name"
+              echo "📊 Current cluster state in namespace {{ .Release.Namespace }}:"
+              echo ""
+              echo "=== PODS ==="
+              kubectl get pods -n {{ .Release.Namespace }} -o wide 2>/dev/null || echo "No pods found"
+              echo ""
+              echo "=== DEPLOYMENTS ==="
+              kubectl get deployments -n {{ .Release.Namespace }} -o wide 2>/dev/null || echo "No deployments found"
+              echo ""
+              echo "=== SERVICES ==="
+              kubectl get services -n {{ .Release.Namespace }} 2>/dev/null || echo "No services found"
+              echo ""
+              echo "=== RECENT EVENTS ==="
+              kubectl get events -n {{ .Release.Namespace }} --sort-by='.lastTimestamp' | tail -15 2>/dev/null || echo "No events found"
+              echo ""
+              echo "❌ Installation validation failed at step: $step_name"
+              echo "🔍 Check the logs above for detailed error information"
+              exit $error_code
+            }
+
+            # 1. Check Main Deployment with pods
+            echo "=== Checking Main Deployment ==="
+            if ! validate_resource deployment "kompass-insights" "Available" "app.kubernetes.io/name=kompass-insights" 300; then
+              handle_validation_error "Main Deployment Check" 1
+            fi
+            
+            # 2. Check Recommendations Deployment with pods (conditional)
+            if [ "$RECOMMENDATIONS_ENABLED" = "true" ]; then
+              echo "=== Checking Recommendations Deployment ==="
+              if ! validate_resource deployment "kompass-insights-recommendations" "Available" "app.kubernetes.io/name=kompass-insights-recommendations" 300; then
+                handle_validation_error "Recommendations Deployment Check" 2
+              fi
+            fi
+
+            # 3. Check Services
+            echo "=== Checking Services ==="
+            {{- if hasKey .Values "kompass-insights" }}
+              {{- with index .Values "kompass-insights" }}
+                {{- if hasKey . "insights" }}
+            if ! validate_resource service "{{ .insights.service | default "kompass-insights" }}" "" "" "" 60; then
+              handle_validation_error "Main Service Check" 3
+            fi
+                {{- else }}
+            if ! validate_resource service "kompass-insights" "" "" "" 60; then
+              handle_validation_error "Main Service Check" 3
+            fi
+                {{- end }}
+              {{- end }}
+            {{- else }}
+            if ! validate_resource service "kompass-insights" "" "" "" 60; then
+              handle_validation_error "Main Service Check" 3
+            fi
+            {{- end }}
+            if [ "$RECOMMENDATIONS_ENABLED" = "true" ]; then
+              if ! validate_resource service "kompass-insights-recommendations" "" "" "" 60; then
+                handle_validation_error "Recommendations Service Check" 4
+              fi
+            fi
+
+            # 4. Check ConfigMap
+            echo "=== Checking ConfigMap ==="
+            if ! validate_resource configmap "kompass-insights-cm" "" "" "" 30; then
+              handle_validation_error "ConfigMap Check" 5
+            fi
+
+            # 5. Check PVC (with automatic bound check)
+            echo "=== Checking PersistentVolumeClaim ==="
+            if ! validate_resource pvc kompass-insights-db-pvc "" "" "" 120; then
+              handle_validation_error "PVC Check" 6
+            fi
+
+            # 6. Check ServiceAccount
+            echo "=== Checking ServiceAccount ==="
+            if ! validate_resource serviceaccount kompass-insights-sa "" "" "" 30; then
+              handle_validation_error "ServiceAccount Check" 7
+            fi
+
+            # 7. Check Role and RoleBinding (namespaced RBAC)
+            echo "=== Checking Namespaced RBAC ==="
+            if ! validate_resource role kompass-insights-role "" "" "" 30; then
+              handle_validation_error "Role Check" 8
+            fi
+            if ! validate_resource rolebinding kompass-insights-roleBinding "" "" "" 30; then
+              handle_validation_error "RoleBinding Check" 9
+            fi
+
+            # 8. Check Secret (conditional - only if not using external secrets)
+            if [ "$USE_EXTERNAL_SECRETS" = "false" ]; then
+              echo "=== Checking Secret ==="
+              if ! validate_resource secret "kompass-insights-secret" "" "" "" 30; then
+                handle_validation_error "Secret Check" 10
+              fi
+            fi
+
+            # 9. Check ExternalSecrets (conditional)
+            if [ "$USE_EXTERNAL_SECRETS" = "true" ]; then
+              echo "=== Checking Credentials ExternalSecret ==="
+              {{- if hasKey .Values "kompass-insights" }}
+                {{- with index .Values "kompass-insights" }}
+                  {{- if hasKey . "secret" }}
+              if ! validate_resource externalsecret "{{ .secret.name | default "zesty-k8s-agent-creds" }}" "" "" "" 60; then
+                handle_validation_error "ExternalSecret Check" 11
+              fi
+                  {{- else }}
+              if ! validate_resource externalsecret "zesty-k8s-agent-creds" "" "" "" 60; then
+                handle_validation_error "ExternalSecret Check" 11
+              fi
+                  {{- end }}
+                {{- end }}
+              {{- else }}
+              if ! validate_resource externalsecret "zesty-k8s-agent-creds" "" "" "" 60; then
+                handle_validation_error "ExternalSecret Check" 11
+              fi
+              {{- end }}
+            fi
+
+            # 10. Check AWS ExternalSecrets (conditional)
+            if [ "$AWS_CLUSTER_ENABLED" = "true" ]; then
+              {{- $checkAwsExternal := true }}
+              {{- if hasKey .Values "kompass-insights" }}
+                {{- with index .Values "kompass-insights" }}
+                  {{- if hasKey . "awsCluster" }}
+                    {{- if ne (.awsCluster.accessKeyID | default "") "" }}
+                      {{- $checkAwsExternal = false }}
+                    {{- end }}
+                  {{- end }}
+                {{- end }}
+              {{- end }}
+              {{- if $checkAwsExternal }}
+              echo "=== Checking AWS Credentials ExternalSecret ==="
+              if ! validate_resource externalsecret "{{ include "zesty-k8s.externalSecret.awsCred" . }}" "" "" "" 60; then
+                handle_validation_error "AWS ExternalSecret Check" 12
+              fi
+              {{- end }}
+            fi
+
+            # 11. Final Status Summary
+            echo ""
+            echo "🎉 ALL VALIDATIONS PASSED SUCCESSFULLY!"
+            echo "✅ Zesty installation in namespace {{ .Release.Namespace }} is healthy and ready."
+            echo ""
+            echo "📊 Final cluster state summary:"
+            echo "=== PODS ==="
+            kubectl get pods -n {{ .Release.Namespace }} -o wide
+            echo ""
+            echo "=== DEPLOYMENTS ==="
+            kubectl get deployments -n {{ .Release.Namespace }} -o wide
+            echo ""
+            echo "=== SERVICES ==="
+            kubectl get services -n {{ .Release.Namespace }}
+            echo ""
+            echo "🚀 Installation validation completed successfully at $(date)"
