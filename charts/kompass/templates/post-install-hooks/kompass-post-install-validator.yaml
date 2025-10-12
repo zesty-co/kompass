@@ -282,23 +282,17 @@ spec:
 
             # 3. Check Services
             echo "=== Checking Services ==="
+            {{- $serviceName := "kompass-insights" }}
             {{- if hasKey .Values "kompass-insights" }}
               {{- with index .Values "kompass-insights" }}
-                {{- if hasKey . "insights" }}
-            if ! validate_resource service "{{ .insights.service | default "kompass-insights" }}" "" "" "" 60; then
-              collect_validation_error "Main Service Check"
-            fi
-                {{- else }}
-            if ! validate_resource service "kompass-insights" "" "" "" 60; then
-              collect_validation_error "Main Service Check"
-            fi
+                {{- if and (hasKey . "insights") (hasKey .insights "service") }}
+                  {{- $serviceName = .insights.service }}
                 {{- end }}
               {{- end }}
-            {{- else }}
-            if ! validate_resource service "kompass-insights" "" "" "" 60; then
+            {{- end }}
+            if ! validate_resource service "{{ $serviceName }}" "" "" "" 60; then
               collect_validation_error "Main Service Check"
             fi
-            {{- end }}
             if [ "$RECOMMENDATIONS_ENABLED" = "true" ]; then
               if ! validate_resource service "kompass-insights-recommendations" "" "" "" 60; then
                 collect_validation_error "Recommendations Service Check"
@@ -343,23 +337,17 @@ spec:
             # 9. Check ExternalSecrets (conditional)
             if [ "$USE_EXTERNAL_SECRETS" = "true" ]; then
               echo "=== Checking Credentials ExternalSecret ==="
+              {{- $externalSecretName := "zesty-k8s-agent-creds" }}
               {{- if hasKey .Values "kompass-insights" }}
                 {{- with index .Values "kompass-insights" }}
-                  {{- if hasKey . "secret" }}
-              if ! validate_resource externalsecret "{{ .secret.name | default "zesty-k8s-agent-creds" }}" "" "" "" 60; then
-                collect_validation_error "ExternalSecret Check"
-              fi
-                  {{- else }}
-              if ! validate_resource externalsecret "zesty-k8s-agent-creds" "" "" "" 60; then
-                collect_validation_error "ExternalSecret Check"
-              fi
+                  {{- if and (hasKey . "secret") (hasKey .secret "name") }}
+                    {{- $externalSecretName = .secret.name }}
                   {{- end }}
                 {{- end }}
-              {{- else }}
-              if ! validate_resource externalsecret "zesty-k8s-agent-creds" "" "" "" 60; then
+              {{- end }}
+              if ! validate_resource externalsecret "{{ $externalSecretName }}" "" "" "" 60; then
                 collect_validation_error "ExternalSecret Check"
               fi
-              {{- end }}
             fi
 
             # 10. Check AWS ExternalSecrets (conditional)
