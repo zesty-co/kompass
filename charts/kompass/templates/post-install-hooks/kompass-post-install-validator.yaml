@@ -26,10 +26,19 @@ rules:
   resources: ["deployments", "statefulsets"]
   verbs: ["get", "list", "watch"]
 - apiGroups: ["rbac.authorization.k8s.io"]
-  resources: ["roles", "rolebindings"]
+  resources: ["roles", "rolebindings", "clusterroles", "clusterrolebindings"]
   verbs: ["get", "list", "watch"]
 - apiGroups: ["external-secrets.io"]
   resources: ["externalsecrets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apiextensions.k8s.io"]
+  resources: ["customresourcedefinitions"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["admissionregistration.k8s.io"]
+  resources: ["validatingwebhookconfigurations", "mutatingwebhookconfigurations"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["cert-manager.io"]
+  resources: ["certificates"]
   verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -87,7 +96,7 @@ spec:
             VALIDATION_ERRORS=""
             ERROR_COUNT=0
             
-            # Define feature flags based on verified defaults
+            # flags indicating whether to check resources that are not mandatory in the installation
             {{- $recommendationsEnabled := true }}
             {{- $useExternalSecrets := true }}
             {{- $awsClusterEnabled := false }}
@@ -234,7 +243,14 @@ spec:
             # Function to collect validation errors
             collect_validation_error() {
               local step_name="$1"
-              VALIDATION_ERRORS="$VALIDATION_ERRORS\n❌ $step_name failed"
+              local error_details="$2"
+              local timestamp=$(date +"%Y-%m-%d %H:%M:%S")
+              VALIDATION_ERRORS="${VALIDATION_ERRORS}\n[${timestamp}] ❌ ${step_name} failed"
+              
+              if [ -n "$error_details" ]; then
+                VALIDATION_ERRORS="${VALIDATION_ERRORS}\n   Details: ${error_details}"
+              fi
+              
               ERROR_COUNT=$((ERROR_COUNT + 1))
               echo "⚠️  $step_name failed - continuing with other checks..."
             }
@@ -244,10 +260,22 @@ spec:
               if [ $ERROR_COUNT -gt 0 ]; then
                 echo ""
                 echo "💥 VALIDATION FAILED - Found $ERROR_COUNT problems:"
+                echo ""
+                echo "📋 DETAILED ERROR SUMMARY:"
                 echo -e "$VALIDATION_ERRORS"
                 echo ""
-                echo "📊 Current cluster state in namespace {{ .Release.Namespace }}:"
+                echo "📊 Current cluster state analysis:"
                 echo ""
+                echo "=== WEBHOOK CONFIGURATIONS (CLUSTER-WIDE) ==="
+                kubectl get validatingwebhookconfiguration,mutatingwebhookconfiguration -o wide 2>/dev/null || echo "No webhook configurations found"
+                echo ""
+                echo "=== CERTIFICATES (CLUSTER-WIDE) ==="
+                kubectl get certificates,certificaterequests -A 2>/dev/null || echo "No certificates found"
+                echo ""
+                echo "=== CUSTOM RESOURCE DEFINITIONS (CLUSTER-WIDE) ==="
+                kubectl get crd | grep -E "(kompass|zesty)" 2>/dev/null || echo "No kompass/zesty CRDs found"
+                echo ""
+                echo "=== NAMESPACE {{ .Release.Namespace }} RESOURCES ==="
                 echo "=== PODS ==="
                 kubectl get pods -n {{ .Release.Namespace }} -o wide 2>/dev/null || echo "No pods found"
                 echo ""
@@ -257,11 +285,14 @@ spec:
                 echo "=== SERVICES ==="
                 kubectl get services -n {{ .Release.Namespace }} 2>/dev/null || echo "No services found"
                 echo ""
+                echo "=== SERVICE ACCOUNTS ==="
+                kubectl get serviceaccounts -n {{ .Release.Namespace }} 2>/dev/null || echo "No service accounts found"
+                echo ""
                 echo "=== RECENT EVENTS ==="
                 kubectl get events -n {{ .Release.Namespace }} --sort-by='.lastTimestamp' | tail -15 2>/dev/null || echo "No events found"
                 echo ""
                 echo "❌ Installation validation failed with $ERROR_COUNT problems"
-                echo "🔍 Check the logs above for detailed error information"
+                echo "🔍 Check the detailed error summary above for specific failure reasons"
                 exit 1
               fi
             }
@@ -370,7 +401,75 @@ spec:
               {{- end }}
             fi
 
-            # 11. Report validation results
+            # 11. Check Pod Rightsizing resources (conditional)
+            {{- if hasKey .Values "rightsizing" }}
+            {{- if .Values.rightsizing.enabled }}
+            echo "=== Checking Pod Rightsizing Resources ==="
+            
+            # Validate CRDs
+            if ! validate_resource "crd" "actions.kompass.zesty.co" "Established" "" "" 60; then
+                collect_validation_error "CRD actions.kompass.zesty.co validation"
+            fi
+            
+            if ! validate_resource "crd" "autopilotconfigs.kompass.zesty.co" "Established" "" "" 60; then
+                collect_validation_error "CRD autopilotconfigs.kompass.zesty.co validation"
+            fi
+            
+            # Validate Deployments
+            if ! validate_resource "deployment" "kompass-rightsizing-action-taker" "Available" "app.kubernetes.io/name=pod-rightsizing" 300; then
+                collect_validation_error "Deployment kompass-rightsizing-action-taker validation"
+            fi
+            
+            if ! validate_resource "deployment" "kompass-rightsizing-recommendations-maker" "Available" "app.kubernetes.io/name=pod-rightsizing" 300; then
+                collect_validation_error "Deployment kompass-rightsizing-recommendations-maker validation"
+            fi
+            
+            # Validate Services
+            if ! validate_resource "service" "kompass-rightsizing-recommendations-maker" "" "" "" 60; then
+                collect_validation_error "Service kompass-rightsizing-recommendations-maker validation"
+            fi
+            
+            # Validate ServiceAccounts
+            if ! validate_resource "serviceaccount" "zesty-kompass-rightsizing" "" "" "" 30; then
+                collect_validation_error "ServiceAccount zesty-kompass-rightsizing validation"
+            fi
+            
+            # Validate webhook if enabled (conditional based on webhook.enabled)
+            {{- if hasKey .Values.rightsizing "webhook" }}
+            {{- if .Values.rightsizing.webhook.enabled }}
+            echo "  → Webhook is enabled, validating webhook resources..."
+            
+            if ! validate_resource "validatingwebhookconfiguration" "kompass-pod-rightsizing-validating-webhook" "" "" "" 60; then
+                collect_validation_error "ValidatingWebhookConfiguration kompass-pod-rightsizing-validating-webhook validation"
+            fi
+            
+            if ! validate_resource "mutatingwebhookconfiguration" "kompass-pod-rightsizing-mutating-webhook" "" "" "" 60; then
+                collect_validation_error "MutatingWebhookConfiguration kompass-pod-rightsizing-mutating-webhook validation"
+            fi
+            
+            if ! validate_resource "certificate" "kompass-pod-rightsizing-webhook-cert" "" "" "" 60; then
+                collect_validation_error "Certificate kompass-pod-rightsizing-webhook-cert validation"
+            fi
+            
+            if ! validate_resource "service" "zesty-kompass-pod-rightsizing-webhook-service" "" "" "" 60; then
+                collect_validation_error "Service zesty-kompass-pod-rightsizing-webhook-service validation"
+            fi
+            {{- else }}
+            echo "  → Webhook is not enabled in values, skipping webhook validation"
+            {{- end }}
+            {{- else }}
+            echo "  → Webhook configuration not found in values, skipping webhook validation"
+            {{- end }}
+            
+            echo "✅ Pod Rightsizing validation section completed"
+            {{- else }}
+            echo "ℹ️  Pod Rightsizing is not enabled, skipping validation"
+            {{- end }}
+            {{- else }}
+            echo "ℹ️  Pod Rightsizing configuration not found, skipping validation"
+            {{- end }}
+
+            # 12. Report validation results
             report_validation_results
             
             # 12. Final Status Summary (only if all validations passed)
