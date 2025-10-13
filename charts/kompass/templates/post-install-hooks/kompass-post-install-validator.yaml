@@ -97,6 +97,7 @@ spec:
             ERROR_COUNT=0
             
             # flags indicating whether to check resources that are not mandatory in the installation
+            # TODO: are there more resources that are not mandatory for installation and validation?
             {{- $recommendationsEnabled := true }}
             {{- $useExternalSecrets := true }}
             {{- $awsClusterEnabled := false }}
@@ -255,14 +256,10 @@ spec:
               echo "⚠️  $step_name failed - continuing with other checks..."
             }
             
-            # Function to report all errors at the end
             report_validation_results() {
               if [ $ERROR_COUNT -gt 0 ]; then
                 echo ""
-                echo "💥 VALIDATION FAILED - Found $ERROR_COUNT problems:"
-                echo ""
-                echo "📋 DETAILED ERROR SUMMARY:"
-                echo -e "$VALIDATION_ERRORS"
+                echo "💥 VALIDATION FAILED - Found $ERROR_COUNT"
                 echo ""
                 echo "📊 Current cluster state analysis:"
                 echo ""
@@ -292,7 +289,9 @@ spec:
                 kubectl get events -n {{ .Release.Namespace }} --sort-by='.lastTimestamp' | tail -15 2>/dev/null || echo "No events found"
                 echo ""
                 echo "❌ Installation validation failed with $ERROR_COUNT problems"
-                echo "🔍 Check the detailed error summary above for specific failure reasons"
+                echo ""
+                echo "📋 DETAILED ERROR SUMMARY:"
+                echo -e "$VALIDATION_ERRORS"
                 exit 1
               fi
             }
@@ -488,3 +487,4 @@ spec:
             kubectl get services -n {{ .Release.Namespace }}
             echo ""
             echo "🚀 Installation validation completed successfully at $(date)"
+            # TODO: how should we handle the errors?
