@@ -97,14 +97,6 @@ data:
           - source_labels: [__name__]
             regex: '(kompass_.*)'
             action: keep
-        
-{{- if .Values.rightsizing.enabled }}
-      - job_name: 'rightsizing_managed_workloads'
-        scrape_interval: {{ include "kompass.scrapeIntervalLong" . }}
-        metrics_path: '/managed_workloads_metrics'
-        static_configs:
-          - targets: ['http://{{- include "rightsizing.recommendationsMaker.name" . -}}.{{ .Release.Namespace }}:{{ .Values.rightsizing.recommendationsMaker.port }}']
-{{- end }}
 
       # for collecting insights metrics
       - job_name: 'kompass-insights'
