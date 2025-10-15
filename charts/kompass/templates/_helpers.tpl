@@ -71,6 +71,14 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- default "30s" .Values.victoriaMetricsAgent.scrapeInterval -}}
 {{- end }}
 
+{{- define "kompass.scrapeIntervalLong" -}}
+{{- default "1m" .Values.victoriaMetricsAgent.scrapeIntervalLong -}}
+{{- end }}
+
+{{- define "kompass.scrapeIntervalVolume" -}}
+{{- default "600s" .Values.victoriaMetricsAgent.scrapeIntervalVolume -}}
+{{- end }}
+
 {{/*
 Create the name of the recommendations-maker
 */}}
