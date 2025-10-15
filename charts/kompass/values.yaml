@@ -119,11 +119,12 @@ victoriaMetrics:
       search.disableCache: true
       memory.allowedPercent: 60
       dedup.minScrapeInterval: 30s
-      search.cacheTimestampOffset: 168h
 
 victoriaMetricsAgent:
   fullnameOverride: kompass-victoria-metrics-agent
   scrapeInterval: 30s
+  scrapeIntervalLong: 1m
+  scrapeIntervalVolume: 600s
   serviceAccount:
     name: kompass-victoria-metrics-agent
   service:

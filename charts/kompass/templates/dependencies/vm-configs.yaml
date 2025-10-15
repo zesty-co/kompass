@@ -33,7 +33,7 @@ data:
             action: keep
 
       - job_name: 'kubelet-resource'
-        scrape_interval: 30s
+        scrape_interval: {{ include "kompass.scrapeInterval" . }}
         scheme: https
         tls_config:
           insecure_skip_verify: true
@@ -61,7 +61,7 @@ data:
             action: keep
 
       - job_name: 'kubelet-volume'
-        scrape_interval: 600s
+        scrape_interval: {{ include "kompass.scrapeIntervalVolume" . }}
         scheme: https
         tls_config:
           insecure_skip_verify: true
@@ -100,7 +100,7 @@ data:
         
 {{- if .Values.rightsizing.enabled }}
       - job_name: 'rightsizing_managed_workloads'
-        scrape_interval: 1m
+        scrape_interval: {{ include "kompass.scrapeIntervalLong" . }}
         metrics_path: '/managed_workloads_metrics'
         static_configs:
           - targets: ['http://{{- include "rightsizing.recommendationsMaker.name" . -}}.{{ .Release.Namespace }}:{{ .Values.rightsizing.recommendationsMaker.port }}']
