@@ -22,7 +22,7 @@ dependencies:
     alias: disk
     condition: disk.enabled
     repository: "https://zesty-co.github.io/zesty-helm"
-    version: 1.7.3
+    version: 1.7.4
 
   # mutual dependencies
   - name: victoria-metrics-single
