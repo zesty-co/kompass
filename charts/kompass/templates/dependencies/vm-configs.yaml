@@ -142,6 +142,7 @@ data:
 
       #  vmagent's own metrics
       - job_name: 'vmagent'
+        scrape_interval: {{ include "kompass.scrapeInterval" . }}
         static_configs:
           - targets:
               - 'localhost:8429'
