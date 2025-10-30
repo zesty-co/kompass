@@ -97,14 +97,6 @@ data:
           - source_labels: [__name__]
             regex: '(kompass_.*)'
             action: keep
-        
-{{- if .Values.rightsizing.enabled }}
-      - job_name: 'rightsizing_managed_workloads'
-        scrape_interval: {{ include "kompass.scrapeIntervalLong" . }}
-        metrics_path: '/managed_workloads_metrics'
-        static_configs:
-          - targets: ['http://{{- include "rightsizing.recommendationsMaker.name" . -}}.{{ .Release.Namespace }}:{{ .Values.rightsizing.recommendationsMaker.port }}']
-{{- end }}
 
       # for collecting insights metrics
       - job_name: 'kompass-insights'
@@ -145,7 +137,7 @@ data:
             action: keep
         metric_relabel_configs:
           - source_labels: [__name__]
-            regex: '(kube_pod_info|kube_pod_container_info|kube_pod_owner|kube_replicaset_owner|kube_pod_container_resource_requests|kube_pod_container_resource_limits|kube_pod_container_status_restarts_total|kube_pod_container_status_last_terminated_reason|kube_horizontalpodautoscaler_spec_target_metric|kube_horizontalpodautoscaler_spec_min_replicas|kube_horizontalpodautoscaler_info|kube_horizontalpodautoscaler_status_current_replicas|kube_namespace_status_phase|kube_deployment_metadata_generation|kube_statefulset_metadata_generation|kube_job_metadata_generation|kube_cronjob_metadata_generation|kube_daemonset_metadata_generation)'
+            regex: '(kube_pod_info|kube_pod_container_info|kube_pod_owner|kube_replicaset_owner|kube_pod_container_resource_requests|kube_pod_container_resource_limits|kube_pod_container_status_restarts_total|kube_pod_container_status_last_terminated_reason|kube_pod_container_status_terminated_reason|kube_horizontalpodautoscaler_spec_target_metric|kube_horizontalpodautoscaler_spec_min_replicas|kube_horizontalpodautoscaler_info|kube_horizontalpodautoscaler_status_current_replicas|kube_namespace_status_phase|kube_deployment_metadata_generation|kube_statefulset_metadata_generation|kube_job_metadata_generation|kube_cronjob_metadata_generation|kube_daemonset_metadata_generation)'
             action: keep
 ---
 apiVersion: v1
