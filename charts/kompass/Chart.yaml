@@ -39,11 +39,11 @@ dependencies:
     alias: kubeStateMetrics
     condition: kubeStateMetrics.enabled
     repository: https://prometheus-community.github.io/helm-charts
-    version: ">=5.28.0"
+    version: 6.4.0
   - name: cert-manager
     repository: https://charts.jetstack.io
     condition: cert-manager.enabled
-    version: ">=1.16.3"
+    version: 1.19.1
   - name: grafana
     condition: grafana.enabled
     repository: https://grafana.github.io/helm-charts
