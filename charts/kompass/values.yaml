@@ -119,6 +119,7 @@ victoriaMetrics:
       search.disableCache: true
       memory.allowedPercent: 60
       dedup.minScrapeInterval: 30s
+      enableTCP6: true
 
 victoriaMetricsAgent:
   fullnameOverride: kompass-victoria-metrics-agent
@@ -132,6 +133,7 @@ victoriaMetricsAgent:
   configMap: kompass-vmagent-config
   extraArgs:
     promscrape.maxScrapeSize: 128MB
+    enableTCP6: true
   remoteWrite:
     - url: *vmRemoteWriteUrl
 
@@ -149,6 +151,7 @@ victoriaMetricsAlert:
       rule:
         - /config/*.yaml
       evaluationInterval: 30s
+      enableTCP6: true
     configMap: kompass-vm-custom-recording-rules
 
 kubeStateMetrics:
