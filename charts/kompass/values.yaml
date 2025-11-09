@@ -26,19 +26,22 @@ global:
   nodeSelector: {}
   # -- (array) global tolerations for Kompass components
   tolerations: []
-  # -- (map) Configuration for sending CX logs.
-  cxLogging: &cxLogging
-    # -- (bool) Enable or disable sending CX logs to Zesty.
-    enabled: false
-    # -- (string) REQUIRED if cxLogging.enabled is true: A descriptive name for your cluster.
-    # This name will appear in the Zesty platform associated with the logs.
-    clusterName: ""
-    # -- (string) REQUIRED if cxLogging.enabled is true: The API Key for CX logging.
-    # Provided during the onboarding process specifically for CX logging.
-    apiKey: ""
-    # -- (string) logUrl: The URL endpoint for sending logs to Coralogix.
-    # -- (string) metricsUrl: The URL endpoint for sending metrics to Coralogix.
-    # -- (string) timeDeltaUrl: The URL endpoint for time synchronization with Coralogix.
+  # -- (map) global cxLogging for Kompass components
+  cxLogging: {}
+
+# -- (map) Configuration for sending CX logs.
+cxLogging: &cxLogging
+  # -- (bool) Enable or disable sending CX logs to Zesty.
+  enabled: false
+  # -- (string) REQUIRED if cxLogging.enabled is true: A descriptive name for your cluster.
+  # This name will appear in the Zesty platform associated with the logs.
+  clusterName: ""
+  # -- (string) REQUIRED if cxLogging.enabled is true: The API Key for CX logging.
+  # Provided during the onboarding process specifically for CX logging.
+  apiKey: ""
+  # -- (string) logUrl: The URL endpoint for sending logs to Coralogix.
+  # -- (string) metricsUrl: The URL endpoint for sending metrics to Coralogix.
+  # -- (string) timeDeltaUrl: The URL endpoint for time synchronization with Coralogix.
 
 validator:
   image:
