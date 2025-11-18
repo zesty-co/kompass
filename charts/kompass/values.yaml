@@ -26,15 +26,11 @@ global:
   nodeSelector: {}
   # -- (array) global tolerations for Kompass components
   tolerations: []
+  # -- (map) global cxLogging for Kompass components
+  cxLogging: {}
 
-validator:
-  image:
-    registry: 672188301118.dkr.ecr.eu-west-1.amazonaws.com/docker-hub/bitnami
-    repository: kubectl
-    tag: latest
-
+# -- (map) Configuration for sending CX logs.
 cxLogging: &cxLogging
-  # Configuration for sending CX logs.
   # -- (bool) Enable or disable sending CX logs to Zesty.
   enabled: false
   # -- (string) REQUIRED if cxLogging.enabled is true: A descriptive name for your cluster.
@@ -43,6 +39,15 @@ cxLogging: &cxLogging
   # -- (string) REQUIRED if cxLogging.enabled is true: The API Key for CX logging.
   # Provided during the onboarding process specifically for CX logging.
   apiKey: ""
+  # -- (string) logUrl: The URL endpoint for sending logs to Coralogix.
+  # -- (string) metricsUrl: The URL endpoint for sending metrics to Coralogix.
+  # -- (string) timeDeltaUrl: The URL endpoint for time synchronization with Coralogix.
+
+validator:
+  image:
+    registry: 672188301118.dkr.ecr.eu-west-1.amazonaws.com/docker-hub/bitnami
+    repository: kubectl
+    tag: latest
 
 kompass-insights:
   # -- (string) REQUIRED: Your Zesty organization ID.
@@ -119,6 +124,7 @@ victoriaMetrics:
       search.disableCache: true
       memory.allowedPercent: 60
       dedup.minScrapeInterval: 30s
+      enableTCP6: true
 
 victoriaMetricsAgent:
   fullnameOverride: kompass-victoria-metrics-agent
@@ -132,6 +138,7 @@ victoriaMetricsAgent:
   configMap: kompass-vmagent-config
   extraArgs:
     promscrape.maxScrapeSize: 128MB
+    enableTCP6: true
   remoteWrite:
     - url: *vmRemoteWriteUrl
 
@@ -149,6 +156,7 @@ victoriaMetricsAlert:
       rule:
         - /config/*.yaml
       evaluationInterval: 30s
+      enableTCP6: true
     configMap: kompass-vm-custom-recording-rules
 
 kubeStateMetrics:
