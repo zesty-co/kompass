@@ -28,6 +28,8 @@ global:
   tolerations: []
   # -- (map) global cxLogging for Kompass components
   cxLogging: {}
+  # -- (string) global configmap name
+  globalConfigName: global-config
 
 # -- (map) Configuration for sending CX logs.
 cxLogging: &cxLogging
