@@ -25,7 +25,7 @@ jobs:
 
       - name: setup helm plugins
         run: |
-          helm plugin install https://github.com/aslafy-z/helm-git --version 0.11.1
+          helm plugin install https://github.com/aslafy-z/helm-git --version 0.11.1 --verify=false
 
       - name: helm dependency update
         run: helm dependency update ./charts/kompass
