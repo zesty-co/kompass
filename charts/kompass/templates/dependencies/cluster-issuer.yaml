@@ -3,9 +3,9 @@ kind: ClusterIssuer
 metadata:
   name: kompass-selfsigned-issuer
   annotations:
-  {{ if and .Values.global .Values.global.useHelmPriorityHooks | default true }}
+{{- if and .Values.global (default true .Values.global.useHelmPriorityHooks) (ne .Values.global.useHelmPriorityHooks false) }}
     helm.sh/hook: post-install,post-upgrade
     helm.sh/hook-weight: "15"
-  {{ end }}
+{{- end }}
 spec:
   selfSigned: {}
