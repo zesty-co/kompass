@@ -146,15 +146,4 @@ data:
         static_configs:
           - targets:
               - 'localhost:8429'
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: kompass-vm-custom-recording-rules
-  namespace: {{ .Release.Namespace }}
-  labels:
-    {{- include "kompass.labels" . | nindent 4 }}
-data:
-  custom-rules.yaml: |
-{{ .Files.Get "files/custom-vm-recording-rules.yaml" | indent 4 }}
 {{- end -}}
