@@ -155,6 +155,7 @@ victoriaMetricsAlert:
       read:
         url: *vmRemoteUrl
     extraArgs:
+      configCheckInterval: 1m
       rule:
         - /config/*.yaml
       evaluationInterval: 30s
