@@ -1,0 +1,59 @@
+{{ if .Values.victoriaMetricsMigration.enabled }}
+---
+# The migration job
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "kompass.name" . }}-vm-migration
+  annotations:
+    "helm.sh/hook": post-upgrade
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
+spec:
+  ttlSecondsAfterFinished: 300  # Keep the job for 5 minutes after failure for debugging
+  template:
+    metadata:
+      name: {{ include "kompass.name" . }}-vm-migration
+      labels:
+        app.kubernetes.io/name: {{ include "kompass.name" . }}-vm-migration
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - vmstorage
+                  - key: app.kubernetes.io/name
+                    operator: In
+                    values:
+                      - victoriaMetricsCluster
+              topologyKey: topology.kubernetes.io/zone
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - vminsert
+                    - key: app.kubernetes.io/name
+                      operator: In
+                      values:
+                        - victoriaMetricsCluster
+                topologyKey: kubernetes.io/hostname
+      containers:
+      - name: vm-migration
+        image: {{ .Values.victoriaMetricsMigration.image.registry }}/{{ .Values.victoriaMetricsMigration.image.repository }}:{{ .Values.victoriaMetricsMigration.image.tag }}
+        args:
+          - vm-native
+          - --vm-native-src-addr={{ include "kompass.victoria-metrics.vmsingle.url" . }}
+          - --vm-native-dst-addr={{ include "kompass.victoria-metrics.vmcluster.vminsert.url" . }}
+          - --vm-native-filter-time-start=now-7d
+          - --vm-native-step-interval=hour
+      restartPolicy: Never
+  backoffLimit: 0
+{{- end }}
