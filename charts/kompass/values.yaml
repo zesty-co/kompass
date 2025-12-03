@@ -13,7 +13,7 @@ global:
   # -- (string) The internal cluster URL for VictoriaMetrics remote write endpoint.
   # This value is referenced by the YAML anchor '&vmRemoteWriteUrl'.
   # It typically depends on 'victoriaMetricsNameOverride'.
-  victoriaMetricsRemoteWriteUrl: &vmRemoteWriteUrl http://kompass-victoria-metrics:8428/api/v1/write
+  victoriaMetricsRemoteWriteUrl: &vmRemoteWriteUrl http://kompass-victoria-metrics-cluster-vminsert:8480/insert/0:0/prometheus/api/v1/write
   # -- (string) The default storage class name for persistent volumes.
   # Set to a specific storage class name or leave as null (~) to use cluster default.
   # This value is referenced by the YAML anchor '&storageClassName'.
@@ -127,6 +127,86 @@ victoriaMetrics:
       memory.allowedPercent: 60
       dedup.minScrapeInterval: 30s
       enableTCP6: true
+
+victoriaMetricsCluster:
+  enabled: false
+  serviceAccount:
+    name: kompass-victoria-metrics-cluster
+  vmselect:
+    fullnameOverride: kompass-victoria-metrics-cluster-vmselect
+    extraArgs:
+      replicationFactor: 3
+      search.maxStalenessInterval: 5m
+      search.minStalenessInterval: 30s
+      search.maxQueryDuration: 2m
+      search.disableCache: true
+      memory.allowedPercent: 60
+      dedup.minScrapeInterval: 30s
+      enableTCP6: true
+    podDisruptionBudget:
+      enabled: true
+      minAvailable: 1
+    #    maxUnavailable: 1 # May be too risky
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway # Use to allow rolling-updates
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: DoNotSchedule
+    replicaCount: 3
+    resources:
+      requests:
+        memory: "256Mi" # I'm guessing that value
+        cpu: "0.5"
+  vminsert:
+    fullnameOverride: kompass-victoria-metrics-cluster-vminsert
+    extraArgs:
+      replicationFactor: 3
+      memory.allowedPercent: 60
+      enableTCP6: true
+    podDisruptionBudget:
+      enabled: true
+      minAvailable: 1
+    #    maxUnavailable: 1 # May be too risky
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway # Use to allow rolling-updates
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: DoNotSchedule
+    replicaCount: 3
+    resources:
+      requests:
+        memory: "256Mi" # I'm guessing that value
+        cpu: "0.5"
+  vmstorage:
+    fullnameOverride: kompass-victoria-metrics-cluster-vmstorage
+    extraArgs:
+      retentionPeriod: 1w
+      memory.allowedPercent: 60
+      dedup.minScrapeInterval: 30s
+      enableTCP6: true
+    persistentVolume:
+      storageClassName: *storageClassName
+      size: 30Gi
+    podDisruptionBudget:
+      enabled: true
+      minAvailable: 1
+    #    maxUnavailable: 1 # May be too risky
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: DoNotSchedule # Force multi zone
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: DoNotSchedule
+    replicaCount: 3
+    resources:
+      requests:
+        memory: "3Gi"
+        cpu: "0.5"
 
 victoriaMetricsAgent:
   fullnameOverride: kompass-victoria-metrics-agent

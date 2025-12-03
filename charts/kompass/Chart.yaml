@@ -25,6 +25,11 @@ dependencies:
     condition: victoriaMetrics.enabled
     repository: https://victoriametrics.github.io/helm-charts
     version: 0.14.3
+  - name: victoria-metrics-cluster
+    alias: victoriaMetricsCluster
+    condition: victoriaMetricsCluster.enabled
+    repository: https://victoriametrics.github.io/helm-charts
+    version: 0.30.1
   - name: victoria-metrics-agent
     alias: victoriaMetricsAgent
     condition: victoriaMetrics.enabled
