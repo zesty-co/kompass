@@ -1,0 +1,45 @@
+{{- if .Values.victoriaMetricsAuth.enabled }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .Values.victoriaMetricsAuth.secretName }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kompass.labels" . | nindent 4 }}
+type: Opaque
+stringData:
+  auth.yml: |
+    unauthorized_user:
+      url_map:
+        # Write (Prometheus remote_write) - must come first for specific matching
+        - src_paths:
+            - "/api/v1/write"
+          url_prefix:
+            - {{ include "kompass.victoria-metrics.insert.endpoint" . }}
+
+        # VMUI - catch-all for VictoriaMetrics UI
+        - src_paths:
+            - "/vmui"
+          url_prefix:
+            - {{ include "kompass.victoria-metrics.vmui.endpoint" . }}
+
+        {{- if not .Values.victoriaMetricsAuth.useSingle }}
+        # VMUI - Prometheus endpoint handling
+        - src_paths:
+            - "/prometheus/.*"
+          drop_src_path_prefix_parts: 1
+          url_prefix:
+            - {{ include "kompass.victoria-metrics.select.endpoint" . }}
+        {{- end }}
+
+        # Read (everything else) - catch-all for all other API endpoints
+        - src_paths:
+            - ".*"
+          url_prefix:
+            - {{ include "kompass.victoria-metrics.select.endpoint" . }}
+
+      # Optional hardening / tuning
+      retry_status_codes: [500, 502, 503]
+      # vmauth defaults to least_loaded policy; override with first_available if needed
+      # load_balancing_policy: least_loaded
+{{- end }}
