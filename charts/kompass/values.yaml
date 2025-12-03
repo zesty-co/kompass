@@ -129,13 +129,13 @@ victoriaMetrics:
       enableTCP6: true
 
 victoriaMetricsCluster:
-  enabled: false
+  enabled: true
   serviceAccount:
     name: kompass-victoria-metrics-cluster
   vmselect:
     fullnameOverride: kompass-victoria-metrics-cluster-vmselect
     extraArgs:
-      replicationFactor: 3
+      replicationFactor: 2
       search.maxStalenessInterval: 5m
       search.minStalenessInterval: 30s
       search.maxQueryDuration: 2m
@@ -146,15 +146,34 @@ victoriaMetricsCluster:
     podDisruptionBudget:
       enabled: true
       minAvailable: 1
-    #    maxUnavailable: 1 # May be too risky
-    topologySpreadConstraints:
-      - maxSkew: 1
-        topologyKey: topology.kubernetes.io/zone
-        whenUnsatisfiable: ScheduleAnyway # Use to allow rolling-updates
-      - maxSkew: 1
-        topologyKey: kubernetes.io/hostname
-        whenUnsatisfiable: DoNotSchedule
-    replicaCount: 3
+    affinity:
+      podAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                    - vmstorage
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - victoriaMetricsCluster
+            topologyKey: topology.kubernetes.io/zone
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                    - vmselect
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - victoriaMetricsCluster
+            topologyKey: kubernetes.io/hostname
+    replicaCount: 2
     resources:
       requests:
         memory: "256Mi" # I'm guessing that value
@@ -162,21 +181,40 @@ victoriaMetricsCluster:
   vminsert:
     fullnameOverride: kompass-victoria-metrics-cluster-vminsert
     extraArgs:
-      replicationFactor: 3
+      replicationFactor: 2
       memory.allowedPercent: 60
       enableTCP6: true
     podDisruptionBudget:
       enabled: true
       minAvailable: 1
-    #    maxUnavailable: 1 # May be too risky
-    topologySpreadConstraints:
-      - maxSkew: 1
-        topologyKey: topology.kubernetes.io/zone
-        whenUnsatisfiable: ScheduleAnyway # Use to allow rolling-updates
-      - maxSkew: 1
-        topologyKey: kubernetes.io/hostname
-        whenUnsatisfiable: DoNotSchedule
-    replicaCount: 3
+    affinity:
+      podAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                    - vmstorage
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - victoriaMetricsCluster
+            topologyKey: topology.kubernetes.io/zone
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                    - vminsert
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - victoriaMetricsCluster
+            topologyKey: kubernetes.io/hostname
+    replicaCount: 2
     resources:
       requests:
         memory: "256Mi" # I'm guessing that value
@@ -194,15 +232,34 @@ victoriaMetricsCluster:
     podDisruptionBudget:
       enabled: true
       minAvailable: 1
-    #    maxUnavailable: 1 # May be too risky
-    topologySpreadConstraints:
-      - maxSkew: 1
-        topologyKey: topology.kubernetes.io/zone
-        whenUnsatisfiable: DoNotSchedule # Force multi zone
-      - maxSkew: 1
-        topologyKey: kubernetes.io/hostname
-        whenUnsatisfiable: DoNotSchedule
-    replicaCount: 3
+    affinity:
+      podAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                    - vmstorage
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - victoriaMetricsCluster
+            topologyKey: topology.kubernetes.io/zone
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                    - vmstorage
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - victoriaMetricsCluster
+            topologyKey: kubernetes.io/hostname
+    replicaCount: 2
     resources:
       requests:
         memory: "3Gi"
