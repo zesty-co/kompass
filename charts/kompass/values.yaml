@@ -8,12 +8,16 @@ global:
   victoriaMetricsNameOverride: &vmName kompass-victoria-metrics
   # -- (string) The internal cluster URL for VictoriaMetrics query access.
   # This value is referenced by the YAML anchor '&vmRemoteUrl'.
-  # It typically depends on 'victoriaMetricsNameOverride'.
-  victoriaMetricsRemoteUrl: &vmRemoteUrl http://kompass-victoria-metrics:8428
+  # It typically depends on 'victoriaMetricsCluster.vmselect.fullnameOverride'.
+  victoriaMetricsRemoteUrl: &vmRemoteUrl http://kompass-victoria-metrics-cluster-vmselect:8481/select/0:0/prometheus
   # -- (string) The internal cluster URL for VictoriaMetrics remote write endpoint.
   # This value is referenced by the YAML anchor '&vmRemoteWriteUrl'.
-  # It typically depends on 'victoriaMetricsNameOverride'.
-  victoriaMetricsRemoteWriteUrl: &vmRemoteWriteUrl http://kompass-victoria-metrics-cluster-vminsert:8480/insert/0:0/prometheus/api/v1/write
+  # It typically depends on 'victoriaMetricsCluster.vminsert.fullnameOverride'.
+  victoriaMetricsRemoteWriteUrl: &vmRemoteWriteUrl http://kompass-victoria-metrics-cluster-vminsert:8480/insert/0:0/prometheus
+  # -- (string) The internal cluster URL for VictoriaMetrics remote write endpoint.
+  # This value is referenced by the YAML anchor '&vmRemoteWritePrometheusUrl'.
+  # It typically depends on 'victoriaMetricsCluster.vminsert.fullnameOverride'.
+  victoriaMetricsRemotePrometheusWriteUrl: &vmRemoteWritePrometheusUrl http://kompass-victoria-metrics-cluster-vminsert:8480/insert/0:0/prometheus/api/v1/write
   # -- (string) The default storage class name for persistent volumes.
   # Set to a specific storage class name or leave as null (~) to use cluster default.
   # This value is referenced by the YAML anchor '&storageClassName'.
@@ -276,10 +280,11 @@ victoriaMetricsAgent:
     type: ClusterIP
   configMap: kompass-vmagent-config
   extraArgs:
+    promscrape.configCheckInterval: 1m
     promscrape.maxScrapeSize: 128MB
     enableTCP6: true
   remoteWrite:
-    - url: *vmRemoteWriteUrl
+    - url: *vmRemoteWritePrometheusUrl
 
 victoriaMetricsAlert:
   fullnameOverride: kompass-victoria-metrics-alert
@@ -288,7 +293,7 @@ victoriaMetricsAlert:
       url: *vmRemoteUrl
     remote:
       write:
-        url: *vmRemoteUrl
+        url: *vmRemoteWriteUrl
       read:
         url: *vmRemoteUrl
     extraArgs:
