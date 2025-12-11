@@ -178,7 +178,7 @@ victoriaMetricsCluster:
     replicaCount: 2
     resources:
       requests:
-        memory: "256Mi" # I'm guessing that value
+        memory: "512Mi"
         cpu: "0.5"
   vminsert:
     fullnameOverride: kompass-victoria-metrics-cluster-vminsert
@@ -219,7 +219,7 @@ victoriaMetricsCluster:
     replicaCount: 2
     resources:
       requests:
-        memory: "256Mi" # I'm guessing that value
+        memory: "512Mi"
         cpu: "0.5"
   vmstorage:
     fullnameOverride: kompass-victoria-metrics-cluster-vmstorage
