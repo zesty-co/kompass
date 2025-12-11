@@ -108,11 +108,36 @@ data:
             regex: '(kompass_.*)'
             action: keep
 
+      {{- if .Values.victoriaMetrics.enabled }}
       # for collecting VM metrics
       - job_name: 'vmetrics'
         scrape_interval: {{ include "kompass.scrapeInterval" . }}
         static_configs:
           - targets: ['{{ .Values.victoriaMetrics.server.fullnameOverride }}.{{ .Release.Namespace }}:8428']
+      {{- end }}
+
+      {{- if .Values.victoriaMetricsCluster.enabled }}
+      - job_name: 'vmselect'
+        scrape_interval: {{ include "kompass.scrapeInterval" . }}
+        static_configs:
+          - targets: ['http://{{ .Values.victoriaMetricsCluster.vmselect.fullnameOverride }}.{{ .Release.Namespace }}:8481']
+      - job_name: 'vminsert'
+        scrape_interval: {{ include "kompass.scrapeInterval" . }}
+        static_configs:
+          - targets: ['http://{{ .Values.victoriaMetricsCluster.vminsert.fullnameOverride }}.{{ .Release.Namespace }}:8480']
+      - job_name: 'vmstorage'
+        scrape_interval: {{ include "kompass.scrapeInterval" . }}
+        static_configs:
+          - targets: ['http://{{ .Values.victoriaMetricsCluster.vmstorage.fullnameOverride }}.{{ .Release.Namespace }}:8482']
+      {{- end }}
+
+      {{- if .Values.victoriaMetricsAuth.enabled }}
+      # for collecting VM metrics
+      - job_name: 'vmauth'
+        scrape_interval: {{ include "kompass.scrapeInterval" . }}
+        static_configs:
+          - targets: ['{{ .Values.victoriaMetricsAuth.fullnameOverride }}.{{ .Release.Namespace }}:8427']
+      {{- end }}
 
       {{- if (index .Values "kompass-insights").recommendations.enabled }}
       # for collecting recommendations
