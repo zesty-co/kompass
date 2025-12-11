@@ -3,13 +3,13 @@ name: kompass
 description: Zesty Kompass Helm Charts
 icon: https://zesty.co/wp-content/uploads/2024/05/favicon-150x150.png
 type: application
-version: 0.1.83
+version: 0.1.84
 appVersion: "1.16.0"
 dependencies:
   # zesty products
   - name: kompass-insights
     repository: "https://zesty-co.github.io/kompass-insights"
-    version: "2.1.72"
+    version: "2.1.73"
   - name: pod-rightsizing
     alias: rightsizing
     repository: "https://zesty-co.github.io/kompass-pod-rightsizing"
