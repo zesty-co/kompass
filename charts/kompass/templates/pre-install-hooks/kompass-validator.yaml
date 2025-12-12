@@ -158,50 +158,6 @@ spec:
           # Print empty line for better readability
           echo ""
 
-          #############################################
-          # Validate kube-state-metrics installation  #
-          #############################################
-
-          KSM_ENABLED="{{ index .Values "kubeStateMetrics" "enabled" }}"
-
-          if [ "$KSM_ENABLED" = "true" ]; then
-            echo "Validating kube-state-metrics installation..."
-            KSM_FORCE="{{ index .Values "kubeStateMetrics" "force" }}"
-      
-            if [ "$KSM_FORCE" = "true" ]; then
-              echo "⚠️ kubeStateMetrics.force is set to true — kubeStateMetrics will be installed even if it already exists"
-              echo "✅ Skipping kubeStateMetrics validation"
-            else
-              # Find the namespace where kubeStateMetrics is installed
-              KSM_NAMESPACE=$(kubectl get deployment --all-namespaces -l app.kubernetes.io/name=kube-state-metrics -o jsonpath='{.items[0].metadata.namespace}')
-              if [ -z "$KSM_NAMESPACE" ]; then
-                echo "✅ kube-state-metrics deployment not found in any namespace - it will be installed as part of Zesty Kompass Pod-RightSizing"
-              else
-                echo "✅ kube-state-metrics deployment found in namespace: $KSM_NAMESPACE"
-                KSM_EXISTS=true
-              fi
-              
-              if [ -n "$KSM_EXISTS" ] && [ "$KSM_NAMESPACE" != "{{ .Release.Namespace }}" ]; then
-                # Retrieve the kube-state-metrics service details
-                KSM_SVC=$(kubectl get svc -n $KSM_NAMESPACE -l app.kubernetes.io/name=kube-state-metrics -o jsonpath='{.items[0].metadata.name}')
-                if [ -n "$KSM_SVC" ]; then
-                    echo "✅ kubeStateMetrics service found: $KSM_SVC in namespace: $KSM_NAMESPACE"
-                    echo ""
-                    echo "⚠️ Please add to the values file kubeStateMetrics.enabled: false AND kubeStateMetrics.serviceName: $KSM_SVC OR use kubeStateMetrics.force: true"
-                    exit 1
-                else
-                    echo "⚠️ kubeStateMetrics service not found in namespace: $KSM_NAMESPACE"
-                    exit 1
-                fi
-              fi
-            fi
-          else
-            KSM_SVC_NAME="{{ index .Values "kubeStateMetrics" "serviceName" | default "" }}"
-            echo "⚠️ kubeStateMetrics.enabled is set to false — kubeStateMetrics will not be installed, going to use the existing service: $KSM_SVC_NAME"
-            echo "✅ Skipping kubeStateMetrics validation"
-          fi
-          echo ""
-
           #########################################
           # Validate cert-manager installation  #
           #########################################
