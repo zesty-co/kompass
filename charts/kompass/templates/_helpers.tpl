@@ -42,12 +42,14 @@ Create chart name and version as used by the chart label.
   {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
-{{- define "kube-state-metrics.serviceName" -}}
-  {{- if .Values.kubeStateMetrics.enabled }}
-    {{- .Values.kubeStateMetrics.fullnameOverride | trunc 63 | trimSuffix "-" }}
-  {{- else }}
-    {{- .Values.kubeStateMetrics.serviceName | trunc 63 | trimSuffix "-" }}
-  {{- end }}
+{{- define "kompass.kube-state-metrics.selectorLabels" -}}
+  {{- $ctx := dict "Values" .Values.kubeStateMetrics "Chart" .Chart "Release" .Release -}}
+  {{- include "kube-state-metrics.selectorLabels" $ctx | trimPrefix " " -}}
+{{- end -}}
+
+{{- define "kompass.kube-state-metrics.serviceName" -}}
+  {{- $ctx := dict "Values" .Values.kubeStateMetrics "Chart" .Chart "Release" .Release -}}
+  {{- include "kube-state-metrics.fullname" $ctx -}}
 {{- end }}
 
 {{- define "kompass.labels" -}}
