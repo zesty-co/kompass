@@ -33,9 +33,9 @@ data:
       statefulsets:
       - app.kubernetes.io/name: victoriaMetrics
     kube_state_metrics:
-        enabled: {{ .Values.kubeStateMetrics.enabled }}
+        enabled: true
         deployments:
-        - app.kubernetes.io/name: {{ .Values.kubeStateMetrics.nameOverride | default "kube-state-metrics" | quote }}
+        - {{ include "kompass.kube-state-metrics.selectorLabels" . | trim | nindent 10 }}
         statefulsets: []
     grafana:
         enabled: {{ .Values.grafana.enabled }}

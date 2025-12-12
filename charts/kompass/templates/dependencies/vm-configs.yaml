@@ -133,7 +133,7 @@ data:
           - role: service
         relabel_configs:
           - source_labels: [__meta_kubernetes_service_name]
-            regex: {{ include "kube-state-metrics.serviceName" . }}
+            regex: {{ include "kompass.kube-state-metrics.serviceName" . }}
             action: keep
         metric_relabel_configs:
           - source_labels: [__name__]
