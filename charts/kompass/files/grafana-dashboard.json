@@ -216,7 +216,7 @@
           {
             "matcher": {
               "id": "byFrameRefID",
-              "options": "MAX Strategy"
+              "options": "MAX Policy"
             },
             "properties": [
               {
@@ -239,7 +239,7 @@
           {
             "matcher": {
               "id": "byFrameRefID",
-              "options": "MAX Strategy"
+              "options": "MAX Policy"
             },
             "properties": []
           }
@@ -311,12 +311,12 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "avg(kompass_rs_recommendations{workload_name=\"$workload_name\", container=\"$container\", namespace=\"$namespace\", resource_type=\"cpu\", mode=\"variants\",resource_source=\"desired\", strategy=\"conservative\"})[1d] * (\"$Strategy\" == 'Conservative' or \"$Strategy\" == 'All')",
+          "expr": "avg(kompass_rs_recommendations{workload_name=\"$workload_name\", container=\"$container\", namespace=\"$namespace\", resource_type=\"cpu\", mode=\"variants\",resource_source=\"desired\", source_apc=\"conservative-policy\"})[1d] * (\"$policy\" == 'conservative' or \"$policy\" == 'all')",
           "hide": false,
           "instant": false,
-          "legendFormat": "Conservative Strategy: {{container}}",
+          "legendFormat": "Conservative Policy: {{container}}",
           "range": true,
-          "refId": "Conservative Strategy"
+          "refId": "Conservative Policy"
         },
         {
           "datasource": {
@@ -324,12 +324,38 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "avg(kompass_rs_recommendations{workload_name=\"$workload_name\", container=\"$container\", namespace=\"$namespace\", resource_type=\"cpu\", mode=\"variants\",resource_source=\"desired\", strategy=\"default\"})[1d] * (\"$Strategy\" == 'Default' or \"$Strategy\" == 'All')",
+          "expr": "avg(kompass_rs_recommendations{workload_name=\"$workload_name\", container=\"$container\", namespace=\"$namespace\", resource_type=\"cpu\", mode=\"variants\",resource_source=\"desired\", source_apc=\"default-policy\"})[1d] * (\"$policy\" == 'default' or \"$policy\" == 'all')",
           "hide": false,
           "instant": false,
-          "legendFormat": "Default Strategy: {{container}}",
+          "legendFormat": "Default Policy: {{container}}",
           "range": true,
-          "refId": "Default Strategy"
+          "refId": "Default Policy"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "VictoriaMetrics"
+          },
+          "editorMode": "code",
+          "expr": "avg(kompass_rs_recommendations{workload_name=\"$workload_name\", container=\"$container\", namespace=\"$namespace\", resource_type=\"cpu\", mode=\"variants\",resource_source=\"desired\", source_apc=\"cost-focused-policy\"})[1d] * (\"$policy\" == 'cost-focused' or \"$policy\" == 'all')",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "Default Policy: {{container}}",
+          "range": true,
+          "refId": "Cost Focused Policy"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "VictoriaMetrics"
+          },
+          "editorMode": "code",
+          "expr": "avg(kompass_rs_recommendations{workload_name=\"$workload_name\", container=\"$container\", namespace=\"$namespace\", resource_type=\"cpu\", mode=\"variants\",resource_source=\"desired\", source_apc=\"stability-focused-policy\"})[1d] * (\"$policy\" == 'stability-focused' or \"$policy\" == 'all')",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "Default Policy: {{container}}",
+          "range": true,
+          "refId": "Stability Focused Policy"
         }
       ],
       "title": "Cpu Usage",
@@ -560,12 +586,12 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "avg(kompass_rs_recommendations{workload_name=\"$workload_name\", container=\"$container\", namespace=\"$namespace\", resource_type=\"memory\", mode=\"variants\",resource_source=\"desired\", strategy=\"conservative\"})[1d] / 1024 / 1024 * (\"$Strategy\" == 'Conservative' or \"$Strategy\" == 'All')",
+          "expr": "avg(kompass_rs_recommendations{workload_name=\"$workload_name\", container=\"$container\", namespace=\"$namespace\", resource_type=\"memory\", mode=\"variants\",resource_source=\"desired\", source_apc=\"conservative-policy\"})[1d] / 1024 / 1024 * (\"$policy\" == 'conservative' or \"$policy\" == 'all')",
           "hide": false,
           "instant": false,
-          "legendFormat": "Conservative Strategy: {{container}}",
+          "legendFormat": "Conservative Policy: {{container}}",
           "range": true,
-          "refId": "Conservative Strategy"
+          "refId": "Conservative Policy"
         },
         {
           "datasource": {
@@ -573,12 +599,38 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "avg(kompass_rs_recommendations{workload_name=\"$workload_name\", container=\"$container\", namespace=\"$namespace\", resource_type=\"memory\", mode=\"variants\",resource_source=\"desired\", strategy=\"default\"})[1d] / 1024 / 1024 * (\"$Strategy\" == 'Default' or \"$Strategy\" == 'All')",
+          "expr": "avg(kompass_rs_recommendations{workload_name=\"$workload_name\", container=\"$container\", namespace=\"$namespace\", resource_type=\"memory\", mode=\"variants\",resource_source=\"desired\", source_apc=\"default-policy\"})[1d] / 1024 / 1024 * (\"$policy\" == 'default' or \"$policy\" == 'all')",
           "hide": false,
           "instant": false,
-          "legendFormat": "Default Strategy: {{container}}",
+          "legendFormat": "Default Policy: {{container}}",
           "range": true,
-          "refId": "Default Strategy"
+          "refId": "Default Policy"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "VictoriaMetrics"
+          },
+          "editorMode": "code",
+          "expr": "avg(kompass_rs_recommendations{workload_name=\"$workload_name\", container=\"$container\", namespace=\"$namespace\", resource_type=\"memory\", mode=\"variants\",resource_source=\"desired\", source_apc=\"cost-focused-policy\"})[1d] / 1024 / 1024 * (\"$policy\" == 'cost-focused' or \"$policy\" == 'all')",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "Default Policy: {{container}}",
+          "range": true,
+          "refId": "Cost Focused Policy"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "VictoriaMetrics"
+          },
+          "editorMode": "code",
+          "expr": "avg(kompass_rs_recommendations{workload_name=\"$workload_name\", container=\"$container\", namespace=\"$namespace\", resource_type=\"memory\", mode=\"variants\",resource_source=\"desired\", source_apc=\"stability-focused-policy\"})[1d] / 1024 / 1024 * (\"$policy\" == 'stability-focused' or \"$policy\" == 'all')",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "Default Policy: {{container}}",
+          "range": true,
+          "refId": "Stability Focused Policy"
         }
       ],
       "title": "Memory Usage",
@@ -1205,35 +1257,40 @@
           "text": "Conservative",
           "value": "Conservative"
         },
-        "name": "Strategy",
+        "name": "policy",
         "options": [
           {
             "selected": false,
-            "text": "Default",
-            "value": "Default"
+            "text": "default",
+            "value": "default"
           },
           {
             "selected": false,
-            "text": "Aggressive",
-            "value": "Aggressive"
+            "text": "conservative",
+            "value": "conservative"
+          },
+          {
+            "selected": false,
+            "text": "cost-focused",
+            "value": "cost-focused"
+          },
+          {
+            "selected": false,
+            "text": "stability-focused",
+            "value": "stability-focused"
           },
           {
             "selected": true,
-            "text": "Conservative",
-            "value": "Conservative"
+            "text": "all",
+            "value": "all"
           },
           {
             "selected": false,
-            "text": "All",
-            "value": "All"
-          },
-          {
-            "selected": false,
-            "text": "None",
-            "value": "None"
+            "text": "none",
+            "value": "none"
           }
         ],
-        "query": "Default, Conservative, All, None",
+        "query": "default, conservative, cost-focused, stability-focused, all, none",
         "type": "custom"
       },
       {
