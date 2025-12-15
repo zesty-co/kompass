@@ -3,6 +3,58 @@ entries:
   kompass:
   - apiVersion: v2
     appVersion: 1.16.0
+    created: "2025-12-15T12:16:08.408061732Z"
+    dependencies:
+    - name: kompass-insights
+      repository: https://zesty-co.github.io/kompass-insights
+      version: 2.1.74
+    - alias: rightsizing
+      name: pod-rightsizing
+      repository: https://zesty-co.github.io/kompass-pod-rightsizing
+      version: v0.3.2
+    - alias: disk
+      condition: disk.enabled
+      name: kompass-storage
+      repository: https://zesty-co.github.io/zesty-helm
+      version: 1.7.4
+    - alias: victoriaMetrics
+      condition: victoriaMetrics.enabled
+      name: victoria-metrics-single
+      repository: https://victoriametrics.github.io/helm-charts
+      version: 0.14.3
+    - alias: victoriaMetricsAgent
+      condition: victoriaMetrics.enabled
+      name: victoria-metrics-agent
+      repository: https://victoriametrics.github.io/helm-charts
+      version: 0.19.0
+    - alias: victoriaMetricsAlert
+      condition: victoriaMetrics.enabled
+      name: victoria-metrics-alert
+      repository: https://victoriametrics.github.io/helm-charts
+      version: 0.18.0
+    - alias: kubeStateMetrics
+      condition: kubeStateMetrics.enabled
+      name: kube-state-metrics
+      repository: https://prometheus-community.github.io/helm-charts
+      version: 6.3.0
+    - condition: cert-manager.enabled
+      name: cert-manager
+      repository: https://charts.jetstack.io
+      version: 1.19.1
+    - condition: grafana.enabled
+      name: grafana
+      repository: https://grafana.github.io/helm-charts
+      version: 8.10.4
+    description: Zesty Kompass Helm Charts
+    digest: d5b8f11732db160225c160f9f0578746630d8c5b1ec41eaa7981dd55b26d0b5e
+    icon: https://zesty.co/wp-content/uploads/2024/05/favicon-150x150.png
+    name: kompass
+    type: application
+    urls:
+    - https://github.com/zesty-co/kompass/releases/download/kompass-0.1.85/kompass-0.1.85.tgz
+    version: 0.1.85
+  - apiVersion: v2
+    appVersion: 1.16.0
     created: "2025-12-11T12:42:19.854090342Z"
     dependencies:
     - name: kompass-insights
@@ -4356,4 +4408,4 @@ entries:
     urls:
     - https://github.com/zesty-co/kompass/releases/download/kompass-0.1.1/kompass-0.1.1.tgz
     version: 0.1.1
-generated: "2025-12-11T12:42:19.85443072Z"
+generated: "2025-12-15T12:16:08.40836737Z"
