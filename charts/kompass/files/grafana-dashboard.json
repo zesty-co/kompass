@@ -311,7 +311,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "avg(kompass_rs_recommendations{workload_name=\"$workload_name\", container=\"$container\", namespace=\"$namespace\", resource_type=\"cpu\", mode=\"variants\",resource_source=\"desired\", source_apc=\"conservative-policy\"})[1d] * (\"$policy\" == 'conservative' or \"$policy\" == 'all')",
+          "expr": "avg(kompass_rs_recommendations{workload_name=\"$workload_name\", container=\"$container\", namespace=\"$namespace\", resource_type=\"cpu\", mode=\"variants\",resource_source=\"desired\", source_policy=\"conservative-policy\"})[1d] * (\"$policy\" == 'conservative' or \"$policy\" == 'all')",
           "hide": false,
           "instant": false,
           "legendFormat": "Conservative Policy: {{container}}",
@@ -324,7 +324,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "avg(kompass_rs_recommendations{workload_name=\"$workload_name\", container=\"$container\", namespace=\"$namespace\", resource_type=\"cpu\", mode=\"variants\",resource_source=\"desired\", source_apc=\"default-policy\"})[1d] * (\"$policy\" == 'default' or \"$policy\" == 'all')",
+          "expr": "avg(kompass_rs_recommendations{workload_name=\"$workload_name\", container=\"$container\", namespace=\"$namespace\", resource_type=\"cpu\", mode=\"variants\",resource_source=\"desired\", source_policy=\"default-policy\"})[1d] * (\"$policy\" == 'default' or \"$policy\" == 'all')",
           "hide": false,
           "instant": false,
           "legendFormat": "Default Policy: {{container}}",
@@ -337,7 +337,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "avg(kompass_rs_recommendations{workload_name=\"$workload_name\", container=\"$container\", namespace=\"$namespace\", resource_type=\"cpu\", mode=\"variants\",resource_source=\"desired\", source_apc=\"cost-focused-policy\"})[1d] * (\"$policy\" == 'cost-focused' or \"$policy\" == 'all')",
+          "expr": "avg(kompass_rs_recommendations{workload_name=\"$workload_name\", container=\"$container\", namespace=\"$namespace\", resource_type=\"cpu\", mode=\"variants\",resource_source=\"desired\", source_policy=\"cost-focused-policy\"})[1d] * (\"$policy\" == 'cost-focused' or \"$policy\" == 'all')",
           "hide": false,
           "instant": false,
           "legendFormat": "Default Policy: {{container}}",
@@ -350,7 +350,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "avg(kompass_rs_recommendations{workload_name=\"$workload_name\", container=\"$container\", namespace=\"$namespace\", resource_type=\"cpu\", mode=\"variants\",resource_source=\"desired\", source_apc=\"stability-focused-policy\"})[1d] * (\"$policy\" == 'stability-focused' or \"$policy\" == 'all')",
+          "expr": "avg(kompass_rs_recommendations{workload_name=\"$workload_name\", container=\"$container\", namespace=\"$namespace\", resource_type=\"cpu\", mode=\"variants\",resource_source=\"desired\", source_policy=\"stability-focused-policy\"})[1d] * (\"$policy\" == 'stability-focused' or \"$policy\" == 'all')",
           "hide": false,
           "instant": false,
           "legendFormat": "Default Policy: {{container}}",
@@ -586,7 +586,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "avg(kompass_rs_recommendations{workload_name=\"$workload_name\", container=\"$container\", namespace=\"$namespace\", resource_type=\"memory\", mode=\"variants\",resource_source=\"desired\", source_apc=\"conservative-policy\"})[1d] / 1024 / 1024 * (\"$policy\" == 'conservative' or \"$policy\" == 'all')",
+          "expr": "avg(kompass_rs_recommendations{workload_name=\"$workload_name\", container=\"$container\", namespace=\"$namespace\", resource_type=\"memory\", mode=\"variants\",resource_source=\"desired\", source_policy=\"conservative-policy\"})[1d] / 1024 / 1024 * (\"$policy\" == 'conservative' or \"$policy\" == 'all')",
           "hide": false,
           "instant": false,
           "legendFormat": "Conservative Policy: {{container}}",
@@ -599,7 +599,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "avg(kompass_rs_recommendations{workload_name=\"$workload_name\", container=\"$container\", namespace=\"$namespace\", resource_type=\"memory\", mode=\"variants\",resource_source=\"desired\", source_apc=\"default-policy\"})[1d] / 1024 / 1024 * (\"$policy\" == 'default' or \"$policy\" == 'all')",
+          "expr": "avg(kompass_rs_recommendations{workload_name=\"$workload_name\", container=\"$container\", namespace=\"$namespace\", resource_type=\"memory\", mode=\"variants\",resource_source=\"desired\", source_policy=\"default-policy\"})[1d] / 1024 / 1024 * (\"$policy\" == 'default' or \"$policy\" == 'all')",
           "hide": false,
           "instant": false,
           "legendFormat": "Default Policy: {{container}}",
@@ -612,7 +612,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "avg(kompass_rs_recommendations{workload_name=\"$workload_name\", container=\"$container\", namespace=\"$namespace\", resource_type=\"memory\", mode=\"variants\",resource_source=\"desired\", source_apc=\"cost-focused-policy\"})[1d] / 1024 / 1024 * (\"$policy\" == 'cost-focused' or \"$policy\" == 'all')",
+          "expr": "avg(kompass_rs_recommendations{workload_name=\"$workload_name\", container=\"$container\", namespace=\"$namespace\", resource_type=\"memory\", mode=\"variants\",resource_source=\"desired\", source_policy=\"cost-focused-policy\"})[1d] / 1024 / 1024 * (\"$policy\" == 'cost-focused' or \"$policy\" == 'all')",
           "hide": false,
           "instant": false,
           "legendFormat": "Default Policy: {{container}}",
@@ -625,7 +625,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "avg(kompass_rs_recommendations{workload_name=\"$workload_name\", container=\"$container\", namespace=\"$namespace\", resource_type=\"memory\", mode=\"variants\",resource_source=\"desired\", source_apc=\"stability-focused-policy\"})[1d] / 1024 / 1024 * (\"$policy\" == 'stability-focused' or \"$policy\" == 'all')",
+          "expr": "avg(kompass_rs_recommendations{workload_name=\"$workload_name\", container=\"$container\", namespace=\"$namespace\", resource_type=\"memory\", mode=\"variants\",resource_source=\"desired\", source_policy=\"stability-focused-policy\"})[1d] / 1024 / 1024 * (\"$policy\" == 'stability-focused' or \"$policy\" == 'all')",
           "hide": false,
           "instant": false,
           "legendFormat": "Default Policy: {{container}}",
