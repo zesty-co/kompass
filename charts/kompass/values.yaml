@@ -31,20 +31,6 @@ global:
   # -- (string) global configmap name
   globalConfigName: global-config
 
-# -- (map) Configuration for sending CX logs.
-cxLogging: &cxLogging
-  # -- (bool) Enable or disable sending CX logs to Zesty.
-  enabled: false
-  # -- (string) REQUIRED if cxLogging.enabled is true: A descriptive name for your cluster.
-  # This name will appear in the Zesty platform associated with the logs.
-  clusterName: ""
-  # -- (string) REQUIRED if cxLogging.enabled is true: The API Key for CX logging.
-  # Provided during the onboarding process specifically for CX logging.
-  apiKey: ""
-  # -- (string) logUrl: The URL endpoint for sending logs to Coralogix.
-  # -- (string) metricsUrl: The URL endpoint for sending metrics to Coralogix.
-  # -- (string) timeDeltaUrl: The URL endpoint for time synchronization with Coralogix.
-
 validator:
   image:
     registry: 672188301118.dkr.ecr.eu-west-1.amazonaws.com/docker-hub/bitnami
@@ -87,12 +73,38 @@ kompass-insights:
     # Provided during the onboarding process to prevent confused deputy problems.
     zestyExternalID: ~
 
-  cxLogging: *cxLogging
+  # -- (map) Configuration for sending CX logs.
+  cxLogging:
+    # -- (bool) Enable or disable sending CX logs to Zesty.
+    enabled: false
+    # -- (string) REQUIRED if cxLogging.enabled is true: A descriptive name for your cluster.
+    # This name will appear in the Zesty platform associated with the logs.
+    clusterName: ""
+    # -- (string) REQUIRED if cxLogging.enabled is true: The API Key for CX logging.
+    # Provided during the onboarding process specifically for CX logging.
+    apiKey: ""
+    # -- (string) domain: The domain of the Coralogix ingress endpoint.
+    # -- (string) logUrl: The URL endpoint for sending logs to Coralogix.
+    # -- (string) timeDeltaUrl: The URL endpoint for time synchronization with Coralogix.
+    # -- (string) ingressLogsUrl: The URL endpoint for Coralogix ingress logs.
+    # -- (string) ingressUrl: The URL endpoint for Coralogix ingress.
+    # -- (string) otelEndpoint: The URL endpoint for Coralogix OpenTelemetry.
 
 rightsizing:
   # -- (bool) Enable or disable the Zesty rightsizing feature components.
   enabled: false
-  cxLogging: *cxLogging
+  # -- (map) Configuration for sending CX logs.
+  cxLogging:
+    # -- (bool) Enable or disable sending CX logs to Zesty.
+    enabled: false
+    # -- (string) REQUIRED if cxLogging.enabled is true: A descriptive name for your cluster.
+    # This name will appear in the Zesty platform associated with the logs.
+    clusterName: ""
+    # -- (string) REQUIRED if cxLogging.enabled is true: The API Key for CX logging.
+    # Provided during the onboarding process specifically for CX logging.
+    apiKey: ""
+    # -- (string) logUrl: The URL endpoint for sending logs to Coralogix.
+    # -- (string) timeDeltaUrl: The URL endpoint for time synchronization with Coralogix.
 
 disk:
   # -- (bool) Enable or disable the Zesty disk optimization feature components.
