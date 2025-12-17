@@ -43,13 +43,23 @@ Create chart name and version as used by the chart label.
 {{- end }}
 
 {{- define "kompass.kube-state-metrics.selectorLabels" -}}
+  {{- if and .Values.kubeStateMetrics.enabled -}}
   {{- $ctx := dict "Values" .Values.kubeStateMetrics "Chart" .Chart "Release" .Release -}}
   {{- include "kube-state-metrics.selectorLabels" $ctx | trimPrefix " " -}}
+  {{- end -}}
 {{- end -}}
 
+{{/*
+Generate service name for Kube State Metrics (KSM)
+- Use name from the KSM Helm Chart, only if the KSM is installed as part of this chart, otherwise use service name provided in `.Values.kubeStateMetrics.serviceName`
+*/}}
 {{- define "kompass.kube-state-metrics.serviceName" -}}
+  {{- if .Values.kubeStateMetrics.enabled -}}
   {{- $ctx := dict "Values" .Values.kubeStateMetrics "Chart" .Chart "Release" .Release -}}
   {{- include "kube-state-metrics.fullname" $ctx -}}
+  {{- else -}}
+  {{- .Values.kubeStateMetrics.serviceName -}}
+  {{- end -}}
 {{- end }}
 
 {{- define "kompass.labels" -}}
