@@ -42,12 +42,37 @@ Create chart name and version as used by the chart label.
   {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
-{{- define "kube-state-metrics.serviceName" -}}
-  {{- if .Values.kubeStateMetrics.enabled }}
-    {{- .Values.kubeStateMetrics.fullnameOverride | trunc 63 | trimSuffix "-" }}
-  {{- else }}
-    {{- .Values.kubeStateMetrics.serviceName | trunc 63 | trimSuffix "-" }}
-  {{- end }}
+{{- define "kompass.kube-state-metrics.selectorLabels" -}}
+  {{- if and .Values.kubeStateMetrics.enabled -}}
+  {{- $ctx := dict "Values" .Values.kubeStateMetrics "Chart" .Chart "Release" .Release -}}
+  {{- include "kube-state-metrics.selectorLabels" $ctx | trimPrefix " " -}}
+  {{- end -}}
+{{- end -}}
+
+{{/*
+Generate service name for Kube State Metrics (KSM)
+- Use name from the KSM Helm Chart, only if the KSM is installed as part of this chart, otherwise use service name provided in `.Values.kubeStateMetrics.serviceName`
+*/}}
+{{- define "kompass.kube-state-metrics.serviceName" -}}
+  {{- if .Values.kubeStateMetrics.enabled -}}
+  {{- $ctx := dict "Values" .Values.kubeStateMetrics "Chart" .Chart "Release" .Release -}}
+  {{- include "kube-state-metrics.fullname" $ctx -}}
+  {{- else -}}
+  {{- .Values.kubeStateMetrics.serviceName -}}
+  {{- end -}}
+{{- end }}
+
+{{/*
+Generate service namespace for Kube State Metrics (KSM)
+- Use name from the KSM Helm Chart, only if the KSM is installed as part of this chart, otherwise use service namespace provided in `.Values.kubeStateMetrics.serviceNamespace`
+*/}}
+{{- define "kompass.kube-state-metrics.serviceNamespace" -}}
+  {{- if .Values.kubeStateMetrics.enabled -}}
+  {{- $ctx := dict "Values" .Values.kubeStateMetrics "Chart" .Chart "Release" .Release -}}
+  {{- include "kube-state-metrics.namespace" $ctx -}}
+  {{- else -}}
+  {{- .Values.kubeStateMetrics.serviceNamespace -}}
+  {{- end -}}
 {{- end }}
 
 {{- define "kompass.labels" -}}

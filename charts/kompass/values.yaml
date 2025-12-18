@@ -139,6 +139,7 @@ victoriaMetricsAgent:
     type: ClusterIP
   configMap: kompass-vmagent-config
   extraArgs:
+    promscrape.configCheckInterval: 1m
     promscrape.maxScrapeSize: 128MB
     enableTCP6: true
   remoteWrite:
@@ -166,6 +167,7 @@ kubeStateMetrics:
   enabled: true
   force: false
   serviceName: ""
+  serviceNamespace: ""
   nameOverride: kube-state-metrics
   fullnameOverride: kompass-kube-state-metrics
   extraArgs:

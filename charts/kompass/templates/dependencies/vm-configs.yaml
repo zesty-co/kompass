@@ -133,8 +133,14 @@ data:
           - role: service
         relabel_configs:
           - source_labels: [__meta_kubernetes_service_name]
-            regex: {{ include "kube-state-metrics.serviceName" . }}
+            regex: {{ include "kompass.kube-state-metrics.serviceName" . }}
             action: keep
+          {{- /* For backward compatibility, add namespace config, only if the namespace was provided */}}
+          {{- if (include "kompass.kube-state-metrics.serviceNamespace" . ) }}
+          - source_labels: [__meta_kubernetes_namespace]
+            regex: {{ include "kompass.kube-state-metrics.serviceNamespace" . }}
+            action: keep
+          {{- end }}
         metric_relabel_configs:
           - source_labels: [__name__]
             regex: '(kube_pod_info|kube_pod_container_info|kube_pod_owner|kube_replicaset_owner|kube_job_owner|kube_pod_container_resource_requests|kube_pod_container_resource_limits|kube_pod_container_status_restarts_total|kube_pod_container_status_last_terminated_reason|kube_pod_container_status_terminated_reason|kube_horizontalpodautoscaler_spec_target_metric|kube_horizontalpodautoscaler_spec_min_replicas|kube_horizontalpodautoscaler_info|kube_horizontalpodautoscaler_status_current_replicas|kube_namespace_status_phase|kube_deployment_metadata_generation|kube_statefulset_metadata_generation|kube_job_metadata_generation|kube_cronjob_metadata_generation|kube_daemonset_metadata_generation)'
