@@ -62,6 +62,19 @@ Generate service name for Kube State Metrics (KSM)
   {{- end -}}
 {{- end }}
 
+{{/*
+Generate service namespace for Kube State Metrics (KSM)
+- Use name from the KSM Helm Chart, only if the KSM is installed as part of this chart, otherwise use service namespace provided in `.Values.kubeStateMetrics.serviceNamespace`
+*/}}
+{{- define "kompass.kube-state-metrics.serviceNamespace" -}}
+  {{- if .Values.kubeStateMetrics.enabled -}}
+  {{- $ctx := dict "Values" .Values.kubeStateMetrics "Chart" .Chart "Release" .Release -}}
+  {{- include "kube-state-metrics.namespace" $ctx -}}
+  {{- else -}}
+  {{- .Values.kubeStateMetrics.serviceNamespace -}}
+  {{- end -}}
+{{- end }}
+
 {{- define "kompass.labels" -}}
 helm.sh/chart: {{ include "kompass.chart" . }}
 {{ include "kompass.selectorLabels" . }}
