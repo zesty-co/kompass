@@ -67,8 +67,10 @@ global:
     ingressLogsUrl: https://ingress.eu2.coralogix.com/logs/v1/singles
     # -- (string) The URL endpoint for Coralogix OpenTelemetry.
     # Deprecated in favor of `global.cxLogging.ingressUrl`.
-    # Resolves to `CORALOGIX_OTEL_ENDPOINT` environment variable.
-    otelEndpoint: ingress.eu2.coralogix.com:443
+    # When set, it will take precedence over `global.cxLogging.ingressUrl`!
+    # Resolves to `CORALOGIX_OTEL_ENDPOINT` environment variable,
+    # and `CORALOGIX_INGRESS_URL` environment variable.
+    # otelEndpoint: ingress.eu2.coralogix.com:443
   # -- (string) global configmap name
   globalConfigName: global-config
 
