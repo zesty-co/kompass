@@ -1,16 +1,3 @@
-{{- if and .Values.grafana.enabled .Values.grafana.deployDashboard}}
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ include "name" . }}-grafana-dashboard
-  labels:
-    {{- include "kompass.labels" . | nindent 4 }}
-    grafana_dashboard: "1"
-data:
-  kompass-grafana-dashboard.json: |-
-{{ .Files.Get "files/grafana-dashboard.json" | indent 4 }}
-{{- end }}
----
 {{- if and .Values.grafana.enabled .Values.grafana.deployDataSource}}
 apiVersion: v1
 kind: ConfigMap
