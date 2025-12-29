@@ -1,19 +1,21 @@
 # -- Global values that are applied across multiple components of the Kompass chart.
 # These values often use YAML anchors (&anchorName) to define a value once and reuse it (*anchorName) elsewhere.
 global:
-  # -- (string) Overrides the name of the VictoriaMetrics service.
+  # -- (string) Overrides the name of the VictoriaMetrics VM Auth service.
   # This value is referenced by the YAML anchor '&vmName'.
   # IMPORTANT: If you change this value, you MUST also update 'victoriaMetricsRemoteUrl'
   # and 'victoriaMetricsRemoteWriteUrl' below to reflect the new service name.
-  victoriaMetricsNameOverride: &vmName kompass-victoria-metrics
-  # -- (string) The internal cluster URL for VictoriaMetrics query access.
+  victoriaMetricsNameOverride: &vmName kompass-victoria-metrics-auth
+  # -- (string) The internal cluster URL for VictoriaMetrics query access via VMAuth.
   # This value is referenced by the YAML anchor '&vmRemoteUrl'.
+  # VMAuth will route to either VM Single or VM Cluster based on victoriaMetricsAuth.useSingle.
   # It typically depends on 'victoriaMetricsNameOverride'.
-  victoriaMetricsRemoteUrl: &vmRemoteUrl http://kompass-victoria-metrics:8428
-  # -- (string) The internal cluster URL for VictoriaMetrics remote write endpoint.
-  # This value is referenced by the YAML anchor '&vmRemoteWriteUrl'.
+  victoriaMetricsRemoteUrl: &vmRemoteUrl http://kompass-victoria-metrics-auth:8427
+  # -- (string) The internal cluster URL for VictoriaMetrics remote write endpoint via VMAuth.
+  # This value is referenced by the YAML anchor '&vmRemoteWritePrometheusUrl'.
+  # VMAuth will route to either VM Single or VM Cluster based on victoriaMetricsAuth.useSingle.
   # It typically depends on 'victoriaMetricsNameOverride'.
-  victoriaMetricsRemoteWriteUrl: &vmRemoteWriteUrl http://kompass-victoria-metrics:8428/api/v1/write
+  victoriaMetricsRemotePrometheusWriteUrl: &vmRemoteWritePrometheusUrl http://kompass-victoria-metrics-auth:8427/api/v1/write
   # -- (string) The default storage class name for persistent volumes.
   # Set to a specific storage class name or leave as null (~) to use cluster default.
   # This value is referenced by the YAML anchor '&storageClassName'.
@@ -106,9 +108,9 @@ disk:
 victoriaMetrics:
   enabled: true
   serviceAccount:
-    name: *vmName
+    name: kompass-victoria-metrics
   server:
-    fullnameOverride: *vmName
+    fullnameOverride: kompass-victoria-metrics
     persistentVolume:
       mountPath: /victoria-metrics-data
       size: "30Gi"
@@ -128,7 +130,152 @@ victoriaMetrics:
       dedup.minScrapeInterval: 30s
       enableTCP6: true
 
+victoriaMetricsCluster:
+  enabled: false
+  serviceAccount:
+    name: kompass-victoria-metrics-cluster
+  vmselect:
+    fullnameOverride: kompass-victoria-metrics-cluster-vmselect
+    extraArgs:
+      replicationFactor: 2
+      search.maxStalenessInterval: 5m
+      search.minStalenessInterval: 30s
+      search.maxQueryDuration: 2m
+      search.disableCache: true
+      memory.allowedPercent: 60
+      dedup.minScrapeInterval: 30s
+      enableTCP6: true
+    podDisruptionBudget:
+      enabled: true
+      minAvailable: 1
+    affinity:
+      podAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                    - vmstorage
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - victoriaMetricsCluster
+            topologyKey: topology.kubernetes.io/zone
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                    - vmselect
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - victoriaMetricsCluster
+            topologyKey: kubernetes.io/hostname
+    replicaCount: 2
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "0.5"
+  vminsert:
+    fullnameOverride: kompass-victoria-metrics-cluster-vminsert
+    extraArgs:
+      replicationFactor: 2
+      memory.allowedPercent: 60
+      enableTCP6: true
+    podDisruptionBudget:
+      enabled: true
+      minAvailable: 1
+    affinity:
+      podAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                    - vmstorage
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - victoriaMetricsCluster
+            topologyKey: topology.kubernetes.io/zone
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                    - vminsert
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - victoriaMetricsCluster
+            topologyKey: kubernetes.io/hostname
+    replicaCount: 2
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "0.5"
+  vmstorage:
+    fullnameOverride: kompass-victoria-metrics-cluster-vmstorage
+    extraArgs:
+      retentionPeriod: 1w
+      memory.allowedPercent: 60
+      dedup.minScrapeInterval: 30s
+      enableTCP6: true
+    persistentVolume:
+      storageClassName: *storageClassName
+      size: 30Gi
+    podDisruptionBudget:
+      enabled: true
+      minAvailable: 1
+    affinity:
+      podAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                    - vmstorage
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - victoriaMetricsCluster
+            topologyKey: topology.kubernetes.io/zone
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                    - vmstorage
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - victoriaMetricsCluster
+            topologyKey: kubernetes.io/hostname
+    replicaCount: 2
+    resources:
+      requests:
+        memory: "3Gi"
+        cpu: "0.5"
+
+victoriaMetricsMigration:
+  enabled: false
+  image:
+    registry: victoriametrics
+    repository: vmctl
+    tag: latest
+
 victoriaMetricsAgent:
+  enabled: true
   fullnameOverride: kompass-victoria-metrics-agent
   scrapeInterval: 30s
   scrapeIntervalLong: 1m
@@ -143,9 +290,10 @@ victoriaMetricsAgent:
     promscrape.maxScrapeSize: 128MB
     enableTCP6: true
   remoteWrite:
-    - url: *vmRemoteWriteUrl
+    - url: *vmRemoteWritePrometheusUrl
 
 victoriaMetricsAlert:
+  enabled: true
   fullnameOverride: kompass-victoria-metrics-alert
   server:
     datasource:
@@ -162,6 +310,62 @@ victoriaMetricsAlert:
       evaluationInterval: 30s
       enableTCP6: true
     configMap: kompass-vm-custom-recording-rules
+
+victoriaMetricsAuth:
+  enabled: true
+  # Set to `true` to use VM Single, set to `false` to use VM Cluster.
+  useSingle: true
+  fullnameOverride: *vmName
+  secretName: kompass-vmauth-config
+  extraArgs:
+    configCheckInterval: 1m
+    enableTCP6: true
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+  affinity:
+    podAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                    - vmstorage
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - victoriaMetricsCluster
+            topologyKey: topology.kubernetes.io/zone
+        - weight: 50
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - victoriaMetrics
+            topologyKey: topology.kubernetes.io/zone
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - victoriaMetricsAuth
+          topologyKey: kubernetes.io/hostname
+  replicaCount: 2
+  deployment:
+    spec:
+      strategy:
+        type: RollingUpdate
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "0.1"
 
 kubeStateMetrics:
   enabled: true
