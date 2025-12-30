@@ -23,15 +23,38 @@ data:
         - app.kubernetes.io/name: "kompass-storage"
         statefulsets: []
     victoria_metrics_agent:
-      enabled: {{ .Values.victoriaMetrics.enabled }}
+      enabled: {{ .Values.victoriaMetricsAgent.enabled }}
       deployments:
       - app.kubernetes.io/name: victoriaMetricsAgent
+      statefulsets: []
+    victoria_metrics_alert:
+      enabled: {{ .Values.victoriaMetricsAlert.enabled }}
+      deployments:
+      - app.kubernetes.io/name: victoriaMetricsAlert
       statefulsets: []
     victoria_metrics:
       enabled: {{ .Values.victoriaMetrics.enabled }}
       deployments: []
       statefulsets:
       - app.kubernetes.io/name: victoriaMetrics
+    victoria_metrics_cluster_vminsert:
+      enabled: {{ .Values.victoriaMetricsCluster.enabled }}
+      deployments:
+      - app.kubernetes.io/name: victoriaMetricsCluster
+        app: vminsert
+      statefulsets: []
+    victoria_metrics_cluster_vmselect:
+      enabled: {{ .Values.victoriaMetricsCluster.enabled }}
+      deployments:
+      - app.kubernetes.io/name: victoriaMetricsCluster
+        app: vmselect
+      statefulsets: []
+    victoria_metrics_cluster_vmstorage:
+      enabled: {{ .Values.victoriaMetricsCluster.enabled }}
+      deployments: []
+      statefulsets:
+      - app.kubernetes.io/name: victoriaMetricsCluster
+        app: vmstorage
     kube_state_metrics:
         enabled: {{ .Values.kubeStateMetrics.enabled }}
         {{- if .Values.kubeStateMetrics.enabled }}
