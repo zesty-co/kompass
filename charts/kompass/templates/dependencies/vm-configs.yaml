@@ -1,4 +1,4 @@
-{{- if .Values.victoriaMetrics.enabled }}
+{{- if .Values.victoriaMetricsAgent.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
