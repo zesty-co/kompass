@@ -3,6 +3,68 @@ entries:
   kompass:
   - apiVersion: v2
     appVersion: 1.16.0
+    created: "2026-01-14T08:24:15.576022657Z"
+    dependencies:
+    - name: kompass-insights
+      repository: https://zesty-co.github.io/kompass-insights
+      version: 2.1.79
+    - alias: rightsizing
+      name: pod-rightsizing
+      repository: https://zesty-co.github.io/kompass-pod-rightsizing
+      version: v0.3.6
+    - alias: disk
+      condition: disk.enabled
+      name: kompass-storage
+      repository: https://zesty-co.github.io/zesty-helm
+      version: 1.7.4
+    - alias: victoriaMetrics
+      condition: victoriaMetrics.enabled
+      name: victoria-metrics-single
+      repository: https://victoriametrics.github.io/helm-charts
+      version: 0.14.3
+    - alias: victoriaMetricsCluster
+      condition: victoriaMetricsCluster.enabled
+      name: victoria-metrics-cluster
+      repository: https://victoriametrics.github.io/helm-charts
+      version: 0.30.1
+    - alias: victoriaMetricsAgent
+      condition: victoriaMetricsAgent.enabled
+      name: victoria-metrics-agent
+      repository: https://victoriametrics.github.io/helm-charts
+      version: 0.19.0
+    - alias: victoriaMetricsAlert
+      condition: victoriaMetricsAlert.enabled
+      name: victoria-metrics-alert
+      repository: https://victoriametrics.github.io/helm-charts
+      version: 0.18.0
+    - alias: victoriaMetricsAuth
+      condition: victoriaMetricsAuth.enabled
+      name: victoria-metrics-auth
+      repository: https://victoriametrics.github.io/helm-charts
+      version: 0.20.0
+    - alias: kubeStateMetrics
+      condition: kubeStateMetrics.enabled
+      name: kube-state-metrics
+      repository: https://prometheus-community.github.io/helm-charts
+      version: 6.3.0
+    - condition: cert-manager.enabled
+      name: cert-manager
+      repository: https://charts.jetstack.io
+      version: 1.19.1
+    - condition: grafana.enabled
+      name: grafana
+      repository: https://grafana.github.io/helm-charts
+      version: 8.10.4
+    description: Zesty Kompass Helm Charts
+    digest: 63d5816886b46c4598aeb6b804f2e32b4b612f248ed3109f18f95d2dc3c7e02f
+    icon: https://zesty.co/wp-content/uploads/2024/05/favicon-150x150.png
+    name: kompass
+    type: application
+    urls:
+    - https://github.com/zesty-co/kompass/releases/download/kompass-0.1.96/kompass-0.1.96.tgz
+    version: 0.1.96
+  - apiVersion: v2
+    appVersion: 1.16.0
     created: "2026-01-12T09:29:14.321058983Z"
     dependencies:
     - name: kompass-insights
@@ -4988,4 +5050,4 @@ entries:
     urls:
     - https://github.com/zesty-co/kompass/releases/download/kompass-0.1.1/kompass-0.1.1.tgz
     version: 0.1.1
-generated: "2026-01-12T09:29:14.321362798Z"
+generated: "2026-01-14T08:24:15.576351089Z"
