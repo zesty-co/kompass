@@ -173,7 +173,7 @@ data:
           {{- end }}
         metric_relabel_configs:
           - source_labels: [__name__]
-            regex: '(kube_pod_info|kube_pod_container_info|kube_pod_owner|kube_replicaset_owner|kube_job_owner|kube_pod_container_resource_requests|kube_pod_container_resource_limits|kube_pod_container_status_restarts_total|kube_pod_container_status_last_terminated_reason|kube_pod_container_status_terminated_reason|kube_horizontalpodautoscaler_spec_target_metric|kube_horizontalpodautoscaler_spec_min_replicas|kube_horizontalpodautoscaler_info|kube_horizontalpodautoscaler_status_current_replicas|kube_namespace_status_phase|kube_deployment_metadata_generation|kube_statefulset_metadata_generation|kube_job_metadata_generation|kube_cronjob_metadata_generation|kube_daemonset_metadata_generation)'
+            regex: '(kube_pod_info|kube_pod_container_info|kube_pod_owner|kube_replicaset_owner|kube_job_owner|kube_pod_container_resource_requests|kube_pod_container_resource_limits|kube_pod_container_status_restarts_total|kube_pod_container_status_last_terminated_reason|kube_pod_container_status_terminated_reason|kube_horizontalpodautoscaler_spec_target_metric|kube_horizontalpodautoscaler_spec_min_replicas|kube_horizontalpodautoscaler_info|kube_horizontalpodautoscaler_status_current_replicas|kube_namespace_status_phase|kube_deployment_metadata_generation|kube_statefulset_metadata_generation|kube_job_metadata_generation|kube_cronjob_metadata_generation|kube_daemonset_metadata_generation|kube_pod_created|kube_pod_status_ready_time)'
             action: keep
 
       #  vmagent's own metrics
