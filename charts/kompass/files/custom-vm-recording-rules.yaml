@@ -17,4 +17,5 @@ groups:
         expr: sum(rate(container_cpu_usage_seconds_total{container!="", pod!=""}[1m]) * on (namespace, pod, container) group_left (resource_id, created_by_name, created_by_kind) max(kompass_insights_pod_info) by (container, pod, resource_id, created_by_name, created_by_kind, namespace)) by (container, resource_id, created_by_name, created_by_kind, namespace) or on (namespace, pod, container) max(kompass_insights_pod_info) by (container, resource_id, created_by_name, created_by_kind, namespace) * 0
       - record: kompass_container_resource_requests_median
         expr: quantile(0.5, kube_pod_container_resource_requests * on(namespace,pod,container) group_left(resource_id,created_by_name,created_by_kind) max(kompass_insights_pod_info) by(container,pod,resource_id,created_by_name,created_by_kind,namespace)) by(container,resource_id,created_by_name,created_by_kind,namespace,resource) or on(namespace,pod,container) (max(kompass_insights_pod_info) by(container,resource_id,created_by_name,created_by_kind,namespace) * 0)
-
+      - record: kompass_pod_startup_time
+        expr: (kube_pod_status_ready_time - kube_pod_created) * on (pod, namespace) group_left (created_by_name, created_by_kind) max by (pod, namespace, created_by_name, created_by_kind) (kompass_pod_info)
