@@ -18,6 +18,7 @@ global:
   victoriaMetricsRemotePrometheusWriteUrl: &vmRemoteWritePrometheusUrl http://kompass-victoria-metrics-auth:8427/api/v1/write
   # -- (string) The default storage class name for persistent volumes.
   # Set to a specific storage class name or leave as null (~) to use cluster default.
+  # Set to a specific storage class name or leave as null (~) to use cluster default.
   # This value is referenced by the YAML anchor '&storageClassName'.
   storageClassName: &storageClassName ~
   # -- (string) The name for zesty's self-signed certificate issuer
@@ -29,50 +30,24 @@ global:
   # -- (array) global tolerations for Kompass components
   tolerations: []
   # -- (map) global cxLogging for Kompass components
-  cxLogging:
-    # -- (bool) Enable or disable sending CX logs to Zesty.
-    enabled: false
-    # -- (string) REQUIRED if cxLogging.enabled is true: A descriptive name for your cluster.
-    # This name will appear in the Zesty platform associated with the logs.
-    # Resolves to `CX_CLUSTER_NAME` environment variable.
-    clusterName: ""
-    # -- (string) REQUIRED if cxLogging.enabled is true: The API Key for CX logging.
-    # Provided during the onboarding process specifically for CX logging.
-    # Resolves to `CX_API_KEY` environment variable.
-    apiKey: ""
-    # -- (string) The domain of the Coralogix ingress endpoint.
-    # Used by OTEL collector (Kompass Compute) to send logs to Coralogix.
-    # Resolves to `CORALOGIX_DOMAIN` environment variable.
-    domain: eu2.coralogix.com
-    # -- (string) The URL endpoint for sending logs to Coralogix.
-    # Used by Rightsizing (Coralogix SDK) to send logs to Coralogix.
-    # Resolves to `CORALOGIX_LOG_URL` environment variable.
-    logUrl: https://ingress.eu2.coralogix.com:443/api/v1/logs
-    # -- (string) The URL endpoint for time synchronization with Coralogix.
-    # Used by Rightsizing (Coralogix SDK) to send logs to Coralogix.
-    # Resolves to `CORALOGIX_TIME_DELTA_URL` environment variable.
-    timeDeltaUrl: https://ingress.eu2.coralogix.com:443/sdk/v1/time
-    # -- (string) The URL endpoint to send metrics to Coralogix
-    # Used by Rightsizing (Coralogix SDK) to metrics logs to Coralogix.
-    # Resolves to `CORALOGIX_METRICS_URL` environment variable.
-    # Probably to be replaced by `global.ingressUrl`
-    metricsUrl: https://ingress.eu2.coralogix.com:443
-    # -- (string) The URL endpoint for Coralogix ingress.
-    # Used by Kompass Insights to send logs (and traces) to Coralogix.
-    # Resolves to `CORALOGIX_INGRESS_URL` environment variable.
-    ingressUrl: https://ingress.eu2.coralogix.com/
-    # -- (string) ingressLogsUrl: The URL endpoint for Coralogix ingress logs.
-    # Used by Vector to send logs to Coralogix.
-    # Resolves to `CORALOGIX_INGRESS_LOGS_URL` environment variable.
-    ingressLogsUrl: https://ingress.eu2.coralogix.com/logs/v1/singles
-    # -- (string) The URL endpoint for Coralogix OpenTelemetry.
-    # Deprecated in favor of `global.cxLogging.ingressUrl`.
-    # When set, it will take precedence over `global.cxLogging.ingressUrl`!
-    # Resolves to `CORALOGIX_OTEL_ENDPOINT` environment variable,
-    # and `CORALOGIX_INGRESS_URL` environment variable.
-    # otelEndpoint: ingress.eu2.coralogix.com:443
+  cxLogging: {}
   # -- (string) global configmap name
   globalConfigName: global-config
+
+# -- (map) Configuration for sending CX logs.
+cxLogging:
+  # -- (bool) Enable or disable sending CX logs to Zesty.
+  &cxLogging
+  enabled: false
+  # -- (string) REQUIRED if cxLogging.enabled is true: A descriptive name for your cluster.
+  # This name will appear in the Zesty platform associated with the logs.
+  clusterName: ""
+  # -- (string) REQUIRED if cxLogging.enabled is true: The API Key for CX logging.
+  # Provided during the onboarding process specifically for CX logging.
+  apiKey: ""
+  # -- (string) logUrl: The URL endpoint for sending logs to Coralogix.
+  # -- (string) metricsUrl: The URL endpoint for sending metrics to Coralogix.
+  # -- (string) timeDeltaUrl: The URL endpoint for time synchronization with Coralogix.
 
 validator:
   image:
@@ -116,37 +91,12 @@ kompass-insights:
     # Provided during the onboarding process to prevent confused deputy problems.
     zestyExternalID: ~
 
-  # -- (map) Configuration for sending CX logs.
-  cxLogging:
-    # -- (bool) Enable or disable sending CX logs to Zesty.
-    enabled: false
-    # -- (string) REQUIRED if cxLogging.enabled is true: A descriptive name for your cluster.
-    # This name will appear in the Zesty platform associated with the logs.
-    clusterName: ""
-    # -- (string) REQUIRED if cxLogging.enabled is true: The API Key for CX logging.
-    # Provided during the onboarding process specifically for CX logging.
-    apiKey: ""
-    # -- (string) domain: The domain of the Coralogix ingress endpoint.
-    # -- (string) logUrl: The URL endpoint for sending logs to Coralogix.
-    # -- (string) timeDeltaUrl: The URL endpoint for time synchronization with Coralogix.
-    # -- (string) ingressLogsUrl: The URL endpoint for Coralogix ingress logs.
-    # -- (string) ingressUrl: The URL endpoint for Coralogix ingress.
+  cxLogging: *cxLogging
 
 rightsizing:
   # -- (bool) Enable or disable the Zesty rightsizing feature components.
   enabled: false
-  # -- (map) Configuration for sending CX logs.
-  cxLogging:
-    # -- (bool) Enable or disable sending CX logs to Zesty.
-    enabled: false
-    # -- (string) REQUIRED if cxLogging.enabled is true: A descriptive name for your cluster.
-    # This name will appear in the Zesty platform associated with the logs.
-    clusterName: ""
-    # -- (string) REQUIRED if cxLogging.enabled is true: The API Key for CX logging.
-    # Provided during the onboarding process specifically for CX logging.
-    apiKey: ""
-    # -- (string) logUrl: The URL endpoint for sending logs to Coralogix.
-    # -- (string) timeDeltaUrl: The URL endpoint for time synchronization with Coralogix.
+  cxLogging: *cxLogging
 
 disk:
   # -- (bool) Enable or disable the Zesty disk optimization feature components.
@@ -156,6 +106,9 @@ disk:
     # -- (string) REQUIRED if disk.enabled is true: The Zesty API Key for disk agent management.
     # Provided during the onboarding process.
     apiKey: ""
+
+kompass-pod-placement:
+  enabled: true # todo: change the default to false
 
 victoriaMetrics:
   enabled: true
@@ -203,30 +156,30 @@ victoriaMetricsCluster:
     affinity:
       podAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                    - vmstorage
-                - key: app.kubernetes.io/name
-                  operator: In
-                  values:
-                    - victoriaMetricsCluster
-            topologyKey: topology.kubernetes.io/zone
+        - labelSelector:
+            matchExpressions:
+            - key: app
+              operator: In
+              values:
+              - vmstorage
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - victoriaMetricsCluster
+          topologyKey: topology.kubernetes.io/zone
       podAntiAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                    - vmselect
-                - key: app.kubernetes.io/name
-                  operator: In
-                  values:
-                    - victoriaMetricsCluster
-            topologyKey: kubernetes.io/hostname
+        - labelSelector:
+            matchExpressions:
+            - key: app
+              operator: In
+              values:
+              - vmselect
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - victoriaMetricsCluster
+          topologyKey: kubernetes.io/hostname
     replicaCount: 2
     resources:
       requests:
@@ -244,30 +197,30 @@ victoriaMetricsCluster:
     affinity:
       podAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                    - vmstorage
-                - key: app.kubernetes.io/name
-                  operator: In
-                  values:
-                    - victoriaMetricsCluster
-            topologyKey: topology.kubernetes.io/zone
+        - labelSelector:
+            matchExpressions:
+            - key: app
+              operator: In
+              values:
+              - vmstorage
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - victoriaMetricsCluster
+          topologyKey: topology.kubernetes.io/zone
       podAntiAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                    - vminsert
-                - key: app.kubernetes.io/name
-                  operator: In
-                  values:
-                    - victoriaMetricsCluster
-            topologyKey: kubernetes.io/hostname
+        - labelSelector:
+            matchExpressions:
+            - key: app
+              operator: In
+              values:
+              - vminsert
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - victoriaMetricsCluster
+          topologyKey: kubernetes.io/hostname
     replicaCount: 2
     resources:
       requests:
@@ -289,30 +242,30 @@ victoriaMetricsCluster:
     affinity:
       podAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                    - vmstorage
-                - key: app.kubernetes.io/name
-                  operator: In
-                  values:
-                    - victoriaMetricsCluster
-            topologyKey: topology.kubernetes.io/zone
+        - labelSelector:
+            matchExpressions:
+            - key: app
+              operator: In
+              values:
+              - vmstorage
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - victoriaMetricsCluster
+          topologyKey: topology.kubernetes.io/zone
       podAntiAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                    - vmstorage
-                - key: app.kubernetes.io/name
-                  operator: In
-                  values:
-                    - victoriaMetricsCluster
-            topologyKey: kubernetes.io/hostname
+        - labelSelector:
+            matchExpressions:
+            - key: app
+              operator: In
+              values:
+              - vmstorage
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - victoriaMetricsCluster
+          topologyKey: kubernetes.io/hostname
     replicaCount: 2
     resources:
       requests:
@@ -342,7 +295,7 @@ victoriaMetricsAgent:
     promscrape.maxScrapeSize: 128MB
     enableTCP6: true
   remoteWrite:
-    - url: *vmRemoteWritePrometheusUrl
+  - url: *vmRemoteWritePrometheusUrl
 
 victoriaMetricsAlert:
   enabled: true
@@ -358,7 +311,7 @@ victoriaMetricsAlert:
     extraArgs:
       configCheckInterval: 1m
       rule:
-        - /config/*.yaml
+      - /config/*.yaml
       evaluationInterval: 30s
       enableTCP6: true
     configMap: kompass-vm-custom-recording-rules
@@ -378,37 +331,37 @@ victoriaMetricsAuth:
   affinity:
     podAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
-        - weight: 100
-          podAffinityTerm:
-            labelSelector:
-              matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                    - vmstorage
-                - key: app.kubernetes.io/name
-                  operator: In
-                  values:
-                    - victoriaMetricsCluster
-            topologyKey: topology.kubernetes.io/zone
-        - weight: 50
-          podAffinityTerm:
-            labelSelector:
-              matchExpressions:
-                - key: app.kubernetes.io/name
-                  operator: In
-                  values:
-                    - victoriaMetrics
-            topologyKey: topology.kubernetes.io/zone
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: app
+              operator: In
+              values:
+              - vmstorage
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - victoriaMetricsCluster
+          topologyKey: topology.kubernetes.io/zone
+      - weight: 50
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - victoriaMetrics
+          topologyKey: topology.kubernetes.io/zone
     podAntiAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchExpressions:
-              - key: app.kubernetes.io/name
-                operator: In
-                values:
-                  - victoriaMetricsAuth
-          topologyKey: kubernetes.io/hostname
+      - labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - victoriaMetricsAuth
+        topologyKey: kubernetes.io/hostname
   replicaCount: 2
   deployment:
     spec:
@@ -427,7 +380,7 @@ kubeStateMetrics:
   nameOverride: kube-state-metrics
   fullnameOverride: kompass-kube-state-metrics
   extraArgs:
-    - --metric-annotations-allowlist=pods=[*]
+  - --metric-annotations-allowlist=pods=[*]
 
 grafana:
   enabled: false
