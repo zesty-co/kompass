@@ -54,21 +54,6 @@ Create the name of role
 {{- printf "%s-role" (include "kompass-pod-placement.fullname" .) }}
 {{- end }}
 
-
-{{/*
-Get the certificate issuer name
-*/}}
-{{- define "kompass-pod-placement.certIssuerName" -}}
-{{- if .Values.certificate.certManager.issuerName }}
-{{- .Values.certificate.certManager.issuerName }}
-{{- else if .Values.global.clusterIssuerName }}
-{{- .Values.global.clusterIssuerName }}
-{{- else }}
-{{- "kompass-selfsigned-issuer" }}
-{{- end }}
-{{- end }}
-
-
 {{- define "cxLogging.ingressUrl" }}
 - name: CORALOGIX_INGRESS_URL
 {{- /*
