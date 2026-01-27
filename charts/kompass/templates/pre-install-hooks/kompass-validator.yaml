@@ -187,7 +187,7 @@ spec:
                 if [ -n "$KSM_SVC" ]; then
                     echo "✅ kubeStateMetrics service found: $KSM_SVC in namespace: $KSM_NAMESPACE"
                     echo ""
-                    echo "⚠️ Please add to the values file kubeStateMetrics.enabled: false AND kubeStateMetrics.serviceName: $KSM_SVC OR use kubeStateMetrics.force: true"
+                    echo "⚠️ Please add to the values file kubeStateMetrics.enabled: false AND kubeStateMetrics.serviceName: $KSM_SVC AND kubeStateMetrics.serviceNamespaec: $KSM_KSM_NAMESPACE OR use kubeStateMetrics.force: true"
                     exit 1
                 else
                     echo "⚠️ kubeStateMetrics service not found in namespace: $KSM_NAMESPACE"
@@ -197,6 +197,12 @@ spec:
             fi
           else
             KSM_SVC_NAME="{{ index .Values "kubeStateMetrics" "serviceName" | default "" }}"
+            # Only check service name, not namespace, for backward compatibility
+            if [ -z "$KSM_SVC_NAME" ]; then
+              echo "❌ kubeStateMetrics.enabled is set to false but kubeStateMetrics.serviceName is not provided"
+              echo "⚠️ Please specify kubeStateMetrics.serviceName and kubeStateMetrics.serviceNamespace in your values file or set kubeStateMetrics.enabled to true"
+              exit 1
+            fi
             echo "⚠️ kubeStateMetrics.enabled is set to false — kubeStateMetrics will not be installed, going to use the existing service: $KSM_SVC_NAME"
             echo "✅ Skipping kubeStateMetrics validation"
           fi
