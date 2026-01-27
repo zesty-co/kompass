@@ -157,6 +157,9 @@ disk:
     # Provided during the onboarding process.
     apiKey: ""
 
+kompass-pod-placement:
+  enabled: false
+
 victoriaMetrics:
   enabled: true
   serviceAccount:
