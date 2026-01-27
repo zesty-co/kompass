@@ -1,0 +1,17 @@
+{{- if and .Values.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kompass-pod-placement.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kompass-pod-placement.labels" . | nindent 4 }}  
+spec:  
+  ports:
+    - name: https
+      port: 443
+      targetPort: {{ .Values.webhook.port }}
+  selector:
+    app: {{ include "kompass-pod-placement.fullname" . }}
+  type: ClusterIP
+{{- end }}

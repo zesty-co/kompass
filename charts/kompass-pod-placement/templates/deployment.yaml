@@ -1,0 +1,86 @@
+{{- if and .Values.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kompass-pod-placement.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kompass-pod-placement.labels" . | nindent 4 }}    
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "kompass-pod-placement.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "kompass-pod-placement.fullname" . }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/_helpers.tpl") . | sha256sum }}
+    spec:
+      serviceAccountName: {{ include "kompass-pod-placement.serviceAccountName" . }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution: # used preferred instead of require to not block deployment on a small cluster
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: {{ include "kompass-pod-placement.fullname" . }}
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: pod-placement
+          image: "{{ .Values.image.registry }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - "--health-probe-bind-address=:8081"
+            - "--metrics-bind-address=127.0.0.1:8080"
+            - "--leader-elect"
+          env:
+            {{- if and .Values.global.cxLogging .Values.global.cxLogging.enabled }}
+            - name: CX_CLUSTER_NAME
+              value: {{ .Values.global.cxLogging.clusterName }}
+            - name: CX_API_KEY
+              value: {{ .Values.global.cxLogging.apiKey }}
+            - name: CORALOGIX_INGRESS_URL
+              value: {{ .Values.global.cxLogging.ingressUrl }}
+            {{- else if and .Values.cxLogging .Values.cxLogging.enabled }}
+            - name: CX_CLUSTER_NAME
+              value: {{ .Values.cxLogging.clusterName }}
+            - name: CX_API_KEY
+              value: {{ .Values.cxLogging.apiKey }}
+            {{- include "cxLogging.ingressUrl" . }}
+            {{- end }}
+          ports:
+            - name: https
+              containerPort: {{ .Values.webhook.port }}
+              protocol: TCP
+            - name: metrics
+              containerPort: 8080
+              protocol: TCP
+            - name: healthz
+              containerPort: 8081
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8081
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8081
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.webhook.resources | nindent 12 }}
+      {{- with .Values.webhook.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.webhook.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

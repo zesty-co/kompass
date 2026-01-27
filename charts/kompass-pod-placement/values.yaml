@@ -1,0 +1,36 @@
+enabled: true # todo: change the default to false
+
+global:
+  cxLogging:
+    enabled: false
+    clusterName: ""
+    apiKey: ""
+    ingressUrl: https://ingress.eu2.coralogix.com/
+
+nameOverride: ~
+fullnameOverride: ~
+
+image:
+  registry: 473301030746.dkr.ecr.us-west-2.amazonaws.com/zesty-k8s/pod-placement
+  pullPolicy: Always
+  tag: 223344
+
+# -- (array) Image pull secrets for private registries
+# imagePullSecrets: []
+
+serviceAccount:
+  annotations: {}
+
+replicaCount: 2
+
+webhook:
+  port: 9443
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+
+cxLogging:
+  enabled: false
+  clusterName: ""
+  apiKey: ""
+  ingressUrl: https://ingress.eu2.coralogix.com/

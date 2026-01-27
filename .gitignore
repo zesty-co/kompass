@@ -3,3 +3,4 @@
 Chart.lock
 charts/kompass/charts
 private
+.idea/*
