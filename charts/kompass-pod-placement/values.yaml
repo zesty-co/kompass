@@ -19,15 +19,35 @@ image:
 # imagePullSecrets: []
 
 serviceAccount:
+  create: true
   annotations: {}
 
 replicaCount: 2
 
 webhook:
   port: 9443
+  failurePolicy: Ignore
+  timeoutSeconds: 5
   resources: {}
   nodeSelector: {}
   tolerations: []
+  affinity: {}
+
+certificate:
+  provider: "cert-manager"
+
+service:
+  portName: https
+
+rbac:
+  create: true
+
+podAnnotations: {}
+podLabels: {}
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
 
 cxLogging:
   enabled: false

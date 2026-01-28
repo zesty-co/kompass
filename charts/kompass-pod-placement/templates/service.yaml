@@ -8,7 +8,7 @@ metadata:
     {{- include "kompass-pod-placement.labels" . | nindent 4 }}  
 spec:  
   ports:
-    - name: https
+    - name: {{ .Values.service.portName | default "https" }}
       port: 443
       targetPort: {{ .Values.webhook.port }}
   selector:
