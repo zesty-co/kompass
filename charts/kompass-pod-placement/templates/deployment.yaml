@@ -5,82 +5,99 @@ metadata:
   name: {{ include "kompass-pod-placement.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "kompass-pod-placement.labels" . | nindent 4 }}    
+{{- include "kompass-pod-placement.labels" . | nindent 4 }}
 spec:
+  {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
-      app: {{ include "kompass-pod-placement.fullname" . }}
+{{- include "kompass-pod-placement.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        app: {{ include "kompass-pod-placement.fullname" . }}
+{{- include "kompass-pod-placement.labels" . | nindent 8 }}
+{{- with .Values.podLabels }}
+{{- toYaml . | nindent 8 }}
+{{- end }}
+      {{- with .Values.podAnnotations }}
       annotations:
-        checksum/config: {{ include (print $.Template.BasePath "/_helpers.tpl") . | sha256sum }}
+{{- toYaml . | nindent 8 }}
+      {{- end }}
     spec:
       serviceAccountName: {{ include "kompass-pod-placement.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{- toYaml . | nindent 8 }}
+      {{- end }}
       affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution: # used preferred instead of require to not block deployment on a small cluster
-            - weight: 100
-              podAffinityTerm:
-                labelSelector:
-                  matchLabels:
-                    app: {{ include "kompass-pod-placement.fullname" . }}
-                topologyKey: kubernetes.io/hostname
+{{- include "kompass-pod-placement.affinity" . | nindent 8 }}
       containers:
         - name: pod-placement
           image: "{{ .Values.image.registry }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- $hasGlobalCx := and .Values.global.cxLogging .Values.global.cxLogging.enabled }}
+          {{- $hasLocalCx := and .Values.cxLogging .Values.cxLogging.enabled }}
           args:
-            - "--health-probe-bind-address=:8081"
-            - "--metrics-bind-address=127.0.0.1:8080"
+            - "--health-probe-bind-address=:{{ .Values.ports.health.containerPort }}"
+            - "--metrics-bind-address=127.0.0.1:{{ .Values.ports.metrics.containerPort }}"
             - "--leader-elect"
-          env:
-            {{- if and .Values.global.cxLogging .Values.global.cxLogging.enabled }}
-            - name: CX_CLUSTER_NAME
-              value: {{ .Values.global.cxLogging.clusterName }}
-            - name: CX_API_KEY
-              value: {{ .Values.global.cxLogging.apiKey }}
-            - name: CORALOGIX_INGRESS_URL
-              value: {{ .Values.global.cxLogging.ingressUrl }}
-            {{- else if and .Values.cxLogging .Values.cxLogging.enabled }}
-            - name: CX_CLUSTER_NAME
-              value: {{ .Values.cxLogging.clusterName }}
-            - name: CX_API_KEY
-              value: {{ .Values.cxLogging.apiKey }}
-            {{- include "cxLogging.ingressUrl" . }}
+            {{- range .Values.extraArgs }}
+            - {{ . | quote }}
             {{- end }}
+          {{- if or $hasGlobalCx $hasLocalCx .Values.env }}
+          env:
+            {{- if $hasGlobalCx }}
+            - name: CX_CLUSTER_NAME
+              value: {{ .Values.global.cxLogging.clusterName | quote }}
+            - name: CX_API_KEY
+              value: {{ .Values.global.cxLogging.apiKey | quote }}
+{{- include "cxLogging.ingressUrl" . | nindent 12 }}
+            {{- else if $hasLocalCx }}
+            - name: CX_CLUSTER_NAME
+              value: {{ .Values.cxLogging.clusterName | quote }}
+            - name: CX_API_KEY
+              value: {{ .Values.cxLogging.apiKey | quote }}
+{{- include "cxLogging.ingressUrl" . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.env }}
+{{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- end }}
+          {{- with .Values.envFrom }}
+          envFrom:
+{{- toYaml . | nindent 12 }}
+          {{- end }}
           ports:
-            - name: https
-              containerPort: {{ .Values.webhook.port }}
-              protocol: TCP
-            - name: metrics
-              containerPort: 8080
-              protocol: TCP
-            - name: healthz
-              containerPort: 8081
-              protocol: TCP
+            - name: {{ .Values.ports.https.name }}
+              containerPort: {{ .Values.ports.https.containerPort }}
+              protocol: {{ .Values.ports.https.protocol }}
+            - name: {{ .Values.ports.metrics.name }}
+              containerPort: {{ .Values.ports.metrics.containerPort }}
+              protocol: {{ .Values.ports.metrics.protocol }}
+            - name: {{ .Values.ports.health.name }}
+              containerPort: {{ .Values.ports.health.containerPort }}
+              protocol: {{ .Values.ports.health.protocol }}
           readinessProbe:
-            httpGet:
-              path: /ready
-              port: 8081
-            initialDelaySeconds: 30
-            periodSeconds: 10
+{{- toYaml .Values.probes.readiness | nindent 12 }}
           livenessProbe:
-            httpGet:
-              path: /health
-              port: 8081
-            initialDelaySeconds: 30
-            periodSeconds: 10
+{{- toYaml .Values.probes.liveness | nindent 12 }}
           resources:
-            {{- toYaml .Values.webhook.resources | nindent 12 }}
-      {{- with .Values.webhook.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
+{{- toYaml .Values.resources | nindent 12 }}
+          {{- with .Values.extraVolumeMounts }}
+          volumeMounts:
+{{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.extraVolumes }}
+      volumes:
+{{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.webhook.tolerations }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
       tolerations:
-        {{- toYaml . | nindent 8 }}
+{{- toYaml . | nindent 8 }}
       {{- end }}
 {{- end }}

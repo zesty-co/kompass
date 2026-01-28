@@ -5,13 +5,13 @@ metadata:
   name: {{ include "kompass-pod-placement.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "kompass-pod-placement.labels" . | nindent 4 }}  
+{{- include "kompass-pod-placement.labels" . | nindent 4 }}
 spec:  
   ports:
     - name: {{ .Values.service.portName | default "https" }}
-      port: 443
-      targetPort: {{ .Values.webhook.port }}
+      port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPortName | default .Values.service.portName | default "https" }}
   selector:
-    app: {{ include "kompass-pod-placement.fullname" . }}
-  type: ClusterIP
+{{- include "kompass-pod-placement.selectorLabels" . | nindent 4 }}
+  type: {{ .Values.service.type }}
 {{- end }}

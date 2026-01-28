@@ -28,8 +28,9 @@ Create chart name and version as used by the chart label.
 Common labels
 */}}
 {{- define "kompass-pod-placement.labels" -}}
-app.kubernetes.io/instance: "{{ include "kompass-pod-placement.fullname" . }}"
-app.kubernetes.io/name: "{{ include "kompass-pod-placement.fullname" . }}"
+{{- include "kompass-pod-placement.selectorLabels" . }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+helm.sh/chart: {{ include "kompass-pod-placement.chart" . }}
 {{- end }}
 
 {{/*
@@ -44,7 +45,11 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 Create the name of the service account
 */}}
 {{- define "kompass-pod-placement.serviceAccountName" -}}
-{{ printf "%s-sa" (include "kompass-pod-placement.fullname" .) }}
+{{- if .Values.serviceAccount.name }}
+{{- .Values.serviceAccount.name }}
+{{- else }}
+{{- printf "%s-sa" (include "kompass-pod-placement.fullname" .) }}
+{{- end }}
 {{- end }}
 
 {{/*
@@ -54,15 +59,46 @@ Create the name of role
 {{- printf "%s-role" (include "kompass-pod-placement.fullname" .) }}
 {{- end }}
 
+{{/*
+Create the name of cluster role
+*/}}
+{{- define "kompass-pod-placement.clusterRoleName" -}}
+{{- include "kompass-pod-placement.fullname" . }}
+{{- end }}
+
 {{- define "cxLogging.ingressUrl" }}
 - name: CORALOGIX_INGRESS_URL
 {{- /*
 For backward compatibility, if the cxLogging.otelEndpoint is provided, use it to generate the ingressUrl.
 To remove in the future.
 */}}
+{{- if and .Values.global.cxLogging .Values.global.cxLogging.enabled }}
 {{- if .Values.global.cxLogging.otelEndpoint }}
   value: https://{{ .Values.global.cxLogging.otelEndpoint }}/
 {{- else }}
   value: {{ .Values.global.cxLogging.ingressUrl }}
+{{- end }}
+{{- else if .Values.cxLogging.otelEndpoint }}
+  value: https://{{ .Values.cxLogging.otelEndpoint }}/
+{{- else }}
+  value: {{ .Values.cxLogging.ingressUrl }}
+{{- end }}
+{{- end }}
+
+{{/*
+Render affinity configuration
+*/}}
+{{- define "kompass-pod-placement.affinity" -}}
+{{- if .Values.affinity }}
+{{- toYaml .Values.affinity }}
+{{- else }}
+podAntiAffinity:
+  preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchLabels:
+            {{- include "kompass-pod-placement.selectorLabels" . | nindent 12 }}
+        topologyKey: kubernetes.io/hostname
 {{- end }}
 {{- end }}

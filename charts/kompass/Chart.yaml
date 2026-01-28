@@ -20,9 +20,10 @@ dependencies:
   repository: "https://zesty-co.github.io/zesty-helm"
   version: 1.7.4
 - name: kompass-pod-placement
-  condition: kompass-pod-placement.enabled
+  alias: podplacement
+  condition: podplacement.enabled
   version: "0.1.0"
-  repository: "file://../kompass-pod-placement"
+  repository: "https://zesty-co.github.io/kompass"
 # mutual dependencies
 - name: victoria-metrics-single
   alias: victoriaMetrics

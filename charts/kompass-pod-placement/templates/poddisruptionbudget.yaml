@@ -1,1 +1,18 @@
-# TBD
+{{- if and .Values.enabled .Values.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "kompass-pod-placement.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+{{- include "kompass-pod-placement.labels" . | nindent 4 }}
+spec:
+  {{- if .Values.podDisruptionBudget.maxUnavailable }}
+  maxUnavailable: {{ .Values.podDisruptionBudget.maxUnavailable }}
+  {{- else }}
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  {{- end }}
+  selector:
+    matchLabels:
+{{- include "kompass-pod-placement.selectorLabels" . | nindent 6 }}
+{{- end }}
