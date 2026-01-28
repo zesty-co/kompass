@@ -8,7 +8,7 @@ metadata:
   annotations:
     cert-manager.io/inject-ca-from: {{ .Release.Namespace }}/{{ include "kompass-pod-placement.fullname" . }}-cert
 webhooks:
-  - name: {{ include "kompass-pod-placement.fullname" . }}-webhook
+  - name: webhook.{{ include "kompass-pod-placement.fullname" . }}.svc
     admissionReviewVersions: ["v1", "v1beta1"]
     sideEffects: None
     reinvocationPolicy: IfNeeded
