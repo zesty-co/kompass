@@ -20,34 +20,75 @@ image:
 
 serviceAccount:
   create: true
+  name: ""
   annotations: {}
 
 replicaCount: 2
 
-webhook:
-  port: 9443
-  failurePolicy: Ignore
-  timeoutSeconds: 5
-  resources: {}
-  nodeSelector: {}
-  tolerations: []
-  affinity: {}
-
-certificate:
-  provider: "cert-manager"
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
 
 service:
   portName: https
+  port: 443
+  targetPortName: https
+  type: ClusterIP
 
-rbac:
-  create: true
+ports:
+  https:
+    name: https
+    containerPort: 9443
+    protocol: TCP
+  metrics:
+    name: metrics
+    containerPort: 8080
+    protocol: TCP
+  health:
+    name: healthz
+    containerPort: 8081
+    protocol: TCP
+
+resources: {}
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
 
 podAnnotations: {}
 podLabels: {}
 
+extraArgs: []
+env: []
+envFrom: []
+
+extraVolumes: []
+extraVolumeMounts: []
+
+probes:
+  readiness:
+    httpGet:
+      path: /ready
+      port: healthz
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  liveness:
+    httpGet:
+      path: /health
+      port: healthz
+    initialDelaySeconds: 30
+    periodSeconds: 10
+
 podDisruptionBudget:
   enabled: true
   minAvailable: 1
+  maxUnavailable: ~
+
+rbac:
+  create: true
 
 cxLogging:
   enabled: false
