@@ -35,26 +35,38 @@ jobs:
         run: |
           set -e
 
-          CHART_PATH="charts/kompass"
-
           git fetch origin main
-          MAIN_VERSION=$(git show origin/main:$CHART_PATH/Chart.yaml | yq '.version')
-          PR_VERSION=$(yq '.version' $CHART_PATH/Chart.yaml)
+          CHARTS=("kompass" "kompass-pod-placement")
 
-          echo "Main version: $MAIN_VERSION"
-          echo "PR version:   $PR_VERSION"
+          for chart in "${CHARTS[@]}"; do
+            CHART_PATH="charts/$chart"
+            if [ ! -f "$CHART_PATH/Chart.yaml" ]; then
+              echo "Skipping $CHART_PATH (no Chart.yaml)."
+              continue
+            fi
 
-          if [ "$MAIN_VERSION" = "$PR_VERSION" ]; then
-            echo "❌ Chart version has not been updated."
-            exit 1
-          fi
+            MAIN_VERSION=$(git show origin/main:$CHART_PATH/Chart.yaml | yq '.version')
+            PR_VERSION=$(yq '.version' $CHART_PATH/Chart.yaml)
 
-          if [ "$(printf '%s\n' "$PR_VERSION" "$MAIN_VERSION" | sort -V | head -n1)" = "$PR_VERSION" ]; then
-            echo "❌ Chart version ($PR_VERSION) must be greater than main ($MAIN_VERSION)."
-            exit 1
-          fi
+            echo "Chart: $chart"
+            echo "Main version: $MAIN_VERSION"
+            echo "PR version:   $PR_VERSION"
 
-          echo "✅ Chart version bump detected."
+            if [ "$MAIN_VERSION" = "$PR_VERSION" ]; then
+              echo "❌ Chart version has not been updated for $chart."
+              exit 1
+            fi
+
+            if [ "$(printf '%s\n' "$PR_VERSION" "$MAIN_VERSION" | sort -V | head -n1)" = "$PR_VERSION" ]; then
+              echo "❌ Chart version ($PR_VERSION) must be greater than main ($MAIN_VERSION) for $chart."
+              exit 1
+            fi
+
+            echo "✅ Chart version bump detected for $chart."
+          done
 
       - name: helm lint
         run: helm lint ./charts/kompass
+
+      - name: helm lint kompass-pod-placement
+        run: helm lint ./charts/kompass-pod-placement
