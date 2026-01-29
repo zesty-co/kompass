@@ -2,15 +2,15 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ include "kompass-pod-placement.clusterRoleName" . }}
+  name: {{ include "kompass-pod-placement.fullname" . }}
   labels:
     {{- include "kompass-pod-placement.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: {{ include "kompass-pod-placement.clusterRoleName" . }}
+  name: {{ include "kompass-pod-placement.fullname" . }}
 subjects:
   - kind: ServiceAccount
-    name: {{ include "kompass-pod-placement.serviceAccountName" . }}
+    name: {{ include "kompass-pod-placement.fullname" . }}
     namespace: {{ .Release.Namespace }}
 {{- end }}

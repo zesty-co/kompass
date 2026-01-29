@@ -42,13 +42,6 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
-Create the name of cluster role
-*/}}
-{{- define "kompass-pod-placement.clusterRoleName" -}}
-{{- include "kompass-pod-placement.fullname" . }}
-{{- end }}
-
-{{/*
 Render affinity configuration
 */}}
 {{- define "kompass-pod-placement.affinity" -}}
