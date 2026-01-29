@@ -1,0 +1,26 @@
+{{- if .Values.webhook.enabled }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "kompass-pod-placement.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+  {{- if and .Values.global .Values.global.useHelmPriorityHooks (eq .Values.global.useHelmPriorityHooks true) }}
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "20"
+  {{- end }}
+    cert-manager.io/disable-name-generation: "true"
+  labels:
+    {{- include "kompass-pod-placement.labels" . | nindent 4 }}
+spec:
+  secretName: {{ include "kompass-pod-placement.fullname" . }}-webhook-cert
+  dnsNames:
+    - {{ include "kompass-pod-placement.fullname" . }}
+    - {{ include "kompass-pod-placement.fullname" . }}.{{ .Release.Namespace }}.svc
+    - {{ include "kompass-pod-placement.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
+  issuerRef:
+    kind: ClusterIssuer
+    {{ if .Values.global }}
+    name: {{ .Values.global.clusterIssuerName }}
+    {{ end }}
+{{- end }}

@@ -1,11 +1,10 @@
-enabled: true # todo: change the default to false
-
 global:
   cxLogging:
     enabled: false
     clusterName: ""
     apiKey: ""
     ingressUrl: https://ingress.eu2.coralogix.com/
+    otelEndpoint: ""
 
 nameOverride: ~
 fullnameOverride: ~
@@ -15,7 +14,6 @@ image:
   pullPolicy: Always
   tag: 223344
 
-# -- (array) Image pull secrets for private registries
 imagePullSecrets: []
 
 serviceAccount:
@@ -28,7 +26,7 @@ replicaCount: 2
 autoscaling:
   enabled: false
   minReplicas: 2
-  maxReplicas: 5
+  maxReplicas: 2
   targetCPUUtilizationPercentage: 80
   targetMemoryUtilizationPercentage: 80
 
@@ -95,3 +93,28 @@ cxLogging:
   clusterName: ""
   apiKey: ""
   ingressUrl: https://ingress.eu2.coralogix.com/
+  otelEndpoint: ""
+
+podSecurityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+# cache.securityContext -- Security context for the Cache container.
+# See: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+
+# todo: use these values in deployment
+
+webhook:
+  enabled: true
+  failurePolicy: Ignore
+  timeoutSeconds: 5

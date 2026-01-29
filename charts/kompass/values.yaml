@@ -71,7 +71,7 @@ global:
     # Resolves to `CORALOGIX_OTEL_ENDPOINT` environment variable,
     # and `CORALOGIX_INGRESS_URL` environment variable.
     # otelEndpoint: ingress.eu2.coralogix.com:443
-  # -- (string) global configmap name
+    # -- (string) global configmap name
   globalConfigName: global-config
 
 validator:
@@ -157,7 +157,7 @@ disk:
     # Provided during the onboarding process.
     apiKey: ""
 
-kompass-pod-placement:
+podPlacement:
   enabled: false
 
 victoriaMetrics:
@@ -206,30 +206,30 @@ victoriaMetricsCluster:
     affinity:
       podAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                    - vmstorage
-                - key: app.kubernetes.io/name
-                  operator: In
-                  values:
-                    - victoriaMetricsCluster
-            topologyKey: topology.kubernetes.io/zone
+        - labelSelector:
+            matchExpressions:
+            - key: app
+              operator: In
+              values:
+              - vmstorage
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - victoriaMetricsCluster
+          topologyKey: topology.kubernetes.io/zone
       podAntiAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                    - vmselect
-                - key: app.kubernetes.io/name
-                  operator: In
-                  values:
-                    - victoriaMetricsCluster
-            topologyKey: kubernetes.io/hostname
+        - labelSelector:
+            matchExpressions:
+            - key: app
+              operator: In
+              values:
+              - vmselect
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - victoriaMetricsCluster
+          topologyKey: kubernetes.io/hostname
     replicaCount: 2
     resources:
       requests:
@@ -247,30 +247,30 @@ victoriaMetricsCluster:
     affinity:
       podAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                    - vmstorage
-                - key: app.kubernetes.io/name
-                  operator: In
-                  values:
-                    - victoriaMetricsCluster
-            topologyKey: topology.kubernetes.io/zone
+        - labelSelector:
+            matchExpressions:
+            - key: app
+              operator: In
+              values:
+              - vmstorage
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - victoriaMetricsCluster
+          topologyKey: topology.kubernetes.io/zone
       podAntiAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                    - vminsert
-                - key: app.kubernetes.io/name
-                  operator: In
-                  values:
-                    - victoriaMetricsCluster
-            topologyKey: kubernetes.io/hostname
+        - labelSelector:
+            matchExpressions:
+            - key: app
+              operator: In
+              values:
+              - vminsert
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - victoriaMetricsCluster
+          topologyKey: kubernetes.io/hostname
     replicaCount: 2
     resources:
       requests:
@@ -292,30 +292,30 @@ victoriaMetricsCluster:
     affinity:
       podAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                    - vmstorage
-                - key: app.kubernetes.io/name
-                  operator: In
-                  values:
-                    - victoriaMetricsCluster
-            topologyKey: topology.kubernetes.io/zone
+        - labelSelector:
+            matchExpressions:
+            - key: app
+              operator: In
+              values:
+              - vmstorage
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - victoriaMetricsCluster
+          topologyKey: topology.kubernetes.io/zone
       podAntiAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                    - vmstorage
-                - key: app.kubernetes.io/name
-                  operator: In
-                  values:
-                    - victoriaMetricsCluster
-            topologyKey: kubernetes.io/hostname
+        - labelSelector:
+            matchExpressions:
+            - key: app
+              operator: In
+              values:
+              - vmstorage
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - victoriaMetricsCluster
+          topologyKey: kubernetes.io/hostname
     replicaCount: 2
     resources:
       requests:
@@ -345,7 +345,7 @@ victoriaMetricsAgent:
     promscrape.maxScrapeSize: 128MB
     enableTCP6: true
   remoteWrite:
-    - url: *vmRemoteWritePrometheusUrl
+  - url: *vmRemoteWritePrometheusUrl
 
 victoriaMetricsAlert:
   enabled: true
@@ -361,7 +361,7 @@ victoriaMetricsAlert:
     extraArgs:
       configCheckInterval: 1m
       rule:
-        - /config/*.yaml
+      - /config/*.yaml
       evaluationInterval: 30s
       enableTCP6: true
     configMap: kompass-vm-custom-recording-rules
@@ -381,37 +381,37 @@ victoriaMetricsAuth:
   affinity:
     podAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
-        - weight: 100
-          podAffinityTerm:
-            labelSelector:
-              matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                    - vmstorage
-                - key: app.kubernetes.io/name
-                  operator: In
-                  values:
-                    - victoriaMetricsCluster
-            topologyKey: topology.kubernetes.io/zone
-        - weight: 50
-          podAffinityTerm:
-            labelSelector:
-              matchExpressions:
-                - key: app.kubernetes.io/name
-                  operator: In
-                  values:
-                    - victoriaMetrics
-            topologyKey: topology.kubernetes.io/zone
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: app
+              operator: In
+              values:
+              - vmstorage
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - victoriaMetricsCluster
+          topologyKey: topology.kubernetes.io/zone
+      - weight: 50
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - victoriaMetrics
+          topologyKey: topology.kubernetes.io/zone
     podAntiAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchExpressions:
-              - key: app.kubernetes.io/name
-                operator: In
-                values:
-                  - victoriaMetricsAuth
-          topologyKey: kubernetes.io/hostname
+      - labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - victoriaMetricsAuth
+        topologyKey: kubernetes.io/hostname
   replicaCount: 2
   deployment:
     spec:
@@ -430,7 +430,7 @@ kubeStateMetrics:
   nameOverride: kube-state-metrics
   fullnameOverride: kompass-kube-state-metrics
   extraArgs:
-    - --metric-annotations-allowlist=pods=[*]
+  - --metric-annotations-allowlist=pods=[*]
 
 grafana:
   enabled: false

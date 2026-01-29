@@ -42,47 +42,10 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
-Create the name of the service account
-*/}}
-{{- define "kompass-pod-placement.serviceAccountName" -}}
-{{- if .Values.serviceAccount.name }}
-{{- .Values.serviceAccount.name }}
-{{- else }}
-{{- printf "%s-sa" (include "kompass-pod-placement.fullname" .) }}
-{{- end }}
-{{- end }}
-
-{{/*
-Create the name of role
-*/}}
-{{- define "kompass-pod-placement.roleName" -}}
-{{- printf "%s-role" (include "kompass-pod-placement.fullname" .) }}
-{{- end }}
-
-{{/*
 Create the name of cluster role
 */}}
 {{- define "kompass-pod-placement.clusterRoleName" -}}
 {{- include "kompass-pod-placement.fullname" . }}
-{{- end }}
-
-{{- define "cxLogging.ingressUrl" }}
-- name: CORALOGIX_INGRESS_URL
-{{- /*
-For backward compatibility, if the cxLogging.otelEndpoint is provided, use it to generate the ingressUrl.
-To remove in the future.
-*/}}
-{{- if and .Values.global.cxLogging .Values.global.cxLogging.enabled }}
-{{- if .Values.global.cxLogging.otelEndpoint }}
-  value: https://{{ .Values.global.cxLogging.otelEndpoint }}/
-{{- else }}
-  value: {{ .Values.global.cxLogging.ingressUrl }}
-{{- end }}
-{{- else if .Values.cxLogging.otelEndpoint }}
-  value: https://{{ .Values.cxLogging.otelEndpoint }}/
-{{- else }}
-  value: {{ .Values.cxLogging.ingressUrl }}
-{{- end }}
 {{- end }}
 
 {{/*

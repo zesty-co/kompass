@@ -1,4 +1,3 @@
-{{- if and .Values.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -12,32 +11,38 @@ spec:
   {{- end }}
   selector:
     matchLabels:
-{{- include "kompass-pod-placement.selectorLabels" . | nindent 6 }}
+      {{- include "kompass-pod-placement.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-{{- include "kompass-pod-placement.labels" . | nindent 8 }}
-{{- with .Values.podLabels }}
-{{- toYaml . | nindent 8 }}
-{{- end }}
+        {{- include "kompass-pod-placement.labels" . | nindent 8 }}
+      {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- with .Values.podAnnotations }}
-      annotations:
-{{- toYaml . | nindent 8 }}
+        annotations:
+          {{- toYaml . | nindent 8 }}
       {{- end }}
     spec:
-      serviceAccountName: {{ include "kompass-pod-placement.serviceAccountName" . }}
+      serviceAccountName: {{ include "kompass-pod-placement.fullname" . }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
-{{- toYaml . | nindent 8 }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
       {{- end }}
       affinity:
-{{- include "kompass-pod-placement.affinity" . | nindent 8 }}
+        {{- include "kompass-pod-placement.affinity" . | nindent 8 }}
       containers:
         - name: pod-placement
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           image: "{{ .Values.image.registry }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          {{- $hasGlobalCx := and .Values.global.cxLogging .Values.global.cxLogging.enabled }}
-          {{- $hasLocalCx := and .Values.cxLogging .Values.cxLogging.enabled }}
           args:
             - "--health-probe-bind-address=:{{ .Values.ports.health.containerPort }}"
             - "--metrics-bind-address=127.0.0.1:{{ .Values.ports.metrics.containerPort }}"
@@ -45,28 +50,44 @@ spec:
             {{- range .Values.extraArgs }}
             - {{ . | quote }}
             {{- end }}
-          {{- if or $hasGlobalCx $hasLocalCx .Values.env }}
           env:
-            {{- if $hasGlobalCx }}
+            {{- if and .Values.global.cxLogging .Values.global.cxLogging.enabled }}
             - name: CX_CLUSTER_NAME
-              value: {{ .Values.global.cxLogging.clusterName | quote }}
+              value: {{ .Values.global.cxLogging.clusterName }}
             - name: CX_API_KEY
-              value: {{ .Values.global.cxLogging.apiKey | quote }}
-{{- include "cxLogging.ingressUrl" . | nindent 12 }}
-            {{- else if $hasLocalCx }}
+              value: {{ .Values.global.cxLogging.apiKey }}
+            - name: CORALOGIX_INGRESS_URL
+              {{- /*
+                For backward compatibility, if the cxLogging.otelEndpoint is provided, use it to generate the ingressUrl.
+                To remove in the future.
+              */}}
+              {{- if .Values.global.cxLogging.otelEndpoint }}
+              value: https://{{ .Values.global.cxLogging.otelEndpoint }}/
+              {{- else }}
+              value: {{ .Values.global.cxLogging.ingressUrl }}
+              {{- end }}
+            {{- else if and .Values.cxLogging .Values.cxLogging.enabled }}
             - name: CX_CLUSTER_NAME
-              value: {{ .Values.cxLogging.clusterName | quote }}
+              value: {{ .Values.cxLogging.clusterName }}
             - name: CX_API_KEY
-              value: {{ .Values.cxLogging.apiKey | quote }}
-{{- include "cxLogging.ingressUrl" . | nindent 12 }}
+              value: {{ .Values.cxLogging.apiKey }}
+            - name: CORALOGIX_INGRESS_URL
+              {{- /*
+                For backward compatibility, if the cxLogging.otelEndpoint is provided, use it to generate the ingressUrl.
+                To remove in the future.
+              */}}
+              {{- if .Values.cxLogging.otelEndpoint }}
+              value: https://{{ .Values.cxLogging.otelEndpoint }}/
+              {{- else }}
+              value: {{ .Values.cxLogging.ingressUrl }}
+              {{- end }}
             {{- end }}
             {{- with .Values.env }}
-{{- toYaml . | nindent 12 }}
+            {{- toYaml . | nindent 12 }}
             {{- end }}
-          {{- end }}
           {{- with .Values.envFrom }}
           envFrom:
-{{- toYaml . | nindent 12 }}
+            {{- toYaml . | nindent 12 }}
           {{- end }}
           ports:
             - name: {{ .Values.ports.https.name }}
@@ -79,25 +100,24 @@ spec:
               containerPort: {{ .Values.ports.health.containerPort }}
               protocol: {{ .Values.ports.health.protocol }}
           readinessProbe:
-{{- toYaml .Values.probes.readiness | nindent 12 }}
+            {{- toYaml .Values.probes.readiness | nindent 12 }}
           livenessProbe:
-{{- toYaml .Values.probes.liveness | nindent 12 }}
+            {{- toYaml .Values.probes.liveness | nindent 12 }}
           resources:
-{{- toYaml .Values.resources | nindent 12 }}
+            {{- toYaml .Values.resources | nindent 12 }}
           {{- with .Values.extraVolumeMounts }}
           volumeMounts:
-{{- toYaml . | nindent 12 }}
+            {{- toYaml . | nindent 12 }}
           {{- end }}
       {{- with .Values.extraVolumes }}
       volumes:
-{{- toYaml . | nindent 8 }}
+        {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
-{{- toYaml . | nindent 8 }}
+        {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- with .Values.tolerations }}
       tolerations:
-{{- toYaml . | nindent 8 }}
+        {{- toYaml . | nindent 8 }}
       {{- end }}
-{{- end }}
