@@ -41,7 +41,7 @@ spec:
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          image: "{{ .Values.image.registry }}:{{ default .Chart.AppVersion .Values.image.tag }}"
+          image: "{{ include "kompass-pod-placement.image" . }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
             - "--health-probe-bind-address=:{{ .Values.ports.health.containerPort }}"

@@ -58,3 +58,10 @@ podAntiAffinity:
         topologyKey: kubernetes.io/hostname
 {{- end }}
 {{- end }}
+
+{{/*
+Create image reference
+*/}}
+{{- define "kompass-pod-placement.image" -}}
+{{ .Values.image.registry }}:{{ default .Chart.AppVersion .Values.image.tag  }}
+{{- end }}
