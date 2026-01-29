@@ -157,7 +157,7 @@ disk:
     # Provided during the onboarding process.
     apiKey: ""
 
-podPlacement:
+kompass-pod-placement:
   enabled: false
 
 victoriaMetrics:
