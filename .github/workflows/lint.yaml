@@ -37,7 +37,7 @@ jobs:
         set -e
 
         git fetch origin main
-        CHARTS=("kompass")
+        CHARTS=("kompass" "kompass-pod-placement")
 
         for chart in "${CHARTS[@]}"; do
           CHART_PATH="charts/$chart"
