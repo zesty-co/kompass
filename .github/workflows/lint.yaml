@@ -15,7 +15,7 @@ jobs:
     name: Helm Lint
     runs-on: ubuntu-latest
     env:
-      CHARTS: "kompass"
+      CHARTS: "kompass kompass-pod-placement"
 
     steps:
     - name: checkout
