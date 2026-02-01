@@ -4,3 +4,4 @@ description: Zesty Kompass Pod Placement for K8s
 type: application
 version: 0.1.0
 appVersion: "0.1.0"
+
