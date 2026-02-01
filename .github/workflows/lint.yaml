@@ -3,8 +3,9 @@ name: helm-lint
 on:
   push:
     branches:
-      - main
+    - main
   pull_request:
+
 
 jobs:
   lint:
@@ -15,46 +16,58 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+    - name: checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
-      - name: setup helm
-        uses: azure/setup-helm@v4
+    - name: setup helm
+      uses: azure/setup-helm@v4
 
-      - name: setup helm plugins
-        run: |
-          helm plugin install https://github.com/aslafy-z/helm-git --version 0.11.1 --verify=false
+    - name: setup helm plugins
+      run: |
+        helm plugin install https://github.com/aslafy-z/helm-git --version 0.11.1 --verify=false
 
-      - name: helm dependency update
-        run: helm dependency update ./charts/kompass
+    - name: helm dependency update
+      run: helm dependency update ./charts/kompass
 
-      - name: validate Chart.yaml version changed in PR
-        if: github.event_name == 'pull_request'
-        run: |
-          set -e
+    - name: validate Chart.yaml version changed in PR
+      if: github.event_name == 'pull_request'
+      run: |
+        set -e
 
-          CHART_PATH="charts/kompass"
+        git fetch origin main
+        CHARTS=("kompass")
 
-          git fetch origin main
+        for chart in "${CHARTS[@]}"; do
+          CHART_PATH="charts/$chart"
+          if [ ! -f "$CHART_PATH/Chart.yaml" ]; then
+            echo "Skipping $CHART_PATH (no Chart.yaml)."
+            continue
+          fi
+
           MAIN_VERSION=$(git show origin/main:$CHART_PATH/Chart.yaml | yq '.version')
           PR_VERSION=$(yq '.version' $CHART_PATH/Chart.yaml)
 
+          echo "Chart: $chart"
           echo "Main version: $MAIN_VERSION"
           echo "PR version:   $PR_VERSION"
 
           if [ "$MAIN_VERSION" = "$PR_VERSION" ]; then
-            echo "❌ Chart version has not been updated."
+            echo "❌ Chart version has not been updated for $chart."
             exit 1
           fi
 
           if [ "$(printf '%s\n' "$PR_VERSION" "$MAIN_VERSION" | sort -V | head -n1)" = "$PR_VERSION" ]; then
-            echo "❌ Chart version ($PR_VERSION) must be greater than main ($MAIN_VERSION)."
+            echo "❌ Chart version ($PR_VERSION) must be greater than main ($MAIN_VERSION) for $chart."
             exit 1
           fi
 
-          echo "✅ Chart version bump detected."
+          echo "✅ Chart version bump detected for $chart."
+        done
 
-      - name: helm lint
-        run: helm lint ./charts/kompass
+    - name: helm lint
+      run: helm lint ./charts/kompass
+
+    - name: helm lint kompass-pod-placement
+      run: helm lint ./charts/kompass-pod-placement

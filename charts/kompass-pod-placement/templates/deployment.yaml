@@ -1,0 +1,123 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kompass-pod-placement.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+{{- include "kompass-pod-placement.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "kompass-pod-placement.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "kompass-pod-placement.labels" . | nindent 8 }}
+      {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.podAnnotations }}
+        annotations:
+          {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "kompass-pod-placement.fullname" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      affinity:
+        {{- include "kompass-pod-placement.affinity" . | nindent 8 }}
+      containers:
+        - name: pod-placement
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ include "kompass-pod-placement.image" . }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - "--health-probe-bind-address=:{{ .Values.ports.health.containerPort }}"
+            - "--metrics-bind-address=127.0.0.1:{{ .Values.ports.metrics.containerPort }}"
+            - "--leader-elect"
+            {{- range .Values.extraArgs }}
+            - {{ . | quote }}
+            {{- end }}
+          env:
+            {{- if and .Values.global.cxLogging .Values.global.cxLogging.enabled }}
+            - name: CX_CLUSTER_NAME
+              value: {{ .Values.global.cxLogging.clusterName }}
+            - name: CX_API_KEY
+              value: {{ .Values.global.cxLogging.apiKey }}
+            - name: CORALOGIX_INGRESS_URL
+              {{- /*
+                For backward compatibility, if the cxLogging.otelEndpoint is provided, use it to generate the ingressUrl.
+                To remove in the future.
+              */}}
+              {{- if .Values.global.cxLogging.otelEndpoint }}
+              value: https://{{ .Values.global.cxLogging.otelEndpoint }}/
+              {{- else }}
+              value: {{ .Values.global.cxLogging.ingressUrl }}
+              {{- end }}
+            {{- else if and .Values.cxLogging .Values.cxLogging.enabled }}
+            - name: CX_CLUSTER_NAME
+              value: {{ .Values.cxLogging.clusterName }}
+            - name: CX_API_KEY
+              value: {{ .Values.cxLogging.apiKey }}
+            - name: CORALOGIX_INGRESS_URL
+              {{- /*
+                For backward compatibility, if the cxLogging.otelEndpoint is provided, use it to generate the ingressUrl.
+                To remove in the future.
+              */}}
+              {{- if .Values.cxLogging.otelEndpoint }}
+              value: https://{{ .Values.cxLogging.otelEndpoint }}/
+              {{- else }}
+              value: {{ .Values.cxLogging.ingressUrl }}
+              {{- end }}
+            {{- end }}
+            {{- with .Values.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.envFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: {{ .Values.ports.https.name }}
+              containerPort: {{ .Values.ports.https.containerPort }}
+              protocol: {{ .Values.ports.https.protocol }}
+            - name: {{ .Values.ports.metrics.name }}
+              containerPort: {{ .Values.ports.metrics.containerPort }}
+              protocol: {{ .Values.ports.metrics.protocol }}
+            - name: {{ .Values.ports.health.name }}
+              containerPort: {{ .Values.ports.health.containerPort }}
+              protocol: {{ .Values.ports.health.protocol }}
+          readinessProbe:
+            {{- toYaml .Values.probes.readiness | nindent 12 }}
+          livenessProbe:
+            {{- toYaml .Values.probes.liveness | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- with .Values.extraVolumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.extraVolumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

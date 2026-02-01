@@ -1,0 +1,120 @@
+global:
+  cxLogging:
+    enabled: false
+    clusterName: ""
+    apiKey: ""
+    ingressUrl: https://ingress.eu2.coralogix.com/
+    otelEndpoint: ""
+
+nameOverride: ~
+fullnameOverride: ~
+
+image:
+  registry: 672188301118.dkr.ecr.eu-west-1.amazonaws.com/zesty-k8s/pod-placement
+  pullPolicy: Always
+  tag: ~
+
+imagePullSecrets: []
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+replicaCount: 2
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 2
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+service:
+  portName: https
+  port: 443
+  targetPortName: https
+  type: ClusterIP
+
+ports:
+  https:
+    name: https
+    containerPort: 9443
+    protocol: TCP
+  metrics:
+    name: metrics
+    containerPort: 8080
+    protocol: TCP
+  health:
+    name: healthz
+    containerPort: 8081
+    protocol: TCP
+
+resources: {}
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+podAnnotations: {}
+podLabels: {}
+
+extraArgs: []
+env: []
+envFrom: []
+
+extraVolumes: []
+extraVolumeMounts: []
+
+probes:
+  readiness:
+    httpGet:
+      path: /ready
+      port: healthz
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  liveness:
+    httpGet:
+      path: /health
+      port: healthz
+    initialDelaySeconds: 30
+    periodSeconds: 10
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+  maxUnavailable: ~
+
+rbac:
+  create: true
+
+cxLogging:
+  enabled: false
+  clusterName: ""
+  apiKey: ""
+  ingressUrl: https://ingress.eu2.coralogix.com/
+  otelEndpoint: ""
+
+podSecurityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+# cache.securityContext -- Security context for the Cache container.
+# See: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+
+# todo: use these values in deployment
+
+webhook:
+  enabled: true
+  failurePolicy: Ignore
+  timeoutSeconds: 5

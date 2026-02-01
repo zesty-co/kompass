@@ -1,0 +1,37 @@
+{{- if and .Values.enabled .Values.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "kompass-pod-placement.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+{{- include "kompass-pod-placement.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "kompass-pod-placement.fullname" . }}
+  minReplicas: {{ .Values.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.autoscaling.maxReplicas }}
+  {{- $cpu := .Values.autoscaling.targetCPUUtilizationPercentage }}
+  {{- $memory := .Values.autoscaling.targetMemoryUtilizationPercentage }}
+  {{- if or $cpu $memory }}
+  metrics:
+    {{- if $cpu }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ $cpu }}
+    {{- end }}
+    {{- if $memory }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ $memory }}
+    {{- end }}
+  {{- end }}
+{{- end }}

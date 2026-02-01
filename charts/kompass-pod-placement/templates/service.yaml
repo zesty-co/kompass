@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kompass-pod-placement.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+{{- include "kompass-pod-placement.labels" . | nindent 4 }}
+spec:  
+  ports:
+    - name: {{ .Values.service.portName }}
+      port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPortName }}
+  selector:
+  {{- include "kompass-pod-placement.selectorLabels" . | nindent 4 }}
+  type: {{ .Values.service.type }}
