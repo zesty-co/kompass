@@ -20,7 +20,7 @@ dependencies:
     repository: "https://zesty-co.github.io/zesty-helm"
     version: 1.7.4
   - name: kompass-pod-placement
-    condition: pod-placement.enabled
+    condition: kompass-pod-placement.enabled
     repository: "https://zesty-co.github.io/kompass"
     version: 0.1.0
   # mutual dependencies
