@@ -23,16 +23,6 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: setup helm
-      uses: azure/setup-helm@v4
-
-    - name: setup helm plugins
-      run: |
-        helm plugin install https://github.com/aslafy-z/helm-git --version 0.11.1 --verify=false
-
-    - name: helm dependency update
-      run: helm dependency update ./charts/kompass
-
     - name: detect chart changes
       run: |
         set -e
@@ -50,6 +40,27 @@ jobs:
             echo "$chart_key=true" >> "$GITHUB_ENV"
           fi
         done
+
+    - name: set any chart changed
+      run: |
+        if [ "$kompass_changed" = "true" ] || [ "$kompass_pod_placement_changed" = "true" ]; then
+          echo "any_chart_changed=true" >> "$GITHUB_ENV"
+        else
+          echo "any_chart_changed=false" >> "$GITHUB_ENV"
+        fi
+
+    - name: setup helm
+      uses: azure/setup-helm@v4
+      if: env.any_chart_changed == 'true'
+
+    - name: setup helm plugins
+      run: |
+        helm plugin install https://github.com/aslafy-z/helm-git --version 0.11.1 --verify=false
+      if: env.kompass_changed == 'true'
+
+    - name: helm dependency update
+      run: helm dependency update ./charts/kompass
+      if: env.kompass_changed == 'true'
 
     - name: validate Chart.yaml version changed in PR
       if: github.event_name == 'pull_request'
