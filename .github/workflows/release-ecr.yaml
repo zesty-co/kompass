@@ -43,6 +43,7 @@ jobs:
 
       - name: Add Helm Repos
         run: |
+          helm repo add kompass https://zesty-co.github.io/kompass
           helm repo add zesty-insights https://zesty-co.github.io/kompass-insights
           helm repo add zesty-rightsizing https://zesty-co.github.io/kompass-pod-rightsizing
           helm repo add zesty-helm https://zesty-co.github.io/zesty-helm
