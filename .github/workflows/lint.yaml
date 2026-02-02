@@ -43,11 +43,19 @@ jobs:
 
     - name: set any chart changed
       run: |
-        if [ "$kompass_changed" = "true" ] || [ "$kompass_pod_placement_changed" = "true" ]; then
-          echo "any_chart_changed=true" >> "$GITHUB_ENV"
-        else
-          echo "any_chart_changed=false" >> "$GITHUB_ENV"
-        fi
+        any_changed=false
+
+        for chart in $CHARTS; do
+          chart_key="${chart//-/_}_changed"
+          chart_changed="${!chart_key}"
+
+          if [ "$chart_changed" = "true" ]; then
+            any_changed=true
+            break
+          fi
+        done
+
+        echo "any_chart_changed=$any_changed" >> "$GITHUB_ENV"
 
     - name: setup helm
       uses: azure/setup-helm@v4
