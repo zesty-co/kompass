@@ -28,6 +28,12 @@ global:
   nodeSelector: {}
   # -- (array) global tolerations for Kompass components
   tolerations: []
+  # -- (array) Global image pull secrets (precreated)
+  imagePullSecrets: []
+  # -- (object) Helm-created image pull secret
+  imagePullSecret:
+    name: ""
+    dockerconfigjson: ""
   # -- (map) global cxLogging for Kompass components
   cxLogging:
     # -- (bool) Enable or disable sending CX logs to Zesty.

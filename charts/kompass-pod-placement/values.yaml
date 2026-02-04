@@ -5,6 +5,10 @@ global:
     apiKey: ""
     ingressUrl: https://ingress.eu2.coralogix.com/
     otelEndpoint: ""
+  imagePullSecrets: []
+  imagePullSecret:
+    name: ""
+    dockerconfigjson: ""
 
 nameOverride: ~
 fullnameOverride: ~
@@ -14,6 +18,7 @@ image:
   pullPolicy: Always
   tag: ~
 
+# -- (array) Image pull secrets for private registries
 imagePullSecrets: []
 
 serviceAccount:
