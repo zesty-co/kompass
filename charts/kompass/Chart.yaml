@@ -3,13 +3,13 @@ name: kompass
 description: Zesty Kompass Helm Charts
 icon: https://zesty.co/wp-content/uploads/2024/05/favicon-150x150.png
 type: application
-version: 0.1.106
+version: 0.1.108
 appVersion: "1.16.0"
 dependencies:
   # zesty products
   - name: kompass-insights
     repository: "https://zesty-co.github.io/kompass-insights"
-    version: "2.1.82"
+    version: "2.1.83"
   - name: pod-rightsizing
     alias: rightsizing
     repository: "https://zesty-co.github.io/kompass-pod-rightsizing"
@@ -22,7 +22,7 @@ dependencies:
   - name: kompass-pod-placement
     condition: kompass-pod-placement.enabled
     repository: "https://zesty-co.github.io/kompass"
-    version: 0.1.0
+    version: 0.1.1
   # mutual dependencies
   - name: victoria-metrics-single
     alias: victoriaMetrics
