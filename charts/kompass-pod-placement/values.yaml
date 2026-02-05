@@ -18,7 +18,6 @@ image:
   pullPolicy: Always
   tag: ~
 
-# -- (array) Image pull secrets for private registries
 imagePullSecrets: []
 
 serviceAccount:
