@@ -5,6 +5,10 @@ global:
     apiKey: ""
     ingressUrl: https://ingress.eu2.coralogix.com/
     otelEndpoint: ""
+  imagePullSecrets: []
+  imagePullSecret:
+    name: ""
+    dockerconfigjson: ""
 
 nameOverride: ~
 fullnameOverride: ~

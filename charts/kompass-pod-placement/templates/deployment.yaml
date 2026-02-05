@@ -25,9 +25,17 @@ spec:
       {{- end }}
     spec:
       serviceAccountName: {{ include "kompass-pod-placement.fullname" . }}
-      {{- with .Values.imagePullSecrets }}
+      {{- $globalPullSecrets := list }}
+      {{- if .Values.global.imagePullSecret.name }}
+      {{- $globalPullSecrets = append $globalPullSecrets (dict "name" .Values.global.imagePullSecret.name) }}
+      {{- end }}
+      {{- range .Values.global.imagePullSecrets }}
+      {{- $globalPullSecrets = append $globalPullSecrets . }}
+      {{- end }}
+      {{- $pullSecrets := .Values.imagePullSecrets | default $globalPullSecrets }}
+      {{- if $pullSecrets }}
       imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
+        {{- toYaml $pullSecrets | nindent 8 }}
       {{- end }}
       {{- with .Values.podSecurityContext }}
       securityContext:
