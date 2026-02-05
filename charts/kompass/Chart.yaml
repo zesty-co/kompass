@@ -22,7 +22,7 @@ dependencies:
   - name: kompass-pod-placement
     condition: kompass-pod-placement.enabled
     repository: "https://zesty-co.github.io/kompass"
-    version: 0.1.0
+    version: 0.1.1
   # mutual dependencies
   - name: victoria-metrics-single
     alias: victoriaMetrics
