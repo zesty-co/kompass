@@ -22,7 +22,6 @@ imagePullSecrets: []
 
 serviceAccount:
   create: true
-  name: ""
   annotations: {}
 
 replicaCount: 2
@@ -54,7 +53,13 @@ ports:
     containerPort: 8081
     protocol: TCP
 
-resources: {}
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi
 
 nodeSelector: {}
 tolerations: []
@@ -75,13 +80,13 @@ probes:
     httpGet:
       path: /ready
       port: healthz
-    initialDelaySeconds: 30
+    initialDelaySeconds: 15
     periodSeconds: 10
   liveness:
     httpGet:
       path: /health
       port: healthz
-    initialDelaySeconds: 30
+    initialDelaySeconds: 15
     periodSeconds: 10
 
 podDisruptionBudget:

@@ -4,7 +4,7 @@ metadata:
   name: {{ include "kompass-pod-placement.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-{{- include "kompass-pod-placement.labels" . | nindent 4 }}
+    {{- include "kompass-pod-placement.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
@@ -20,8 +20,8 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- with .Values.podAnnotations }}
-        annotations:
-          {{- toYaml . | nindent 8 }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
       {{- end }}
     spec:
       serviceAccountName: {{ include "kompass-pod-placement.fullname" . }}
@@ -53,7 +53,7 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
             - "--health-probe-bind-address=:{{ .Values.ports.health.containerPort }}"
-            - "--metrics-bind-address=127.0.0.1:{{ .Values.ports.metrics.containerPort }}"
+            - "--metrics-bind-address=:{{ .Values.ports.metrics.containerPort }}"
             - "--leader-elect"
             {{- range .Values.extraArgs }}
             - {{ . | quote }}

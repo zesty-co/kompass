@@ -45,9 +45,9 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 Render affinity configuration
 */}}
 {{- define "kompass-pod-placement.affinity" -}}
-{{- if .Values.affinity }}
-{{- toYaml .Values.affinity }}
-{{- else }}
+{{- if .Values.affinity -}}
+{{- toYaml .Values.affinity -}}
+{{- else -}}
 podAntiAffinity:
   preferredDuringSchedulingIgnoredDuringExecution:
     - weight: 100
