@@ -5,7 +5,7 @@ metadata:
   name: {{ include "kompass-pod-placement.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-{{- include "kompass-pod-placement.labels" . | nindent 4 }}
+    {{- include "kompass-pod-placement.labels" . | nindent 4 }}
 spec:
   {{- if .Values.podDisruptionBudget.maxUnavailable }}
   maxUnavailable: {{ .Values.podDisruptionBudget.maxUnavailable }}
@@ -14,5 +14,5 @@ spec:
   {{- end }}
   selector:
     matchLabels:
-    {{- include "kompass-pod-placement.selectorLabels" . | nindent 6 }}
+      {{- include "kompass-pod-placement.selectorLabels" . | nindent 6 }}
 {{- end }}

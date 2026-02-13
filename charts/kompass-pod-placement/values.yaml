@@ -13,6 +13,9 @@ global:
 nameOverride: ~
 fullnameOverride: ~
 
+# kompassInsightSecret -- Name of the Kubernetes secret created by the Kompass Insight.
+kompassInsightSecret: "kompass-insights-secret"
+
 image:
   registry: 672188301118.dkr.ecr.eu-west-1.amazonaws.com/zesty-k8s/pod-placement
   pullPolicy: Always
@@ -22,7 +25,6 @@ imagePullSecrets: []
 
 serviceAccount:
   create: true
-  name: ""
   annotations: {}
 
 replicaCount: 2
@@ -54,7 +56,13 @@ ports:
     containerPort: 8081
     protocol: TCP
 
-resources: {}
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi
 
 nodeSelector: {}
 tolerations: []
@@ -73,15 +81,15 @@ extraVolumeMounts: []
 probes:
   readiness:
     httpGet:
-      path: /ready
+      path: /readyz
       port: healthz
-    initialDelaySeconds: 30
+    initialDelaySeconds: 15
     periodSeconds: 10
   liveness:
     httpGet:
-      path: /health
+      path: /healthz
       port: healthz
-    initialDelaySeconds: 30
+    initialDelaySeconds: 15
     periodSeconds: 10
 
 podDisruptionBudget:

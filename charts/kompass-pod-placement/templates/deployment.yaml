@@ -4,7 +4,7 @@ metadata:
   name: {{ include "kompass-pod-placement.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-{{- include "kompass-pod-placement.labels" . | nindent 4 }}
+    {{- include "kompass-pod-placement.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
@@ -20,8 +20,8 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- with .Values.podAnnotations }}
-        annotations:
-          {{- toYaml . | nindent 8 }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
       {{- end }}
     spec:
       serviceAccountName: {{ include "kompass-pod-placement.fullname" . }}
@@ -52,13 +52,20 @@ spec:
           image: "{{ include "kompass-pod-placement.image" . }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
-            - "--health-probe-bind-address=:{{ .Values.ports.health.containerPort }}"
-            - "--metrics-bind-address=127.0.0.1:{{ .Values.ports.metrics.containerPort }}"
-            - "--leader-elect"
+            - "--probe-addr=:{{ .Values.ports.health.containerPort }}"
+            - "--metrics-addr=:{{ .Values.ports.metrics.containerPort }}"
             {{- range .Values.extraArgs }}
             - {{ . | quote }}
             {{- end }}
           env:
+            - name: ZESTY_SECRET_NAME
+              value: {{ .Values.kompassInsightSecret }}
+            - name: KOMPASS_CHART_VERSION
+              value: {{ .Chart.Version }}
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
             {{- if and .Values.global.cxLogging .Values.global.cxLogging.enabled }}
             - name: CX_CLUSTER_NAME
               value: {{ .Values.global.cxLogging.clusterName }}
