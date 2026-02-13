@@ -6,6 +6,7 @@ metadata:
   labels:
     {{- include "kompass-pod-placement.labels" . | nindent 4 }}
 rules:
+  # Pod operations. Patch and Update are required to update the pod's labels and annotations.
   - apiGroups:
     - ""
     resources:
@@ -17,14 +18,16 @@ rules:
     - patch
     - update
     - watch
-  
+
+  # Pod eviction
   - apiGroups:
     - ""
     resources:
     - pods/eviction
     verbs:
     - create
-  
+
+  # Node operations. Patch and Update are required to update the node's labels and annotations.
   - apiGroups:
     - ""
     resources:
@@ -33,48 +36,86 @@ rules:
     - get
     - list
     - watch
-  
+    - patch
+    - update
+
+  # Core operations.
   - apiGroups:
     - ""
-    resources: # To identify unevictable pods
-    - persistentvolumes
-    - persistentvolumeclaims
-    verbs: 
+    resources:
+    - namespaces             # Required by scheduler
+    - persistentvolumes      # Required by scheduler
+    - persistentvolumeclaims # Required by scheduler
+    - services               # Required by scheduler
+    - replicationcontrollers # Required by scheduler
+    verbs:
       - get
       - list
       - watch
-  
+
+  # Apps operations.
+  - apiGroups:
+      - "apps"
+    resources:
+      - replicasets  # Required by scheduler
+      - statefulsets # Required by scheduler
+    verbs:
+      - get
+      - list
+      - watch
+
+  # PodDisruptionBudget operations. To read PDBs, identify unevictable pods and perform eviction.
+  # Required for classification, eviction and by scheduler.
   - apiGroups:
     - "policy"
     resources:
-    - poddisruptionbudgets # To identify unevictable pods
+    - poddisruptionbudgets
     verbs:
     - get
     - list
     - watch
-    
+
+  # Storage operations. To read CSI nodes, storage classes, and volume attachments.
+  # Required by scheduler.
   - apiGroups:
-    - "apps"
+      - "storage.k8s.io"
     resources:
-    - deployments
-    - statefulsets
-    - daemonsets
-    - replicasets
+      - csinodes
+      - csidrivers
+      - csistoragecapacities
+      - storageclasses
+      - volumeattachments
     verbs:
-    - get
-    - list
-    - watch
-    
+      - get
+      - list
+      - watch
+
+  # Dynamic Resource Allocation (DRA) operations. To read resource claims, slices, and device classes.
+  # Required by scheduler.
   - apiGroups:
-    - "batch"
+      - "resource.k8s.io"
     resources:
-    - jobs
-    - cronjobs
+      - resourceclaims
+      - resourceslices
+      - deviceclasses
     verbs:
-    - get
-    - list
-    - watch
-    
+      - get
+      - list
+      - watch
+
+  # Karpenter v1alpha5 operations. To read Provisions.
+  # Required for classification.
+  - apiGroups:
+      - "karpenter.sh"
+    resources:
+      - provisioners
+    verbs:
+      - get
+      - list
+      - watch
+
+  # Karpenter v1 operations. To read NodePools.
+  # Required for classification.
   - apiGroups:
     - "karpenter.sh"
     resources:
