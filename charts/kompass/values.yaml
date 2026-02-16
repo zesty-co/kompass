@@ -24,6 +24,15 @@ global:
   clusterIssuerName: kompass-selfsigned-issuer
   # -- (bool)
   useHelmPriorityHooks: true
+  # -- (map) Quantiles (as whole-number percentages) for custom replica aggregation methods.
+  # Each value must be an integer between 1 and 99.
+  customReplicaAggregationMethodsOverride:
+    cpu:
+      custom1: 90
+      custom2: 80
+    memory:
+      custom1: 98
+      custom2: 90
   # -- (map) global node selector for Kompass components
   nodeSelector: {}
   # -- (array) global tolerations for Kompass components
