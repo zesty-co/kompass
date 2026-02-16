@@ -195,6 +195,9 @@ rightsizing:
     apiKey: ""
     # -- (string) logUrl: The URL endpoint for sending logs to Coralogix.
     # -- (string) timeDeltaUrl: The URL endpoint for time synchronization with Coralogix.
+  # -- (map) Optional custom replica aggregation quantiles (integers 1..99).
+  config:
+    customReplicaAggregationMethodsOverride: {}
 
 disk:
   # -- (bool) Enable or disable the Zesty disk optimization feature components.
