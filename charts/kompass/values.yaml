@@ -379,6 +379,7 @@ victoriaMetricsAuth:
   fullnameOverride: *vmName
   secretName: kompass-vmauth-config
   extraArgs:
+    loggerLevel: WARN
     configCheckInterval: 1m
     enableTCP6: true
   podDisruptionBudget:
