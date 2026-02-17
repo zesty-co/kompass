@@ -160,3 +160,97 @@ Create the name of the recommendations-maker
 */}}
 {{- $makerValues.fullnameOverride | default $defaultFullName | trim -}}
 {{- end -}}
+
+{{/*
+Resolve a map workload value from global/component values.
+Global values override component values for matching keys.
+*/}}
+{{- define "kompass.workload.resolveMap" -}}
+{{- $global := default (dict) .global -}}
+{{- $component := default (dict) .component -}}
+{{- $key := .key -}}
+{{- $globalHasKey := hasKey $global $key -}}
+{{- $componentHasKey := hasKey $component $key -}}
+{{- if and $globalHasKey $componentHasKey -}}
+{{- $componentValue := default (dict) (index $component $key) -}}
+{{- $globalValue := default (dict) (index $global $key) -}}
+{{- toYaml (mergeOverwrite (deepCopy $componentValue) $globalValue) -}}
+{{- else if $globalHasKey -}}
+{{- toYaml (default (dict) (index $global $key)) -}}
+{{- else if $componentHasKey -}}
+{{- toYaml (default (dict) (index $component $key)) -}}
+{{- else -}}
+{{- toYaml (dict) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Resolve container securityContext from global/component values.
+Global values override component values for matching keys.
+Pod-only securityContext keys are removed from the resolved map.
+*/}}
+{{- define "kompass.workload.resolveContainerSecurityContext" -}}
+{{- $resolved := include "kompass.workload.resolveMap" (dict "global" .global "component" .component "key" "securityContext") | fromYaml | default (dict) -}}
+{{- $podOnlyKeys := list "fsGroup" "fsGroupChangePolicy" "supplementalGroups" "supplementalGroupsPolicy" "sysctls" -}}
+{{- range $key := $podOnlyKeys -}}
+{{- $_ := unset $resolved $key -}}
+{{- end -}}
+{{- toYaml $resolved -}}
+{{- end -}}
+
+{{/*
+Resolve a list workload value from global/component values.
+Global value takes precedence when set.
+*/}}
+{{- define "kompass.workload.resolveList" -}}
+{{- $global := default (dict) .global -}}
+{{- $component := default (dict) .component -}}
+{{- $key := .key -}}
+{{- $globalValue := default (list) (index $global $key) -}}
+{{- $componentValue := default (list) (index $component $key) -}}
+{{- if and (hasKey $global $key) (gt (len $globalValue) 0) -}}
+{{- toYaml $globalValue -}}
+{{- else if and (hasKey $component $key) (gt (len $componentValue) 0) -}}
+{{- toYaml $componentValue -}}
+{{- else -}}
+{{- toYaml (list) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Resolve a bool workload value from global/component values.
+Global value takes precedence and explicit false is preserved.
+*/}}
+{{- define "kompass.workload.resolveBool" -}}
+{{- $global := default (dict) .global -}}
+{{- $component := default (dict) .component -}}
+{{- $key := .key -}}
+{{- $globalValue := index $global $key -}}
+{{- $componentValue := index $component $key -}}
+{{- if and (hasKey $global $key) (ne $globalValue nil) -}}
+{{- $globalValue | toJson -}}
+{{- else if and (hasKey $component $key) (ne $componentValue nil) -}}
+{{- $componentValue | toJson -}}
+{{- else -}}
+null
+{{- end -}}
+{{- end -}}
+
+{{/*
+Resolve a string workload value from global/component values.
+Global value takes precedence when explicitly set.
+*/}}
+{{- define "kompass.workload.resolveString" -}}
+{{- $global := default (dict) .global -}}
+{{- $component := default (dict) .component -}}
+{{- $key := .key -}}
+{{- $globalValue := default "" (index $global $key) -}}
+{{- $componentValue := default "" (index $component $key) -}}
+{{- if and (hasKey $global $key) (not (empty $globalValue)) -}}
+{{- $globalValue -}}
+{{- else if and (hasKey $component $key) (not (empty $componentValue)) -}}
+{{- $componentValue -}}
+{{- else -}}
+{{- "" -}}
+{{- end -}}
+{{- end -}}
