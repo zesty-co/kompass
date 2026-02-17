@@ -28,8 +28,28 @@ global:
   nodeSelector: {}
   # -- (array) global tolerations for Kompass components
   tolerations: []
+  # -- (map) Global affinity for root-owned workloads.
+  affinity: {}
+  # -- (bool) Global automountServiceAccountToken for root-owned workloads.
+  automountServiceAccountToken: ~
   # -- (array) Global image pull secrets (precreated)
   imagePullSecrets: []
+  # -- (string) Global metrics exporter service account name (pass-through key).
+  metricsExporterServiceAccountName: ""
+  # -- (map) Global pod annotations for root-owned workloads.
+  podAnnotations: {}
+  # -- (map) Global pod labels for root-owned workloads.
+  podLabels: {}
+  # -- (map) Global pod-level security context for root-owned workloads.
+  # Use pod-only keys here (for example: fsGroup, fsGroupChangePolicy, supplementalGroups).
+  podSecurityContext: {}
+  # -- (string) Global runtime class name for root-owned workloads.
+  runtimeClassName: ""
+  # -- (map) Global container-level security context for root-owned workloads.
+  # Use container-only keys here (for example: runAsUser, runAsGroup, capabilities); do not set fsGroup.
+  securityContext: {}
+  # -- (array) Global topology spread constraints for root-owned workloads.
+  topologySpreadConstraints: []
   # -- (object) Helm-created image pull secret
   imagePullSecret:
     name: ""
@@ -85,6 +105,28 @@ validator:
     registry: 672188301118.dkr.ecr.eu-west-1.amazonaws.com/docker-hub/bitnami
     repository: kubectl
     tag: latest
+  # -- (map) Pod affinity for validator job.
+  affinity: {}
+  # -- (bool) Pod automountServiceAccountToken for validator job.
+  automountServiceAccountToken: ~
+  # -- (array) Pod imagePullSecrets for validator job.
+  imagePullSecrets: []
+  # -- (string) Metrics exporter service account name (pass-through key).
+  metricsExporterServiceAccountName: ""
+  # -- (map) Pod annotations for validator job.
+  podAnnotations: {}
+  # -- (map) Pod labels for validator job.
+  podLabels: {}
+  # -- (map) Pod-level security context for validator job.
+  podSecurityContext: {}
+  # -- (string) Runtime class name for validator job.
+  runtimeClassName: ""
+  # -- (map) Container-level security context for validator job.
+  securityContext: {}
+  # -- (string) Service account name for validator job.
+  serviceAccountName: kompass-validator
+  # -- (array) Topology spread constraints for validator job.
+  topologySpreadConstraints: []
 
 kompass-insights:
   # -- (string) REQUIRED: Your Zesty organization ID.
@@ -334,6 +376,55 @@ victoriaMetricsMigration:
     registry: victoriametrics
     repository: vmctl
     tag: latest
+  # -- (map) Pod affinity for VictoriaMetrics migration job.
+  affinity:
+    podAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values:
+            - vmstorage
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - victoriaMetricsCluster
+        topologyKey: topology.kubernetes.io/zone
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: app
+              operator: In
+              values:
+              - vminsert
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - victoriaMetricsCluster
+          topologyKey: kubernetes.io/hostname
+  # -- (bool) Pod automountServiceAccountToken for VictoriaMetrics migration job.
+  automountServiceAccountToken: ~
+  # -- (array) Pod imagePullSecrets for VictoriaMetrics migration job.
+  imagePullSecrets: []
+  # -- (string) Metrics exporter service account name (pass-through key).
+  metricsExporterServiceAccountName: ""
+  # -- (map) Pod annotations for VictoriaMetrics migration job.
+  podAnnotations: {}
+  # -- (map) Pod labels for VictoriaMetrics migration job.
+  podLabels: {}
+  # -- (map) Pod-level security context for VictoriaMetrics migration job.
+  podSecurityContext: {}
+  # -- (string) Runtime class name for VictoriaMetrics migration job.
+  runtimeClassName: ""
+  # -- (map) Container-level security context for VictoriaMetrics migration job.
+  securityContext: {}
+  # -- (string) Service account name for VictoriaMetrics migration job.
+  serviceAccountName: ""
+  # -- (array) Topology spread constraints for VictoriaMetrics migration job.
+  topologySpreadConstraints: []
 
 victoriaMetricsAgent:
   enabled: true

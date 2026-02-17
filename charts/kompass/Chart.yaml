@@ -9,11 +9,11 @@ dependencies:
   # zesty products
   - name: kompass-insights
     repository: "https://zesty-co.github.io/kompass-insights"
-    version: "2.1.83"
+    version: "2.1.88"
   - name: pod-rightsizing
     alias: rightsizing
     repository: "https://zesty-co.github.io/kompass-pod-rightsizing"
-    version: v0.4.0
+    version: v0.4.1
   - name: kompass-storage
     alias: disk
     condition: disk.enabled
