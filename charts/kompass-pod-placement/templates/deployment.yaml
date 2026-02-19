@@ -120,12 +120,18 @@ spec:
             {{- toYaml .Values.probes.liveness | nindent 12 }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          {{- with .Values.extraVolumeMounts }}
           volumeMounts:
+            - mountPath: "/tmp/k8s-webhook-server/serving-certs"
+              name: webhook-tls
+              readOnly: true
+          {{- with .Values.extraVolumeMounts }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
-      {{- with .Values.extraVolumes }}
       volumes:
+        - name: webhook-tls
+          secret:
+            secretName: {{ include "kompass-pod-placement.webhook.certificateName" . }}
+      {{- with .Values.extraVolumes }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- with .Values.nodeSelector }}
