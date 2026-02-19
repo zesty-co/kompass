@@ -254,3 +254,47 @@ Global value takes precedence when explicitly set.
 {{- "" -}}
 {{- end -}}
 {{- end -}}
+
+
+{{/*
+Validate that a value is an integer within the 1..99 range.
+*/}}
+{{- define "kompass.validate.intRange1to99" -}}
+{{- $name := .name -}}
+{{- $value := .value -}}
+{{- if kindIs "invalid" $value -}}
+{{- fail (printf "%s is required" $name) -}}
+{{- end -}}
+{{- $raw := printf "%v" $value -}}
+{{- if not (regexMatch "^[0-9]+$" $raw) -}}
+{{- fail (printf "%s must be an integer between 1 and 99, got %q" $name $raw) -}}
+{{- end -}}
+{{- $num := int $raw -}}
+{{- if or (lt $num 1) (gt $num 99) -}}
+{{- fail (printf "%s must be between 1 and 99, got %d" $name $num) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Validate custom aggregation quantiles used by custom recording rules.
+*/}}
+{{- define "kompass.validate.customReplicaAggregationMethods" -}}
+{{- $methods := default (dict) .Values.rightsizing.config.customReplicaAggregationMethods -}}
+{{- if not (kindIs "map" $methods) -}}
+{{- fail "rightsizing.config.customReplicaAggregationMethods must be a map when set" -}}
+{{- end -}}
+{{- $supported := dict "cpu" (list "custom1" "custom2") "memory" (list "custom1" "custom2") -}}
+{{- range $resourceType, $methodNames := $supported -}}
+{{- if hasKey $methods $resourceType -}}
+{{- $resourceMethods := get $methods $resourceType -}}
+{{- if not (kindIs "map" $resourceMethods) -}}
+{{- fail (printf "rightsizing.config.customReplicaAggregationMethods.%s must be a map when set" $resourceType) -}}
+{{- end -}}
+{{- range $methodName := $methodNames -}}
+{{- if hasKey $resourceMethods $methodName -}}
+{{- include "kompass.validate.intRange1to99" (dict "name" (printf "rightsizing.config.customReplicaAggregationMethods.%s.%s" $resourceType $methodName) "value" (get $resourceMethods $methodName)) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
