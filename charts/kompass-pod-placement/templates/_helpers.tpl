@@ -65,3 +65,7 @@ Create image reference
 {{- define "kompass-pod-placement.image" -}}
 {{ .Values.image.registry }}:{{ default .Chart.AppVersion .Values.image.tag  }}
 {{- end }}
+
+{{- define "kompass-pod-placement.webhook.certificateName" -}}
+{{ include "kompass-pod-placement.fullname" . }}-webhook-cert
+{{- end }}

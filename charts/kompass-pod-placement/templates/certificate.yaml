@@ -2,7 +2,7 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: {{ include "kompass-pod-placement.fullname" . }}
+  name: {{ include "kompass-pod-placement.webhook.certificateName" . }}
   namespace: {{ .Release.Namespace }}
   annotations:
   {{- if and .Values.global .Values.global.useHelmPriorityHooks (eq .Values.global.useHelmPriorityHooks true) }}
@@ -13,7 +13,7 @@ metadata:
   labels:
     {{- include "kompass-pod-placement.labels" . | nindent 4 }}
 spec:
-  secretName: {{ include "kompass-pod-placement.fullname" . }}-webhook-cert
+  secretName: {{ include "kompass-pod-placement.webhook.certificateName" . }}
   dnsNames:
     - {{ include "kompass-pod-placement.fullname" . }}
     - {{ include "kompass-pod-placement.fullname" . }}.{{ .Release.Namespace }}.svc
