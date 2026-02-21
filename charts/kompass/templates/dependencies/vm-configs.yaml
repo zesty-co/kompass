@@ -87,7 +87,7 @@ data:
             regex: "{{ .Release.Namespace }}"
             action: keep
 
-
+      {{- if and .Values.rightsizing.enabled .Values.rightsizing.recommendationsMaker .Values.rightsizing.recommendationsMaker.port }}
       # for collecting Pilot metrics
       - job_name: 'pilot'
         scrape_interval: {{ include "kompass.scrapeInterval" . }}
@@ -102,6 +102,7 @@ data:
         scrape_interval: {{ include "kompass.scrapeInterval" . }}
         static_configs:
           - targets: ['http://{{- include "rightsizing.recommendationsMaker.name" . -}}.{{ .Release.Namespace }}:{{ .Values.rightsizing.recommendationsMaker.port }}/savings']
+      {{- end }}
 
       # for collecting insights metrics
       - job_name: 'kompass-insights'

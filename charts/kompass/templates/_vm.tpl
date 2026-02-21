@@ -52,9 +52,27 @@ http://{{ include "kompass.victoria-metrics.vmcluster.vminsert.service.name" . }
 {{/* High level helper*/}}
 
 {{/*
+Validate VM topology for VMAuth routing
+*/}}
+{{- define "kompass.victoria-metrics.auth.topology.validate" -}}
+{{- if .Values.victoriaMetricsAuth.enabled -}}
+{{- if .Values.victoriaMetricsAuth.useSingle -}}
+{{- if not .Values.victoriaMetrics.enabled -}}
+{{- fail "invalid VictoriaMetrics topology: victoriaMetricsAuth.useSingle=true requires victoriaMetrics.enabled=true" -}}
+{{- end -}}
+{{- else -}}
+{{- if not .Values.victoriaMetricsCluster.enabled -}}
+{{- fail "invalid VictoriaMetrics topology: victoriaMetricsAuth.useSingle=false requires victoriaMetricsCluster.enabled=true" -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Generate VM select endpoint
 */}}
 {{- define "kompass.victoria-metrics.select.endpoint" -}}
+{{- include "kompass.victoria-metrics.auth.topology.validate" . -}}
 {{- if .Values.victoriaMetricsAuth.useSingle -}}
 {{ include "kompass.victoria-metrics.vmsingle.url" . }}
 {{- else -}}
@@ -66,6 +84,7 @@ Generate VM select endpoint
 Generate VM insert endpoint
 */}}
 {{- define "kompass.victoria-metrics.insert.endpoint" -}}
+{{- include "kompass.victoria-metrics.auth.topology.validate" . -}}
 {{- if .Values.victoriaMetricsAuth.useSingle -}}
 {{ include "kompass.victoria-metrics.vmsingle.url" . }}
 {{- else -}}
@@ -77,6 +96,7 @@ Generate VM insert endpoint
 Generate VMUI endpoint
 */}}
 {{- define "kompass.victoria-metrics.vmui.endpoint" -}}
+{{- include "kompass.victoria-metrics.auth.topology.validate" . -}}
 {{- if .Values.victoriaMetricsAuth.useSingle -}}
 {{ include "kompass.victoria-metrics.vmsingle.url" . }}
 {{- else -}}
