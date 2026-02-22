@@ -87,6 +87,7 @@ data:
             regex: "{{ .Release.Namespace }}"
             action: keep
 
+
       # for collecting Pilot metrics
       - job_name: 'pilot'
         scrape_interval: {{ include "kompass.scrapeInterval" . }}
@@ -96,7 +97,6 @@ data:
           - source_labels: [__name__]
             regex: '(kompass_.*)'
             action: keep
-
 
       - job_name: 'rightsizing-savings'
         scrape_interval: {{ include "kompass.scrapeInterval" . }}
