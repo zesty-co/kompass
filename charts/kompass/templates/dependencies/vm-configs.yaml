@@ -97,6 +97,7 @@ data:
             regex: '(kompass_.*)'
             action: keep
 
+
       - job_name: 'rightsizing-savings'
         scrape_interval: {{ include "kompass.scrapeInterval" . }}
         static_configs:
