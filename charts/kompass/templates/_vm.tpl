@@ -72,7 +72,6 @@ Validate VM topology for VMAuth routing
 Generate VM select endpoint
 */}}
 {{- define "kompass.victoria-metrics.select.endpoint" -}}
-{{- include "kompass.victoria-metrics.auth.topology.validate" . -}}
 {{- if .Values.victoriaMetricsAuth.useSingle -}}
 {{ include "kompass.victoria-metrics.vmsingle.url" . }}
 {{- else -}}
@@ -84,7 +83,6 @@ Generate VM select endpoint
 Generate VM insert endpoint
 */}}
 {{- define "kompass.victoria-metrics.insert.endpoint" -}}
-{{- include "kompass.victoria-metrics.auth.topology.validate" . -}}
 {{- if .Values.victoriaMetricsAuth.useSingle -}}
 {{ include "kompass.victoria-metrics.vmsingle.url" . }}
 {{- else -}}
@@ -96,7 +94,6 @@ Generate VM insert endpoint
 Generate VMUI endpoint
 */}}
 {{- define "kompass.victoria-metrics.vmui.endpoint" -}}
-{{- include "kompass.victoria-metrics.auth.topology.validate" . -}}
 {{- if .Values.victoriaMetricsAuth.useSingle -}}
 {{ include "kompass.victoria-metrics.vmsingle.url" . }}
 {{- else -}}
