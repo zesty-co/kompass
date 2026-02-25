@@ -77,35 +77,51 @@ jobs:
     - name: validate Chart.yaml version changed in PR
       if: github.event_name == 'pull_request'
       run: |
-        set -e
+        set -euo pipefail
 
         for chart in $CHARTS; do
           chart_key="${chart//-/_}_changed"
           chart_path="charts/${chart}"
           chart_changed="${!chart_key}"
 
-          if [ "$chart_changed" = "true" ]; then
-            MAIN_VERSION=$(git show origin/main:$chart_path/Chart.yaml | yq '.version')
-            PR_VERSION=$(yq '.version' $chart_path/Chart.yaml)
-
-            echo "Chart: $chart"
-            echo "Main version: $MAIN_VERSION"
-            echo "PR version:   $PR_VERSION"
-
-            if [ "$MAIN_VERSION" = "$PR_VERSION" ]; then
-              echo "❌ Chart version has not been updated for $chart."
-              exit 1
-            fi
-
-            if [ "$(printf '%s\n' "$PR_VERSION" "$MAIN_VERSION" | sort -V | head -n1)" = "$PR_VERSION" ]; then
-              echo "❌ Chart version ($PR_VERSION) must be greater than main ($MAIN_VERSION) for $chart."
-              exit 1
-            fi
-
-            echo "✅ Chart version bump detected for $chart."
-          else
+          if [ "$chart_changed" != "true" ]; then
             echo "⏭️  Skipping $chart - no changes detected."
+            continue
           fi
+
+          PR_VERSION=$(yq '.version' "$chart_path/Chart.yaml")
+          if [ -z "$PR_VERSION" ] || [ "$PR_VERSION" = "null" ]; then
+            echo "❌ PR version is missing/invalid for $chart."
+            exit 1
+          fi
+
+          if ! git cat-file -e "origin/main:$chart_path/Chart.yaml" 2>/dev/null; then
+            echo "🆕 Chart: $chart (not present in origin/main)"
+            echo "PR version:   $PR_VERSION"
+            continue
+          fi
+
+          MAIN_VERSION=$(git show "origin/main:$chart_path/Chart.yaml" | yq '.version')
+          if [ -z "$MAIN_VERSION" ] || [ "$MAIN_VERSION" = "null" ]; then
+            echo "❌ Main version is missing/invalid for $chart."
+            exit 1
+          fi
+
+          echo "Chart: $chart"
+          echo "Main version: $MAIN_VERSION"
+          echo "PR version:   $PR_VERSION"
+
+          if [ "$MAIN_VERSION" = "$PR_VERSION" ]; then
+            echo "❌ Chart version has not been updated for $chart."
+            exit 1
+          fi
+
+          if [ "$(printf '%s\n' "$PR_VERSION" "$MAIN_VERSION" | sort -V | head -n1)" = "$PR_VERSION" ]; then
+            echo "❌ Chart version ($PR_VERSION) must be greater than main ($MAIN_VERSION) for $chart."
+            exit 1
+          fi
+
+          echo "✅ Chart version bump detected for $chart."
         done
 
     - name: helm lint
