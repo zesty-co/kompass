@@ -1,0 +1,74 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "{{ include "zesty-k8s.configmap" . }}"
+  namespace: "{{ .Release.Namespace }}"
+  labels:
+    app.kubernetes.io/instance: "{{ include "zesty-k8s.fullname" . }}"
+    app.kubernetes.io/name: "{{ include "zesty-k8s.fullname" . }}"
+data:
+  ORG_ID: "{{ .Values.orgID }}"
+  PODMINUTEMETRICS_ENABLED: "{{ .Values.podMinuteMetrics.enabled }}"
+  PATHS_MOUNTPATH: "{{ .Values.persistence.mountPath }}"
+  STORAGE_SIZE: "{{ .Values.persistence.spec.resources.requests.storage }}"
+  EXTERNAL_ID: "{{ .Values.externalID }}"
+  {{- if .Values.prometheus.url }}
+  PROMETHEUS_SERVER_ENDPOINT: "{{ .Values.prometheus.url }}"
+  {{- end }}
+  {{- if .Values.prometheus.username }}
+  DB_BASIC_AUTH_USERNAME: "{{ .Values.prometheus.username }}"
+  {{- end }}
+  {{- if .Values.prometheus.password }}
+  DB_BASIC_AUTH_PW: "{{ .Values.prometheus.password }}"
+  {{- end }}
+  {{- if .Values.prometheus.bearerToken }}
+  DB_BEARER_TOKEN: "{{ .Values.prometheus.bearerToken }}"
+  {{- end }}
+  {{- if .Values.pvcExpansion.enabled }}
+  PVC_EXPANSION_ENABLED: "{{ .Values.pvcExpansion.enabled }}"
+  PVC_EXPANSION_THRESHOLD: "{{ .Values.pvcExpansion.threshold }}"
+  PVC_EXPANSION_SIZE: "{{ .Values.pvcExpansion.expansionSize }}"
+  {{- end }}
+  {{- if .Values.awsAthena.enabled }}
+  ATHENA_ENABLED: "{{ .Values.awsAthena.enabled }}"
+  ATHENA_CUR_V2: "{{ .Values.awsAthena.curV2 }}"
+  ATHENA_PROJECT_ID: "{{ .Values.awsAthena.athenaProjectID }}"
+  ATHENA_BUCKET_NAME: "{{ .Values.awsAthena.athenaBucketName }}"
+  ATHENA_REGION: "{{ .Values.awsAthena.athenaRegion }}"
+  ATHENA_DATABASE: "{{ .Values.awsAthena.athenaDatabase }}"
+  ATHENA_TABLE: "{{ .Values.awsAthena.athenaTable }}"
+  ATHENA_WORKGROUP: "{{ .Values.awsAthena.athenaWorkgroup }}"
+  ATHENA_CATALOG: "{{ .Values.awsAthena.athenaCatalog }}"
+  {{- end }}
+  {{- if .Values.assumeRole.enabled }}
+  MASTER_PAYER_ARN: "{{ .Values.assumeRole.masterRoleArn }}"
+  MASTER_ROLE_EXTERNALID: "{{ .Values.assumeRole.masterExternalID }}"
+  ZESTY_ROLE_EXTERNALID: "{{ .Values.assumeRole.zestyExternalID }}"
+  ZESTY_ROLE_ARN: "{{ .Values.assumeRole.roleArn }}"
+  {{- end }}
+  {{- if .Values.s3override.enabled }}
+  S3BUCKET: "{{ .Values.s3override.bucket }}"
+  REGION: "{{ .Values.s3override.region }}"
+  {{- end }}
+  LOG_LEVEL: "{{ .Values.log.level }}"
+  LOG_REMOTE: "{{ .Values.log.remote }}"
+  {{- if .Values.metadata.enabled }}
+  METADATA_ENABLED: "{{ .Values.metadata.enabled }}"
+  METADATA_PROVIDER: "{{ .Values.metadata.provider }}"
+  METADATA_ACCOUNTID: "{{ .Values.metadata.accountID }}"
+  METADATA_REGION: "{{ .Values.metadata.region }}"
+  METADATA_CLUSTERNAME: "{{ .Values.metadata.clusterName }}"
+  {{- end }}
+  GRPC_PORT: "{{ .Values.insights.grpc.server.port }}"
+  MANAGER_HOST: "{{ .Values.admission.service.name }}"
+  MANAGER_PORT: "{{ .Values.insights.grpc.port }}"
+  {{- if .Values.awsCluster.enabled }}
+  {{- if ne .Values.awsCluster.accessKeyID "" }}
+  AWS_ACCESS_KEY_ID: "{{ .Values.awsCluster.accessKeyID }}"
+  AWS_SECRET_ACCESS_KEY: "{{ .Values.awsCluster.secretAccessKey }}"
+  {{- end }}
+  {{- end }}
+  SECRET_NAME: "{{ .Values.insights.secret }}"
+  UPDATER: "{{ include "zesty-k8s.fullname" . }}-updater"
+  VICTORIAMETRICS_URL: {{ include "zesty-k8s.victoriaMetrics.endpoint" . | quote }}
+  METRICSPORT: {{ include "zesty-k8s.exposedMetrics.port" . | quote }}

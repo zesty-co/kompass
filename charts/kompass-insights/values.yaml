@@ -1,0 +1,246 @@
+global:
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  automountServiceAccountToken: ~
+  imagePullSecrets: ~
+  podAnnotations: {}
+  podLabels: {}
+  # Pod-level settings. These take precedence over legacy pod keys under `securityContext`.
+  podSecurityContext: {}
+  runtimeClassName: ~
+  # Container-level settings. Legacy pod-level keys mixed here are tolerated and moved to pod securityContext.
+  securityContext: {}
+  topologySpreadConstraints: ~
+  imagePullSecret:
+    name: ""
+    dockerconfigjson: ""
+
+orgID: ""
+# if you put the value here, the secret won't be used.
+encryptedCredentials: ""
+secret:
+  name: zesty-k8s-agent-creds
+  key: "zesty-k8s/encrypted-creds"
+
+awsCluster:
+  enabled: true
+  # if you put the values here, the secret won't be used.
+  accessKeyID: ""
+  secretAccessKey: ""
+  secret:
+    name: aws-cluster-secret
+    key: "zesty/access-credentials"
+
+log:
+  level: 0
+  remote: true
+
+imagePullSecrets: []
+
+image:
+  repository: "672188301118.dkr.ecr.eu-west-1.amazonaws.com/zesty-k8s/agent"
+  migrationRepository: "672188301118.dkr.ecr.eu-west-1.amazonaws.com/zesty-k8s/agent/migration"
+  pullPolicy: Always
+  tag: ~
+
+nameOverride: ~
+fullnameOverride: ~
+
+persistence:
+  volumeName: "zesty-pv-storage"
+  mountPath: "/bin/db"
+  spec:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 10Gi
+
+serviceAccount:
+  annotations: {}
+
+externalID: ~
+
+container:
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+
+securityContext:
+  fsGroup: 65532
+  runAsGroup: 65532
+  runAsNonRoot: true
+  runAsUser: 65532
+  seccompProfile:
+    type: RuntimeDefault
+
+resources:
+  limits:
+    memory: 2Gi
+  requests:
+    cpu: 250m
+    memory: 2Gi
+
+prometheus:
+  url: ~
+  username: ~
+  password: ~
+  bearerToken: ~
+
+awsAthena:
+  enabled: false
+  curV2: false
+  athenaProjectID: ~
+  athenaBucketName: ~
+  athenaRegion: ~
+  athenaDatabase: ~
+  athenaTable: ~
+  athenaWorkgroup: ~
+  athenaCatalog: ~
+
+assumeRole:
+  enabled: false
+  masterRoleArn: ~
+  masterExternalID: ~
+  zestyExternalID: ~
+  roleArn: ~
+
+s3override:
+  enabled: false
+  bucket: ~
+  region: ~
+
+metadata:
+  enabled: false
+  provider: ~
+  accountID: ~
+  region: ~
+  clusterName: ~
+
+config:
+  manager:
+    enable: false
+
+podMinuteMetrics:
+  enabled: true
+
+insights:
+  extraEnv: []
+
+  affinity: {}
+  automountServiceAccountToken: ~
+  imagePullSecrets: ~
+  podAnnotations: {}
+  podLabels: {}
+  # Pod-level settings. These take precedence over legacy pod keys under `securityContext`.
+  podSecurityContext: {}
+  runtimeClassName: ~
+  # Container-level settings. Legacy pod-level keys mixed here are tolerated and moved to pod securityContext.
+  securityContext: {}
+  topologySpreadConstraints: ~
+
+  secret: "kompass-insights-secret"
+  service: "kompass-insights-svc"
+
+  grpc:
+    port: 50051
+    server:
+      port: 50052
+
+  metrics:
+    port: 9003
+
+  health:
+    port: 9000
+
+recommendations:
+  enabled: true
+  image: 
+    repository: "672188301118.dkr.ecr.eu-west-1.amazonaws.com/zesty-k8s/recommendation-maker"
+    pullPolicy: Always
+    tag: v1.9.0
+
+  extraEnv: []
+
+  affinity: {}
+  automountServiceAccountToken: ~
+  imagePullSecrets: ~
+  podAnnotations: {}
+  podLabels: {}
+  # Pod-level settings. These take precedence over legacy pod keys under `securityContext`.
+  podSecurityContext:
+    fsGroup: 65532
+    runAsGroup: 65532
+    runAsNonRoot: true
+    runAsUser: 65532
+    seccompProfile:
+      type: RuntimeDefault
+  runtimeClassName: ~
+  # Container-level settings. Legacy pod-level keys mixed here are tolerated and moved to pod securityContext.
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+  topologySpreadConstraints: ~
+
+  http:
+    port: 8000
+  resources:
+    limits:
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+
+metricsServer:
+  enabled: false # enable it to install metrics-server
+
+admission:
+  enabled: false
+  service:
+    name: "kompass-admission-controller-svc"
+
+pvcExpansion:
+  enabled: true
+  # -- (string) A percentage threshold to limit pvb utilization
+  threshold: 80
+  # -- (string) The size by which to expand a PVC that exceeded its disk utilization
+  # threshold. The size can be either percentage or resource quantity ("20%"/"5Gi")
+  expansionSize: "20%"  # Amount to expand by,
+
+cxLogging:
+  enabled: false
+  clusterName: ""
+  apiKey: ""
+  domain: "eu2.coralogix.com"
+  logUrl: "https://ingress.eu2.coralogix.com:443/api/v1/logs"
+  timeDeltaUrl: "https://ingress.eu2.coralogix.com:443/sdk/v1/time"
+  ingressLogsUrl: "https://ingress.eu2.coralogix.com/logs/v1/singles"
+  ingressUrl: "https://ingress.eu2.coralogix.com/"
+  otelEndpoint: ""
+
+selfMonitoring:
+  schedule: "*/5 * * * *"
+  affinity: {}
+  automountServiceAccountToken: ~
+  imagePullSecrets: ~
+  podAnnotations: {}
+  podLabels: {}
+  # Pod-level settings. These take precedence over legacy pod keys under `securityContext`.
+  podSecurityContext: {}
+  runtimeClassName: ~
+  # Container-level settings. Legacy pod-level keys mixed here are tolerated and moved to pod securityContext.
+  securityContext: {}
+  topologySpreadConstraints: ~
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 256Mi

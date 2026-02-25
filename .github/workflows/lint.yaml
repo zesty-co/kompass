@@ -15,7 +15,7 @@ jobs:
     name: Helm Lint
     runs-on: ubuntu-latest
     env:
-      CHARTS: "kompass kompass-pod-placement"
+      CHARTS: "kompass kompass-pod-placement kompass-insights"
 
     steps:
     - name: checkout
@@ -64,11 +64,15 @@ jobs:
     - name: setup helm plugins
       run: |
         helm plugin install https://github.com/aslafy-z/helm-git --version 0.11.1 --verify=false
-      if: env.kompass_changed == 'true'
+      if: env.kompass_changed == 'true' || env.kompass_insights_changed == 'true'
 
     - name: helm dependency update
       run: helm dependency update ./charts/kompass
-      if: env.kompass_changed == 'true'
+      if: env.kompass_changed == 'true' || env.kompass_insights_changed == 'true'
+
+    - name: helm dependency update (kompass-insights)
+      run: helm dependency update ./charts/kompass-insights
+      if: env.kompass_insights_changed == 'true'
 
     - name: validate Chart.yaml version changed in PR
       if: github.event_name == 'pull_request'
@@ -118,3 +122,7 @@ jobs:
             echo "⏭️  Skipping helm lint for $chart - no changes detected."
           fi
         done
+
+    - name: helm lint kompass (insights compatibility)
+      run: helm lint ./charts/kompass
+      if: env.kompass_changed != 'true' && env.kompass_insights_changed == 'true'

@@ -1,0 +1,240 @@
+{{- $globalWorkload := .Values.global | default dict -}}
+{{- $insightsWorkload := .Values.insights | default dict -}}
+{{- $insightsPodAnnotations := include "zesty-k8s.workload.mergeMaps" (dict
+  "global" $globalWorkload
+  "component" $insightsWorkload
+  "key" "podAnnotations"
+  "fallback" (.Values.insights.podAnnotations | default dict)
+) | fromYaml -}}
+{{- $insightsPodLabels := include "zesty-k8s.workload.mergeMaps" (dict
+  "global" $globalWorkload
+  "component" $insightsWorkload
+  "key" "podLabels"
+  "fallback" (.Values.insights.podLabels | default dict)
+) | fromYaml -}}
+{{- $insightsResolvedPodSecurityContext := mergeOverwrite
+  (mergeOverwrite
+    (deepCopy (.Values.securityContext | default dict))
+    ((get $insightsWorkload "podSecurityContext") | default dict)
+  )
+  ((get $globalWorkload "podSecurityContext") | default dict)
+-}}
+{{- $insightsResolvedSecurityContext := mergeOverwrite
+  (mergeOverwrite
+    (deepCopy (.Values.container.securityContext | default dict))
+    ((get $insightsWorkload "securityContext") | default dict)
+  )
+  ((get $globalWorkload "securityContext") | default dict)
+-}}
+{{- include "zesty-k8s.workload.validateContainerSecurityContext" (dict
+  "context" $insightsResolvedSecurityContext
+  "path" "insights.securityContext"
+) -}}
+{{- $insightsLegacyPodSecurityContext := include "zesty-k8s.workload.extractPodSecurityContext" (dict
+  "context" $insightsResolvedSecurityContext
+  "path" "insights.securityContext"
+) | fromYaml -}}
+{{- $insightsContainerSecurityContext := include "zesty-k8s.workload.extractContainerSecurityContext" (dict
+  "context" $insightsResolvedSecurityContext
+  "path" "insights.securityContext"
+) | fromYaml -}}
+{{- $insightsPodSecurityContext := mergeOverwrite (deepCopy ($insightsLegacyPodSecurityContext | default dict)) ($insightsResolvedPodSecurityContext | default dict) -}}
+{{- $insightsAffinity := include "zesty-k8s.workload.mergeMaps" (dict
+  "global" $globalWorkload
+  "component" $insightsWorkload
+  "key" "affinity"
+) | fromYaml -}}
+{{- $insightsImagePullSecrets := include "zesty-k8s.workload.resolveImagePullSecrets" (dict
+  "root" .
+  "global" $globalWorkload
+  "component" $insightsWorkload
+) | fromYamlArray -}}
+{{- $insightsTopologySpreadConstraints := include "zesty-k8s.workload.resolveListWithGlobalPrecedence" (dict
+  "global" $globalWorkload
+  "component" $insightsWorkload
+  "key" "topologySpreadConstraints"
+) | fromYamlArray -}}
+{{- $insightsAutomountSAToken := include "zesty-k8s.workload.resolveBool" (dict
+  "global" $globalWorkload
+  "component" $insightsWorkload
+  "key" "automountServiceAccountToken"
+  "fallback" true
+) | trim -}}
+{{- $insightsRuntimeClassName := include "zesty-k8s.workload.resolveString" (dict
+  "global" $globalWorkload
+  "component" $insightsWorkload
+  "key" "runtimeClassName"
+  "fallback" ""
+) | trim -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ include "zesty-k8s.fullname" . }}"
+  namespace: "{{ .Release.Namespace }}"
+  labels:
+    app.kubernetes.io/instance: "{{ include "zesty-k8s.fullname" . }}"
+    app.kubernetes.io/name: "{{ include "zesty-k8s.fullname" . }}"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: "{{ include "zesty-k8s.fullname" . }}"
+      app.kubernetes.io/name: "{{ include "zesty-k8s.fullname" . }}"
+  template:
+    metadata:
+      annotations:
+        timestamp: {{ now | quote }}
+        {{- with $insightsPodAnnotations }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        app.kubernetes.io/instance: "{{ include "zesty-k8s.fullname" . }}"
+        app.kubernetes.io/name: "{{ include "zesty-k8s.fullname" . }}"
+        {{- with $insightsPodLabels }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- if $insightsImagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml $insightsImagePullSecrets | nindent 8 }}
+      {{- end }}
+      automountServiceAccountToken: {{ $insightsAutomountSAToken }}
+      {{- if $insightsRuntimeClassName }}
+      runtimeClassName: {{ $insightsRuntimeClassName | quote }}
+      {{- end }}
+      {{- if .Values.global.nodeSelector }}
+      nodeSelector:
+      {{- toYaml .Values.global.nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if .Values.global.tolerations }}
+      tolerations:
+      {{- toYaml .Values.global.tolerations | nindent 8 }}
+      {{- end }}
+      {{- with $insightsAffinity }}
+      affinity:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $insightsTopologySpreadConstraints }}
+      topologySpreadConstraints:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      initContainers:
+        - image: "{{ .Values.image.migrationRepository }}:{{ include "zesty-k8s.version" . }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          name: migrate
+          {{- with $insightsContainerSecurityContext }}
+          securityContext:
+          {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - mountPath: {{ .Values.persistence.mountPath }}
+              name: {{ .Values.persistence.volumeName }}
+            - mountPath: /tmp
+              name: migrate-tmp
+            - mountPath: /home/nonroot/.cache
+              name: migrate-cache
+          env:
+            - name: TMPDIR
+              value: /tmp
+            - name: XDG_CACHE_HOME
+              value: /home/nonroot/.cache
+          args: ["schema", "apply", "--url", "sqlite://{{ .Values.persistence.mountPath}}/zesty.db", "--dev-url", "sqlite://:memory:", "--to",  "file:///bin/pkg/db/schema.sql", "--auto-approve", "--format", "json"]
+      containers:
+        - image: "{{ .Values.image.repository }}:{{ include "zesty-k8s.version" . }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          name: "{{ include "zesty-k8s.name" . }}"
+          ports:
+            - name: healthz
+              containerPort: {{ .Values.insights.health.port }}
+              protocol: TCP
+            - name: metrics
+              containerPort: {{ .Values.insights.metrics.port }}
+              protocol: TCP
+            - name: grpc
+              containerPort: {{ .Values.insights.grpc.server.port }}
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: {{ .Values.insights.health.port }}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.insights.health.port }}
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          {{- with .Values.resources }}
+          resources:
+          {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $insightsContainerSecurityContext }}
+          securityContext:
+          {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - mountPath: {{ .Values.persistence.mountPath }}
+              name: {{ .Values.persistence.volumeName }}
+          envFrom:
+            - configMapRef:
+                name: "{{ include "zesty-k8s.configmap" . }}"
+          {{- if .Values.awsCluster.enabled }}
+          {{- if eq .Values.awsCluster.accessKeyID "" }}
+            - secretRef:
+                name: {{ .Values.awsCluster.secret.name }}
+          {{- end }}
+          {{- end }}
+          {{- if eq .Values.encryptedCredentials "" }}
+            - secretRef:
+                name: {{ .Values.secret.name | quote }}
+          {{- end }}
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: CONTAINER_NAME
+              value: {{ include "zesty-k8s.name" . }}
+            {{- with .Values.insights.extraEnv }}
+              {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- include "zesty-k8s.controller.coralogix.envs" . | nindent 12 }}
+            - name: KOMPASS_RELEASE
+              value: {{ .Release.Name }}
+            - name: KOMPASS_CHART_VERSION
+              valueFrom:
+                configMapKeyRef:
+                  name: "{{ include "zesty-k8s.globalConfig" .}}"
+                  key: kompass_chart_version
+            - name: INSIGHTS_CHART_VERSION
+              value: {{ .Chart.Version }}
+          {{- if ne .Values.encryptedCredentials ""}}
+            - name: ENCRYPTED_CREDENTIALS
+              value: {{ .Values.encryptedCredentials | quote }}
+          {{- end }}
+      priorityClassName: system-cluster-critical
+      {{- with $insightsPodSecurityContext }}
+      securityContext:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: "{{ include "zesty-k8s.serviceAccountName" . }}"
+      shareProcessNamespace: true
+      volumes:
+        - name: {{ .Values.persistence.volumeName }}
+          persistentVolumeClaim:
+            claimName: "{{ include "zesty-k8s.pvcname" . }}"
+        - name: migrate-tmp
+          emptyDir: {}
+        - name: migrate-cache
+          emptyDir: {}
