@@ -1,9 +1,21 @@
+{{- $globalValues := .Values.global | default (dict) -}}
+{{- $validatorValues := .Values.validator | default (dict) -}}
+{{- $validatorPodAnnotations := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $validatorValues "key" "podAnnotations") | fromYaml -}}
+{{- $validatorPodLabels := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $validatorValues "key" "podLabels") | fromYaml -}}
+{{- $validatorAffinity := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $validatorValues "key" "affinity") | fromYaml -}}
+{{- $validatorImagePullSecrets := include "kompass.workload.resolveList" (dict "global" $globalValues "component" $validatorValues "key" "imagePullSecrets") | fromYamlArray -}}
+{{- $validatorPodSecurityContext := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $validatorValues "key" "podSecurityContext") | fromYaml -}}
+{{- $validatorSecurityContext := include "kompass.workload.resolveContainerSecurityContext" (dict "global" $globalValues "component" $validatorValues) | fromYaml -}}
+{{- $validatorTopologySpreadConstraints := include "kompass.workload.resolveList" (dict "global" $globalValues "component" $validatorValues "key" "topologySpreadConstraints") | fromYamlArray -}}
+{{- $validatorAutomountServiceAccountToken := include "kompass.workload.resolveBool" (dict "global" $globalValues "component" $validatorValues "key" "automountServiceAccountToken") | trim -}}
+{{- $validatorRuntimeClassName := include "kompass.workload.resolveString" (dict "global" $globalValues "component" $validatorValues "key" "runtimeClassName") | trim -}}
+{{- $validatorServiceAccountName := index $validatorValues "serviceAccountName" | default "" | trim | default "kompass-validator" -}}
 ---
 # Service Account for the validation job
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: kompass-validatior
+  name: {{ $validatorServiceAccountName }}
   namespace: {{ .Release.Namespace }}
   annotations:
     "helm.sh/hook": pre-install,pre-upgrade
@@ -14,7 +26,7 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: kompass-validatior
+  name: {{ $validatorServiceAccountName }}
   annotations:
     "helm.sh/hook": pre-install,pre-upgrade
     "helm.sh/hook-weight": "-10"
@@ -34,18 +46,18 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: kompass-validatior
+  name: {{ $validatorServiceAccountName }}
   annotations:
     "helm.sh/hook": pre-install,pre-upgrade
     "helm.sh/hook-weight": "-10"
     "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
 subjects:
 - kind: ServiceAccount
-  name: kompass-validatior
+  name: {{ $validatorServiceAccountName }}
   namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole
-  name: kompass-validatior
+  name: {{ $validatorServiceAccountName }}
   apiGroup: rbac.authorization.k8s.io
 ---
 # The validation job
@@ -63,11 +75,38 @@ spec:
   template:
     metadata:
       name: kompass-validation
+      {{- if $validatorPodAnnotations }}
+      annotations:
+{{ toYaml $validatorPodAnnotations | nindent 8 }}
+      {{- end }}
+      {{- $validatorDefaultPodLabels := dict "app.kubernetes.io/name" "kompass-validation" "app.kubernetes.io/instance" .Release.Name }}
+      {{- $validatorResolvedPodLabels := mergeOverwrite (deepCopy $validatorDefaultPodLabels) $validatorPodLabels }}
       labels:
-        app.kubernetes.io/name: kompass-validation
-        app.kubernetes.io/instance: {{ .Release.Name }}
+{{ toYaml $validatorResolvedPodLabels | nindent 8 }}
     spec:
-      serviceAccountName: kompass-validatior
+      serviceAccountName: {{ $validatorServiceAccountName }}
+      {{- if ne $validatorAutomountServiceAccountToken "null" }}
+      automountServiceAccountToken: {{ $validatorAutomountServiceAccountToken }}
+      {{- end }}
+      {{- if $validatorImagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml $validatorImagePullSecrets | nindent 8 }}
+      {{- end }}
+      {{- if $validatorPodSecurityContext }}
+      securityContext:
+{{ toYaml $validatorPodSecurityContext | nindent 8 }}
+      {{- end }}
+      {{- if $validatorRuntimeClassName }}
+      runtimeClassName: {{ $validatorRuntimeClassName }}
+      {{- end }}
+      {{- if $validatorAffinity }}
+      affinity:
+{{ toYaml $validatorAffinity | nindent 8 }}
+      {{- end }}
+      {{- if $validatorTopologySpreadConstraints }}
+      topologySpreadConstraints:
+{{ toYaml $validatorTopologySpreadConstraints | nindent 8 }}
+      {{- end }}
       {{- if .Values.global.nodeSelector }}
       nodeSelector:
       {{- toYaml .Values.global.nodeSelector | nindent 8 }}
@@ -77,8 +116,12 @@ spec:
       {{- toYaml .Values.global.tolerations | nindent 8 }}
       {{- end }}
       containers:
-      - name: kompass-validatior
+      - name: {{ $validatorServiceAccountName }}
         image: {{ .Values.validator.image.registry }}/{{ .Values.validator.image.repository }}:{{ .Values.validator.image.tag }}
+        {{- if $validatorSecurityContext }}
+        securityContext:
+{{ toYaml $validatorSecurityContext | nindent 10 }}
+        {{- end }}
         command:
         - /bin/bash
         - -c

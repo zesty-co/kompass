@@ -1,4 +1,16 @@
 {{ if .Values.victoriaMetricsMigration.enabled }}
+{{- $globalValues := .Values.global | default (dict) -}}
+{{- $migrationValues := .Values.victoriaMetricsMigration | default (dict) -}}
+{{- $migrationPodAnnotations := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $migrationValues "key" "podAnnotations") | fromYaml -}}
+{{- $migrationPodLabels := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $migrationValues "key" "podLabels") | fromYaml -}}
+{{- $migrationAffinity := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $migrationValues "key" "affinity") | fromYaml -}}
+{{- $migrationImagePullSecrets := include "kompass.workload.resolveList" (dict "global" $globalValues "component" $migrationValues "key" "imagePullSecrets") | fromYamlArray -}}
+{{- $migrationPodSecurityContext := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $migrationValues "key" "podSecurityContext") | fromYaml -}}
+{{- $migrationSecurityContext := include "kompass.workload.resolveContainerSecurityContext" (dict "global" $globalValues "component" $migrationValues) | fromYaml -}}
+{{- $migrationTopologySpreadConstraints := include "kompass.workload.resolveList" (dict "global" $globalValues "component" $migrationValues "key" "topologySpreadConstraints") | fromYamlArray -}}
+{{- $migrationAutomountServiceAccountToken := include "kompass.workload.resolveBool" (dict "global" $globalValues "component" $migrationValues "key" "automountServiceAccountToken") | trim -}}
+{{- $migrationRuntimeClassName := include "kompass.workload.resolveString" (dict "global" $globalValues "component" $migrationValues "key" "runtimeClassName") | trim -}}
+{{- $migrationServiceAccountName := index $migrationValues "serviceAccountName" | default "" | trim -}}
 ---
 # The migration job
 apiVersion: batch/v1
@@ -13,41 +25,47 @@ spec:
   template:
     metadata:
       name: {{ include "kompass.name" . }}-vm-migration
+      {{- if $migrationPodAnnotations }}
+      annotations:
+{{ toYaml $migrationPodAnnotations | nindent 8 }}
+      {{- end }}
+      {{- $migrationDefaultPodLabels := dict "app.kubernetes.io/name" (printf "%s-vm-migration" (include "kompass.name" .)) "app.kubernetes.io/instance" .Release.Name }}
+      {{- $migrationResolvedPodLabels := mergeOverwrite (deepCopy $migrationDefaultPodLabels) $migrationPodLabels }}
       labels:
-        app.kubernetes.io/name: {{ include "kompass.name" . }}-vm-migration
-        app.kubernetes.io/instance: {{ .Release.Name }}
+{{ toYaml $migrationResolvedPodLabels | nindent 8 }}
     spec:
+      {{- if ne $migrationAutomountServiceAccountToken "null" }}
+      automountServiceAccountToken: {{ $migrationAutomountServiceAccountToken }}
+      {{- end }}
+      {{- if $migrationImagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml $migrationImagePullSecrets | nindent 8 }}
+      {{- end }}
+      {{- if $migrationPodSecurityContext }}
+      securityContext:
+{{ toYaml $migrationPodSecurityContext | nindent 8 }}
+      {{- end }}
+      {{- if $migrationRuntimeClassName }}
+      runtimeClassName: {{ $migrationRuntimeClassName }}
+      {{- end }}
+      {{- if $migrationServiceAccountName }}
+      serviceAccountName: {{ $migrationServiceAccountName }}
+      {{- end }}
+      {{- if $migrationAffinity }}
       affinity:
-        podAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchExpressions:
-                  - key: app
-                    operator: In
-                    values:
-                      - vmstorage
-                  - key: app.kubernetes.io/name
-                    operator: In
-                    values:
-                      - victoriaMetricsCluster
-              topologyKey: topology.kubernetes.io/zone
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              podAffinityTerm:
-                labelSelector:
-                  matchExpressions:
-                    - key: app
-                      operator: In
-                      values:
-                        - vminsert
-                    - key: app.kubernetes.io/name
-                      operator: In
-                      values:
-                        - victoriaMetricsCluster
-                topologyKey: kubernetes.io/hostname
+{{ toYaml $migrationAffinity | nindent 8 }}
+      {{- end }}
+      {{- if $migrationTopologySpreadConstraints }}
+      topologySpreadConstraints:
+{{ toYaml $migrationTopologySpreadConstraints | nindent 8 }}
+      {{- end }}
       containers:
       - name: vm-migration
         image: {{ .Values.victoriaMetricsMigration.image.registry }}/{{ .Values.victoriaMetricsMigration.image.repository }}:{{ .Values.victoriaMetricsMigration.image.tag }}
+        {{- if $migrationSecurityContext }}
+        securityContext:
+{{ toYaml $migrationSecurityContext | nindent 10 }}
+        {{- end }}
         args:
           - vm-native
           - --vm-native-src-addr={{ include "kompass.victoria-metrics.vmsingle.url" . }}

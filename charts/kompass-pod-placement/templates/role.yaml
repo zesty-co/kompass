@@ -11,14 +11,18 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - configmaps
+  - secrets
+  resourceNames:
+  - {{ .Values.kompassInsightSecret }}
   verbs:
   - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
+- apiGroups:
+    - ""
+  resources:
+    - events
+  verbs:
+    - create
+    - patch
 - apiGroups:
   - coordination.k8s.io
   resources:

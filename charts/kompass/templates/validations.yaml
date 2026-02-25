@@ -1,0 +1,1 @@
+{{- include "kompass.validate.customReplicaAggregationMethods" . -}}

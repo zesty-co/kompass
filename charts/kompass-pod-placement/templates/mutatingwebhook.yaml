@@ -6,7 +6,7 @@ metadata:
   labels:
     {{- include "kompass-pod-placement.labels" . | nindent 4 }}
   annotations:
-    cert-manager.io/inject-ca-from: {{ .Release.Namespace }}/{{ include "kompass-pod-placement.fullname" . }}-cert
+    cert-manager.io/inject-ca-from: {{ .Release.Namespace }}/{{ include "kompass-pod-placement.webhook.certificateName" . }}
 webhooks:
   - name: {{ include "kompass-pod-placement.fullname" . }}.{{ .Release.Namespace }}.svc
     admissionReviewVersions: ["v1", "v1beta1"]

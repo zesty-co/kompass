@@ -1,4 +1,5 @@
 {{- if .Values.victoriaMetricsAuth.enabled }}
+{{- include "kompass.victoria-metrics.auth.topology.validate" . -}}
 apiVersion: v1
 kind: Secret
 metadata:

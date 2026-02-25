@@ -192,5 +192,5 @@ metadata:
     {{- include "kompass.labels" . | nindent 4 }}
 data:
   custom-rules.yaml: |
-{{ .Files.Get "files/custom-vm-recording-rules.yaml" | indent 4 }}
+{{ tpl (.Files.Get "files/custom-vm-recording-rules.yaml") . | indent 4 }}
 {{- end -}}
