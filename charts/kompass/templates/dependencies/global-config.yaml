@@ -6,22 +6,24 @@ metadata:
 data:
   monitoring_config: |
     rightsizing:
-        enabled: {{ .Values.rightsizing.enabled }}
-        deployments:
+      enabled: {{ .Values.rightsizing.enabled }}
+      deployments:
         - app.kubernetes.io/name: pod-rightsizing
-        - app.kubernetes.io/name: kube-state-metrics
-        - app.kubernetes.io/name: grafana
-        - app.kubernetes.io/name: cert-manager
-        - app.kubernetes.io/name: cainjector
-        - app.kubernetes.io/component: webhook
-        statefulsets:
-        - app.kubernetes.io/name: pod-rightsizing
-        - app.kubernetes.io/name: grafana
+          control-plane: controller-manager
+    rightsizing_recommendations_maker:
+      enabled: true
+      deployments:
+        - app: kompass-rightsizing-recommendations-maker
+    # Rightsizing metrics exporter is a CronJob
+    #rightsizing_metrics_exporter:
+    #  enabled: false
+    #  deployments:
+    #    - app: kompass-rightsizing-metrics-exporter
     storage:
-        enabled: {{ .Values.disk.enabled }} # Has a problem with component names being calculated in the chart and will break on change
-        deployments:
+      enabled: {{ .Values.disk.enabled }} # Has a problem with component names being calculated in the chart and will break on change
+      deployments:
         - app.kubernetes.io/name: "kompass-storage"
-        statefulsets: []
+      statefulsets: []
     victoria_metrics_agent:
       enabled: {{ .Values.victoriaMetricsAgent.enabled }}
       deployments:
@@ -56,19 +58,42 @@ data:
       - app.kubernetes.io/name: victoriaMetricsCluster
         app: vmstorage
     kube_state_metrics:
-        enabled: {{ .Values.kubeStateMetrics.enabled }}
-        {{- if .Values.kubeStateMetrics.enabled }}
-        deployments:
-        - {{ include "kompass.kube-state-metrics.selectorLabels" . | trim | nindent 10 }}
-        {{- else }}
-        deployments: []
-        {{- end }}
-        statefulsets: []
+      enabled: {{ .Values.kubeStateMetrics.enabled }}
+      {{- if .Values.kubeStateMetrics.enabled }}
+      deployments:
+      - {{ include "kompass.kube-state-metrics.selectorLabels" . | trim | replace "\n" "\n        " }}
+      {{- else }}
+      deployments: []
+      {{- end }}
+      statefulsets: []
     grafana:
-        enabled: {{ .Values.grafana.enabled }}
-        deployments: []
-        statefulsets:
+      enabled: {{ .Values.grafana.enabled }}
+      deployments: []
+      statefulsets:
         - app.kubernetes.io/name: {{ .Values.grafana.nameOverride | default "grafana" | quote }}
-    pod-placement:
+    pod_placement:
       enabled: {{ index .Values "kompass-pod-placement" "enabled" }}
+      {{- if index .Values "kompass-pod-placement" "enabled" }}
+      deployments:
+      - {{ include "kompass.pod-placement.selectorLabels" . | trim | replace "\n" "\n        " }}
+      {{- end }}
+    cert_manager:
+      enabled: {{ index .Values "cert-manager" "enabled" }}
+      {{- if index .Values "cert-manager" "enabled" }}
+      deployments:
+      - app.kubernetes.io/name: cert-manager
+      {{- end }}
+    cert_manager_cainjector:
+      enabled: {{ index .Values "cert-manager" "enabled" }}
+      {{- if index .Values "cert-manager" "enabled" }}
+      deployments:
+      - app.kubernetes.io/name: cainjector
+      {{- end }}
+    cert_manager_webhook:
+      enabled: {{ index .Values "cert-manager" "enabled" }}
+      {{- if index .Values "cert-manager" "enabled" }}
+      deployments:
+      - app.kubernetes.io/name: webhook
+        app.kubernetes.io/component: webhook
+      {{- end }}
   kompass_chart_version: "{{ .Chart.Version }}"

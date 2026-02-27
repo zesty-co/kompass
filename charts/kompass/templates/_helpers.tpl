@@ -45,7 +45,7 @@ Create chart name and version as used by the chart label.
 {{- define "kompass.kube-state-metrics.selectorLabels" -}}
   {{- if and .Values.kubeStateMetrics.enabled -}}
   {{- $ctx := dict "Values" .Values.kubeStateMetrics "Chart" .Chart "Release" .Release -}}
-  {{- include "kube-state-metrics.selectorLabels" $ctx | trimPrefix " " -}}
+  {{- include "kube-state-metrics.selectorLabels" $ctx -}}
   {{- end -}}
 {{- end -}}
 
@@ -255,6 +255,15 @@ Global value takes precedence when explicitly set.
 {{- end -}}
 {{- end -}}
 
+{{/*
+Returns Kompass Pod Placement selector labels
+*/}}
+{{- define "kompass.pod-placement.selectorLabels" -}}
+  {{- if and .Values.kubeStateMetrics.enabled -}}
+  {{- $ctx := dict "Values" (index .Values "kompass-pod-placement") "Chart" (index .Subcharts "kompass-pod-placement" "Chart") "Release" .Release -}}
+  {{- include "kompass-pod-placement.selectorLabels" $ctx -}}
+  {{- end -}}
+{{- end -}}
 
 {{/*
 Validate that kompass-pod-placement is only enabled when rightsizing is also enabled.
