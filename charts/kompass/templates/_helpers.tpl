@@ -257,6 +257,15 @@ Global value takes precedence when explicitly set.
 
 
 {{/*
+Validate that kompass-pod-placement is only enabled when rightsizing is also enabled.
+*/}}
+{{- define "kompass.validate.podPlacementRequiresRightsizing" -}}
+{{- if and (index .Values "kompass-pod-placement" "enabled") (not .Values.rightsizing.enabled) -}}
+{{- fail "kompass-pod-placement requires rightsizing to be enabled. Add --set rightsizing.enabled=true" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Validate that a value is an integer within the 1..99 range.
 */}}
 {{- define "kompass.validate.intRange1to99" -}}
