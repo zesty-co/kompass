@@ -2,8 +2,6 @@ name: trigger-jenkins
 
 on:
   pull_request:
-    paths:
-    - charts/kompass/**
 
 jobs:
   jenkins:
