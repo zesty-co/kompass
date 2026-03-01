@@ -81,8 +81,10 @@ jobs:
           chart_changed="${!chart_key}"
 
           if [ "$chart_changed" = "true" ]; then
-            MAIN_VERSION=$(git show origin/main:$chart_path/Chart.yaml | yq '.version')
-            PR_VERSION=$(yq '.version' $chart_path/Chart.yaml)
+            MAIN_VERSION=$(git show "origin/main:$chart_path/Chart.yaml" 2>/dev/null | yq -r '.version // "0.0.0"')
+            MAIN_VERSION=${MAIN_VERSION:-0.0.0}
+
+            PR_VERSION=$(yq -r '.version // "0.0.0"' "$chart_path/Chart.yaml")
 
             echo "Chart: $chart"
             echo "Main version: $MAIN_VERSION"
