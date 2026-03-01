@@ -81,16 +81,8 @@ jobs:
           chart_changed="${!chart_key}"
 
           if [ "$chart_changed" = "true" ]; then
-            PR_VERSION=$(yq '.version' "$chart_path/Chart.yaml")
-
-            if ! git cat-file -e "origin/main:$chart_path/Chart.yaml" 2>/dev/null; then
-              echo "🆕 Chart: $chart (not present in origin/main)"
-              echo "PR version:   $PR_VERSION"
-              echo "✅ Chart version bump detected for $chart."
-              continue
-            fi
-
-            MAIN_VERSION=$(git show "origin/main:$chart_path/Chart.yaml" | yq '.version')
+            MAIN_VERSION=$(git show origin/main:$chart_path/Chart.yaml | yq '.version')
+            PR_VERSION=$(yq '.version' $chart_path/Chart.yaml)
 
             echo "Chart: $chart"
             echo "Main version: $MAIN_VERSION"
