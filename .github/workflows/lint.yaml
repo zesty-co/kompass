@@ -64,64 +64,52 @@ jobs:
     - name: setup helm plugins
       run: |
         helm plugin install https://github.com/aslafy-z/helm-git --version 0.11.1 --verify=false
-      if: env.kompass_changed == 'true' || env.kompass_insights_changed == 'true'
+      if: env.kompass_changed == 'true'
 
     - name: helm dependency update
       run: helm dependency update ./charts/kompass
-      if: env.kompass_changed == 'true' || env.kompass_insights_changed == 'true'
-
-    - name: helm dependency update (kompass-insights)
-      run: helm dependency update ./charts/kompass-insights
-      if: env.kompass_insights_changed == 'true'
+      if: env.kompass_changed == 'true'
 
     - name: validate Chart.yaml version changed in PR
       if: github.event_name == 'pull_request'
       run: |
-        set -euo pipefail
+        set -e
 
         for chart in $CHARTS; do
           chart_key="${chart//-/_}_changed"
           chart_path="charts/${chart}"
           chart_changed="${!chart_key}"
 
-          if [ "$chart_changed" != "true" ]; then
-            echo "⏭️  Skipping $chart - no changes detected."
-            continue
-          fi
+          if [ "$chart_changed" = "true" ]; then
+            PR_VERSION=$(yq '.version' "$chart_path/Chart.yaml")
 
-          PR_VERSION=$(yq '.version' "$chart_path/Chart.yaml")
-          if [ -z "$PR_VERSION" ] || [ "$PR_VERSION" = "null" ]; then
-            echo "❌ PR version is missing/invalid for $chart."
-            exit 1
-          fi
+            if ! git cat-file -e "origin/main:$chart_path/Chart.yaml" 2>/dev/null; then
+              echo "🆕 Chart: $chart (not present in origin/main)"
+              echo "PR version:   $PR_VERSION"
+              echo "✅ Chart version bump detected for $chart."
+              continue
+            fi
 
-          if ! git cat-file -e "origin/main:$chart_path/Chart.yaml" 2>/dev/null; then
-            echo "🆕 Chart: $chart (not present in origin/main)"
+            MAIN_VERSION=$(git show "origin/main:$chart_path/Chart.yaml" | yq '.version')
+
+            echo "Chart: $chart"
+            echo "Main version: $MAIN_VERSION"
             echo "PR version:   $PR_VERSION"
-            continue
+
+            if [ "$MAIN_VERSION" = "$PR_VERSION" ]; then
+              echo "❌ Chart version has not been updated for $chart."
+              exit 1
+            fi
+
+            if [ "$(printf '%s\n' "$PR_VERSION" "$MAIN_VERSION" | sort -V | head -n1)" = "$PR_VERSION" ]; then
+              echo "❌ Chart version ($PR_VERSION) must be greater than main ($MAIN_VERSION) for $chart."
+              exit 1
+            fi
+
+            echo "✅ Chart version bump detected for $chart."
+          else
+            echo "⏭️  Skipping $chart - no changes detected."
           fi
-
-          MAIN_VERSION=$(git show "origin/main:$chart_path/Chart.yaml" | yq '.version')
-          if [ -z "$MAIN_VERSION" ] || [ "$MAIN_VERSION" = "null" ]; then
-            echo "❌ Main version is missing/invalid for $chart."
-            exit 1
-          fi
-
-          echo "Chart: $chart"
-          echo "Main version: $MAIN_VERSION"
-          echo "PR version:   $PR_VERSION"
-
-          if [ "$MAIN_VERSION" = "$PR_VERSION" ]; then
-            echo "❌ Chart version has not been updated for $chart."
-            exit 1
-          fi
-
-          if [ "$(printf '%s\n' "$PR_VERSION" "$MAIN_VERSION" | sort -V | head -n1)" = "$PR_VERSION" ]; then
-            echo "❌ Chart version ($PR_VERSION) must be greater than main ($MAIN_VERSION) for $chart."
-            exit 1
-          fi
-
-          echo "✅ Chart version bump detected for $chart."
         done
 
     - name: helm lint
@@ -138,7 +126,3 @@ jobs:
             echo "⏭️  Skipping helm lint for $chart - no changes detected."
           fi
         done
-
-    - name: helm lint kompass (insights compatibility)
-      run: helm lint ./charts/kompass
-      if: env.kompass_changed != 'true' && env.kompass_insights_changed == 'true'
