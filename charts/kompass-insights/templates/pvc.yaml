@@ -1,0 +1,18 @@
+{{- $pvcName := include "zesty-k8s.pvcname" . -}}
+{{- $existingPVC := lookup "v1" "PersistentVolumeClaim" .Release.Namespace $pvcName -}}
+{{- $existingStorage := "" -}}
+{{- if $existingPVC -}}
+  {{- $existingStorage = $existingPVC.spec.resources.requests.storage -}}
+{{- end -}}
+{{- $pvcSpec := .Values.persistence.spec -}}
+{{- $_ := set $pvcSpec.resources.requests "storage" ($existingStorage | default $pvcSpec.resources.requests.storage) -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: "{{ $pvcName }}"
+  namespace: "{{ .Release.Namespace }}"
+  labels:
+    app.kubernetes.io/instance: "{{ include "zesty-k8s.fullname" . }}"
+    app.kubernetes.io/name: "{{ include "zesty-k8s.fullname" . }}"
+spec:
+  {{- toYaml $pvcSpec | nindent 2 }}

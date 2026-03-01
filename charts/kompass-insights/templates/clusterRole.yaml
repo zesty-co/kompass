@@ -1,0 +1,224 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: "{{ include "zesty-k8s.clusterrole" . }}"
+  labels:
+    app.kubernetes.io/instance: "{{ include "zesty-k8s.fullname" . }}"
+    app.kubernetes.io/name: "{{ include "zesty-k8s.fullname" . }}"
+rules:
+  - apiGroups:
+      - "rightsizing.kompass.zesty.co"
+    resources:
+      - policies
+      - actions
+    verbs:
+      - list
+      - watch
+  - apiGroups:
+      - "kompass.zesty.co"
+    resources:
+      - virtualworkloads
+    verbs:
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - "argoproj.io"
+    resources:
+      - workflows
+      - workflowtemplates
+      - clusterworkflowtemplates
+      - cronworkflows
+      - rollouts
+      - analysistemplates
+      - experiments
+      - analysisruns
+    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+  - apiGroups:
+      - "kafka.strimzi.io"
+    resources:
+      - kafkas
+      - kafkatopics
+      - kafkausers
+      - kafkaconnects
+      - kafkaconnectors
+      - kafkamirrormakers
+      - kafkamirrormaker2s
+      - kafkarebalances
+      - kafkabridges
+    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+  - apiGroups:
+      - "core.strimzi.io"
+    resources:
+      - strimzipodsets
+      - strimzipodsets/status
+    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+  - apiGroups:
+      - "clickhouse.altinity.com"
+    resources:
+      - clickhouseinstallations
+      - clickhouseinstallationtemplates
+      - clickhouseoperatorconfigurations
+      - clickhousekeeperinstallations
+    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+  - apiGroups:
+      - "cloudwatch.aws.amazon.com"
+    resources:
+      - amazoncloudwatchagents
+    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+  - apiGroups:
+      - "flink.apache.org"
+    resources:
+      - flinkdeployments
+      - flinksessionjobs
+      - flinkstatesnapshots
+    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+  - apiGroups:
+      - "monitoring.coreos.com"
+    resources:
+      - alertmanagers
+      - podmonitors
+      - probes
+      - prometheuses
+      - prometheusrules
+      - servicemonitors
+      - thanosrulers
+    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+  - apiGroups:
+      - "actions.github.com"
+    resources:
+      - autoscalinglisteners
+      - autoscalingrunnersets
+      - workflowruns
+      - runnerdeployments
+      - runners
+      - runnersets
+      - workflows
+      - ephemeralrunners
+      - ephemeralrunnersets
+      - horizontalrunnerautoscalers
+    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+  - apiGroups:
+      - "qscaler.qubex.ai"
+    resources:
+      - qcacherevisioncreations
+    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+      - events
+      - namespaces
+      - nodes
+      - persistentvolumes
+      - pods
+      - replicationcontrollers
+      - services
+      - nodes/proxy
+    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+  - apiGroups:
+      - ""
+    resources:
+      - persistentvolumeclaims
+    verbs: ["get", "list", "watch", "patch"]
+  - apiGroups:
+      - ""
+    resources:
+      - pods/log
+    verbs:
+      - get
+  - apiGroups:
+      - "metrics.k8s.io"
+    resources:
+      - pods
+      - nodes
+    verbs:
+      - get
+      - list
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+      - replicasets
+      - daemonsets
+      - statefulsets
+    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+  - apiGroups:
+      - batch
+    resources:
+      - cronjobs
+      - jobs
+    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+  - apiGroups:
+      - policy
+    resources:
+      - poddisruptionbudgets
+    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+  - apiGroups:
+      - "storage.k8s.io"
+    resources:
+      - storageclasses
+    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+  - apiGroups:
+      - "karpenter.sh"
+    resources:
+      - nodepools
+      - nodeclaims
+    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+  - apiGroups:
+      - "keda.sh"
+    resources:
+      - scaledjobs
+      - scaledobjects
+    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+  - apiGroups:
+      - autoscaling
+    resources:
+      - horizontalpodautoscalers
+    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+  - apiGroups:
+      - "qscaler.qubex.ai"
+    resources:
+      - workloadprotections
+      - qnodes
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups:
+      - "kompass.zesty.co"
+    resources:
+      - workloaddescriptors
+      - autopilotconfigs
+      - jobpilotconfigs
+      - actions
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups:
+      - "kompass.zesty.co"
+    resources:
+      - workloaddescriptors/status
+      - autopilotconfigs/status
+      - jobpilotconfigs/status
+    verbs: [ "get", "update", "patch" ]
+  - apiGroups:
+      - "zesty.co"
+    resources:
+      - managedworkloads
+      - managednodepools
+    verbs: ["get", "list"]
+  - apiGroups:
+      - "apiextensions.k8s.io"
+    resources:
+      - customresourcedefinitions
+    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - clusterroles
+      - clusterrolebindings
+    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+  - apiGroups:
+      - admissionregistration.k8s.io
+    resources:
+      - mutatingwebhookconfigurations
+      - validatingwebhookconfigurations
+    {{- include "zesty-k8s.verbs" . | nindent 4 }}

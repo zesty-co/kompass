@@ -1,0 +1,182 @@
+{{- if .Values.recommendations.enabled }}
+{{- $globalWorkload := .Values.global | default dict -}}
+{{- $recommendationsWorkload := .Values.recommendations | default dict -}}
+{{- $recommendationsLegacyContainerSecurityContext := ((.Values.recommendations.container | default dict).securityContext | default dict) -}}
+{{- $recommendationsPodAnnotations := include "zesty-k8s.workload.mergeMaps" (dict
+  "global" $globalWorkload
+  "component" $recommendationsWorkload
+  "key" "podAnnotations"
+  "fallback" (.Values.recommendations.podAnnotations | default dict)
+) | fromYaml -}}
+{{- $recommendationsPodLabels := include "zesty-k8s.workload.mergeMaps" (dict
+  "global" $globalWorkload
+  "component" $recommendationsWorkload
+  "key" "podLabels"
+  "fallback" (.Values.recommendations.podLabels | default dict)
+) | fromYaml -}}
+{{- $recommendationsResolvedPodSecurityContext := mergeOverwrite
+  (mergeOverwrite
+    (deepCopy (.Values.recommendations.podSecurityContext | default dict))
+    ((get $recommendationsWorkload "podSecurityContext") | default dict)
+  )
+  ((get $globalWorkload "podSecurityContext") | default dict)
+-}}
+{{- $recommendationsResolvedSecurityContext := mergeOverwrite
+  (mergeOverwrite
+    (deepCopy $recommendationsLegacyContainerSecurityContext)
+    ((get $recommendationsWorkload "securityContext") | default dict)
+  )
+  ((get $globalWorkload "securityContext") | default dict)
+-}}
+{{- include "zesty-k8s.workload.validateContainerSecurityContext" (dict
+  "context" $recommendationsResolvedSecurityContext
+  "path" "recommendations.securityContext"
+) -}}
+{{- $recommendationsLegacyPodSecurityContext := include "zesty-k8s.workload.extractPodSecurityContext" (dict
+  "context" $recommendationsResolvedSecurityContext
+  "path" "recommendations.securityContext"
+) | fromYaml -}}
+{{- $recommendationsContainerSecurityContext := include "zesty-k8s.workload.extractContainerSecurityContext" (dict
+  "context" $recommendationsResolvedSecurityContext
+  "path" "recommendations.securityContext"
+) | fromYaml -}}
+{{- $recommendationsPodSecurityContext := mergeOverwrite (deepCopy ($recommendationsLegacyPodSecurityContext | default dict)) ($recommendationsResolvedPodSecurityContext | default dict) -}}
+{{- $recommendationsAffinity := include "zesty-k8s.workload.mergeMaps" (dict
+  "global" $globalWorkload
+  "component" $recommendationsWorkload
+  "key" "affinity"
+) | fromYaml -}}
+{{- $recommendationsImagePullSecrets := include "zesty-k8s.workload.resolveImagePullSecrets" (dict
+  "root" .
+  "global" $globalWorkload
+  "component" $recommendationsWorkload
+) | fromYamlArray -}}
+{{- $recommendationsTopologySpreadConstraints := include "zesty-k8s.workload.resolveListWithGlobalPrecedence" (dict
+  "global" $globalWorkload
+  "component" $recommendationsWorkload
+  "key" "topologySpreadConstraints"
+) | fromYamlArray -}}
+{{- $recommendationsAutomountSAToken := include "zesty-k8s.workload.resolveBool" (dict
+  "global" $globalWorkload
+  "component" $recommendationsWorkload
+  "key" "automountServiceAccountToken"
+  "fallback" true
+) | trim -}}
+{{- $recommendationsRuntimeClassName := include "zesty-k8s.workload.resolveString" (dict
+  "global" $globalWorkload
+  "component" $recommendationsWorkload
+  "key" "runtimeClassName"
+  "fallback" ""
+) | trim -}}
+{{- $recommendationsServiceAccountName := include "zesty-k8s.workload.resolveString" (dict
+  "global" dict
+  "component" $recommendationsWorkload
+  "key" "serviceAccountName"
+  "fallback" ""
+) | trim -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ include "zesty-k8s.recommendations.fullname" . }}"
+  namespace: "{{ .Release.Namespace }}"
+  labels:
+    app.kubernetes.io/instance: "{{ include "zesty-k8s.fullname" . }}"
+    app.kubernetes.io/name: "{{ include "zesty-k8s.recommendations.fullname" . }}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: "{{ include "zesty-k8s.fullname" . }}"
+      app.kubernetes.io/name: "{{ include "zesty-k8s.recommendations.fullname" . }}"
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "{{ .Values.recommendations.http.port }}"
+        {{- with $recommendationsPodAnnotations }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        app.kubernetes.io/instance: "{{ include "zesty-k8s.fullname" . }}"
+        app.kubernetes.io/name: "{{ include "zesty-k8s.recommendations.fullname" . }}"
+        {{- with $recommendationsPodLabels }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- if $recommendationsImagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml $recommendationsImagePullSecrets | nindent 8 }}
+      {{- end }}
+      automountServiceAccountToken: {{ $recommendationsAutomountSAToken }}
+      {{- if $recommendationsRuntimeClassName }}
+      runtimeClassName: {{ $recommendationsRuntimeClassName | quote }}
+      {{- end }}
+      {{- if .Values.global.nodeSelector }}
+      nodeSelector:
+      {{- toYaml .Values.global.nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if .Values.global.tolerations }}
+      tolerations:
+      {{- toYaml .Values.global.tolerations | nindent 8 }}
+      {{- end }}
+      {{- with $recommendationsAffinity }}
+      affinity:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $recommendationsTopologySpreadConstraints }}
+      topologySpreadConstraints:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if $recommendationsServiceAccountName }}
+      serviceAccountName: {{ $recommendationsServiceAccountName | quote }}
+      {{- end }}
+      containers:
+        - image: "{{ .Values.recommendations.image.repository }}:{{ .Values.recommendations.image.tag }}"
+          imagePullPolicy: {{ .Values.recommendations.image.pullPolicy }}
+          name: "{{ include "zesty-k8s.recommendations.fullname" . }}"
+          ports:
+            - containerPort: {{ .Values.recommendations.http.port }}
+              name: http
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: {{ .Values.recommendations.http.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ .Values.recommendations.http.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          {{- with .Values.recommendations.resources }}
+          resources:
+          {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $recommendationsContainerSecurityContext }}
+          securityContext:
+          {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: PROMETHEUS_ENDPOINT
+              value: {{ include "zesty-k8s.victoriaMetrics.endpoint" . | quote }}
+            - name: AGENT_HOST
+              value: {{ .Values.insights.service | quote }}
+            {{- include "zesty-k8s.recommendations.coralogix.envs" . | nindent 12 }}
+            {{- with .Values.recommendations.extraEnv }}
+              {{- toYaml . | nindent 12 }}
+            {{- end }}
+          envFrom:
+            - secretRef:
+                name: "{{ .Values.insights.secret }}"
+      {{- with $recommendationsPodSecurityContext }}
+      securityContext:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

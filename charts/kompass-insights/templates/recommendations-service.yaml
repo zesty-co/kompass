@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: "{{ include "zesty-k8s.recommendations.fullname" . }}"
+  labels:
+    app.kubernetes.io/instance: "{{ include "zesty-k8s.fullname" . }}"
+    app.kubernetes.io/name: "{{ include "zesty-k8s.recommendations.fullname" . }}"
+spec:
+  selector:
+    app.kubernetes.io/name: "{{ include "zesty-k8s.recommendations.fullname" . }}"
+  ports:
+    - name: http
+      port: {{ .Values.recommendations.http.port }}
+      targetPort: http
+      protocol: TCP
+  type: ClusterIP
