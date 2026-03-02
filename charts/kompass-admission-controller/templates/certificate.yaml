@@ -1,0 +1,23 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "kompass-admission-controller.name" . }}-webhook-cert
+  namespace: {{ .Release.Namespace }}  # Ensure it's deployed in the correct namespace
+  annotations:
+  {{- if and .Values.global .Values.global.useHelmPriorityHooks (eq .Values.global.useHelmPriorityHooks true) }}
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "20"
+  {{- end }}
+    cert-manager.io/disable-name-generation: "true"
+  labels:
+    {{- include "kompass-admission-controller.labels" . | nindent 4 }}
+spec:
+  secretName: {{ include "kompass-admission-controller.name" . }}-webhook-cert
+  dnsNames:
+    - {{ .Values.service.name }}.{{ .Release.Namespace }}.svc
+    - {{ .Values.service.name }}.{{ .Release.Namespace }}.svc.cluster.local
+  issuerRef:
+    kind: ClusterIssuer
+    {{ if .Values.global }}
+    name: {{ .Values.global.clusterIssuerName }}
+    {{ end }}

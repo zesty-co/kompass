@@ -1,0 +1,53 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: {{ include "kompass-admission-controller.fullname" . }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+    cert-manager.io/inject-ca-from: {{ .Release.Namespace }}/{{ include "kompass-admission-controller.name" . }}-webhook-cert
+webhooks:
+- name: nodepool.karpenter.sh
+  clientConfig:
+    service:
+      name: {{ .Values.service.name }}
+      namespace: {{ .Release.Namespace }}
+      path: /mutate
+  rules:
+    - operations:
+        - "CREATE"
+        - "UPDATE"
+        - "CONNECT"
+      apiGroups:
+        - "apps"
+      apiVersions:
+        - "v1"
+      resources:
+        - "deployments"
+    - operations:
+        - "CREATE"
+        - "UPDATE"
+        - "CONNECT"
+      apiGroups:
+        - "autoscaling"
+      apiVersions:
+        - "v1"
+        - "v2beta1"
+        - "v2beta2"
+        - "v2"
+      resources:
+        - "horizontalpodautoscalers"
+    - operations:
+        - "CREATE"
+        - "UPDATE"
+        - "CONNECT"
+      apiGroups:
+        - "karpenter.sh"
+      apiVersions:
+        - "v1beta1"
+        - "v1"
+      resources:
+        - "nodepools"
+  admissionReviewVersions: ["v1"]
+  sideEffects: None
+  timeoutSeconds: 10
+  failurePolicy: {{ .Values.webhook.failurePolicy | default "Ignore" | quote }}

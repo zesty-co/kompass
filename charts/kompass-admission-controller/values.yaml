@@ -1,0 +1,87 @@
+global:
+  cxLogging:
+    enabled: false
+    clusterName: ""
+    apiKey: ""
+    ingressUrl: https://ingress.eu2.coralogix.com/
+  imagePullSecrets: []
+  imagePullSecret:
+    name: ""
+    dockerconfigjson: ""
+
+
+# -- (string) Override the default name
+nameOverride: ~
+
+# -- (string) Override the fully qualified name
+fullnameOverride: ~
+
+webhook:
+  # -- (string) webhook failure policy
+  failurePolicy: Ignore # or "Fail"
+
+insights:
+  # -- (string) Override the Kompass Insights generated secret name
+  secret: "kompass-insights-secret"
+  # -- (string) Override the Kompass Insights generated service name
+  service: "kompass-insights-svc"
+
+grpc:
+  server:
+    # -- (int) Port for the gRPC server
+    port: 50052
+  # -- (string) gRPC service endpoint
+  endpoint: ~
+  # -- (int) Default gRPC port
+  port: 50051
+
+deployment:
+  # -- (int) Number of replicas for the deployment
+  replicaCount: 2
+  # -- (map) Node selector for scheduling
+  nodeSelector: {}
+  # -- (list) Tolerations for scheduling onto nodes with taints
+  tolerations: []
+  image:
+    # -- (string) Image repository
+    repository: "672188301118.dkr.ecr.eu-west-1.amazonaws.com/zesty-k8s/action-taker"
+    # -- (string) Image pull policy (e.g., Always, IfNotPresent, Never)
+    pullPolicy: Always
+    # -- (string) Image tag (version)
+    tag: stable
+  resources:
+    limits:
+      # -- (string) Maximum memory limit for the container
+      memory: 2Gi
+    requests:
+      # -- (string) CPU request for scheduling
+      cpu: 250m
+      # -- (string) Memory request for scheduling
+      memory: 2Gi
+
+# -- (array) Image pull secrets for private registries
+imagePullSecrets: []
+
+service:
+  # -- (string) Name of the controller service
+  name: "kompass-admission-controller-svc"
+
+pdb:
+  # -- (int) Maximum number of unavailable pods in the pod disruption budget
+  maxUnavailable: 1
+
+serviceAccount:
+  # -- (map) Annotations to add to the service account
+  annotations: {}
+
+log:
+  # -- (int) Log level to use
+  level: 0
+  # -- (bool) Enable or disable remote logging features
+  remote: true
+
+cxLogging:
+  enabled: false
+  clusterName: ""
+  apiKey: ""
+  ingressUrl: https://ingress.eu2.coralogix.com/

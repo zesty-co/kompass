@@ -1,0 +1,78 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "kompass-admission-controller.cr" . }}
+  labels:
+    app: {{ include "kompass-admission-controller.fullname" . }}
+rules:
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+      - daemonsets
+      - statefulsets
+    verbs:
+      - get
+      - list
+      - patch
+      - watch
+  - apiGroups:
+      - batch
+    resources:
+      - cronjobs
+    verbs:
+      - get
+      - list
+      - patch
+      - watch
+  - apiGroups:
+      - autoscaling
+    resources:
+      - horizontalpodautoscalers
+    verbs:
+      - get
+      - list
+      - watch
+      - patch
+      - update
+  - apiGroups:
+      - keda.sh
+    resources:
+      - scaledjobs
+      - scaledobject
+    verbs:
+      - get
+      - list
+      - patch
+      - watch
+  - apiGroups:
+      - karpenter.sh
+    resources:
+      - nodepools
+    verbs:
+      - get
+      - list
+      - patch
+      - watch
+  - apiGroups:
+      - kompass.zesty.co
+    resources:
+      - workloaddescriptors
+    verbs:
+      - get
+      - list
+      - watch
+      - update
+      - patch
+  - apiGroups:
+      - zesty.co
+    resources:
+      - managedworkloads
+      - managednodepools
+    verbs:
+      - get
+      - list
+      - create
+      - update
+      - patch
+      - delete

@@ -1,0 +1,14 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "kompass-admission-controller.crb" . }}
+  labels:
+    app: {{ include "kompass-admission-controller.fullname" . }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "kompass-admission-controller.cr" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "kompass-admission-controller.sa" . }}
+    namespace: "{{ .Release.Namespace }}"

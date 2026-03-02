@@ -1,0 +1,36 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: "{{ include "kompass-admission-controller.role" . }}"
+  labels:
+    app.kubernetes.io/instance: "{{ include "kompass-admission-controller.fullname" . }}"
+    app.kubernetes.io/name: "{{ include "kompass-admission-controller.fullname" . }}"
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    resourceNames:
+      - "{{ .Values.insights.secret }}"
+    verbs:
+      - get
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+      - update

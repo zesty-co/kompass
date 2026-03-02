@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+  name: {{ include "kompass-admission-controller.fullname" . }}
+  labels:
+    app: {{ include "kompass-admission-controller.fullname" . }}
+spec:
+  replicas: {{ .Values.deployment.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "kompass-admission-controller.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "kompass-admission-controller.fullname" . }}
+      annotations:
+        checksum/webhook-tls: {{ include (print $.Template.BasePath "/mutatingWebhook.yaml") . | sha256sum }}
+    spec:
+      serviceAccountName: "{{ include "kompass-admission-controller.sa" . }}"
+      {{- if .Values.deployment.nodeSelector }}
+      nodeSelector:
+      {{- toYaml .Values.deployment.nodeSelector | nindent 10 }}
+      {{- end }}
+      {{- if .Values.deployment.tolerations }}
+      tolerations:
+      {{- toYaml .Values.deployment.tolerations | nindent 10 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.deployment.image.repository }}:{{ .Values.deployment.image.tag }}"
+          imagePullPolicy: {{ .Values.deployment.image.pullPolicy }}
+          ports:
+          - name: https
+            containerPort: 443
+            protocol: TCP
+          - name: grpc
+            containerPort: {{ .Values.grpc.port }}
+          volumeMounts:
+            - mountPath: "/etc/webhook/tls"
+              name: webhook-tls
+              readOnly: true
+            - mountPath: "/tmp/k8s-webhook-server/serving-certs"
+              name: webhook-tls
+              readOnly: true
+          {{- with .Values.deployment.resources }}
+          resources:
+          {{- toYaml . | nindent 12 }}
+          {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "kompass-admission-controller.configMap" . }}
+          env:
+            {{- if and .Values.global.cxLogging .Values.global.cxLogging.enabled }}
+            - name: CX_CLUSTER_NAME
+              value: {{ .Values.global.cxLogging.clusterName }}
+            - name: CX_API_KEY
+              value: {{ .Values.global.cxLogging.apiKey }}
+            - name: CORALOGIX_INGRESS_URL
+              value: {{ .Values.global.cxLogging.ingressUrl }}
+            {{- else if and .Values.cxLogging .Values.cxLogging.enabled }}
+            - name: CX_CLUSTER_NAME
+              value: {{ .Values.cxLogging.clusterName }}
+            - name: CX_API_KEY
+              value: {{ .Values.cxLogging.apiKey }}
+            - name: CORALOGIX_INGRESS_URL
+              value: {{ .Values.cxLogging.ingressUrl }}
+            {{- end }}
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: MANAGER_HOST
+              value: {{ .Values.grpc.endpoint }}
+            - name: KOMPASS_CHART_VERSION
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "kompass-admission-controller.globalConfig" . }}
+                  key: kompass_chart_version
+            - name: ACTION_TAKER_CHART_VERSION
+              value: {{ .Chart.Version }}
+
+      volumes:
+        - name: webhook-tls
+          secret:
+            secretName: {{ include "kompass-admission-controller.name" . }}-webhook-cert

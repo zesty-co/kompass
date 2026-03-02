@@ -1,0 +1,15 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: "{{ include "kompass-admission-controller.rb" . }}"
+  labels:
+    app.kubernetes.io/instance: "{{ include "kompass-admission-controller.name" . }}"
+    app.kubernetes.io/name: "{{ include "kompass-admission-controller.name" . }}"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: "{{ include "kompass-admission-controller.role" . }}"
+subjects:
+  - kind: ServiceAccount
+    name: "{{ include "kompass-admission-controller.sa" . }}"
+    namespace: "{{ .Release.Namespace }}"

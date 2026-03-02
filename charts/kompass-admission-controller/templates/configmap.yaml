@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  name: {{ include "kompass-admission-controller.configMap" . }}
+data:
+  AGENT_HOST: "{{ .Values.insights.service }}"
+  AGENT_PORT: "{{ .Values.grpc.server.port }}"
+  GRPC: "{{ .Values.grpc.port }}"
+  SECRET: "{{ .Values.insights.secret }}"
+  LOG_LEVEL: "{{ .Values.log.level }}"
+  LOG_REMOTE: "{{ .Values.log.remote }}"
