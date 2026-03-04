@@ -3,7 +3,7 @@
 {{- $validatorPodAnnotations := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $validatorValues "key" "podAnnotations") | fromYaml -}}
 {{- $validatorPodLabels := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $validatorValues "key" "podLabels") | fromYaml -}}
 {{- $validatorAffinity := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $validatorValues "key" "affinity") | fromYaml -}}
-{{- $validatorImagePullSecrets := include "kompass.workload.resolveList" (dict "global" $globalValues "component" $validatorValues "key" "imagePullSecrets") | fromYamlArray -}}
+{{- $validatorImagePullSecrets := include "kompass.workload.resolveImagePullSecrets" (dict "global" $globalValues "component" $validatorValues "legacySecretName" .Values.global.imagePullSecret.name) | fromYamlArray -}}
 {{- $validatorPodSecurityContext := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $validatorValues "key" "podSecurityContext") | fromYaml -}}
 {{- $validatorSecurityContext := include "kompass.workload.resolveContainerSecurityContext" (dict "global" $globalValues "component" $validatorValues) | fromYaml -}}
 {{- $validatorTopologySpreadConstraints := include "kompass.workload.resolveList" (dict "global" $globalValues "component" $validatorValues "key" "topologySpreadConstraints") | fromYamlArray -}}

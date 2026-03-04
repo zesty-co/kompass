@@ -4,7 +4,7 @@
 {{- $migrationPodAnnotations := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $migrationValues "key" "podAnnotations") | fromYaml -}}
 {{- $migrationPodLabels := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $migrationValues "key" "podLabels") | fromYaml -}}
 {{- $migrationAffinity := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $migrationValues "key" "affinity") | fromYaml -}}
-{{- $migrationImagePullSecrets := include "kompass.workload.resolveList" (dict "global" $globalValues "component" $migrationValues "key" "imagePullSecrets") | fromYamlArray -}}
+{{- $migrationImagePullSecrets := include "kompass.workload.resolveImagePullSecrets" (dict "global" $globalValues "component" $migrationValues "legacySecretName" .Values.global.imagePullSecret.name) | fromYamlArray -}}
 {{- $migrationPodSecurityContext := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $migrationValues "key" "podSecurityContext") | fromYaml -}}
 {{- $migrationSecurityContext := include "kompass.workload.resolveContainerSecurityContext" (dict "global" $globalValues "component" $migrationValues) | fromYaml -}}
 {{- $migrationTopologySpreadConstraints := include "kompass.workload.resolveList" (dict "global" $globalValues "component" $migrationValues "key" "topologySpreadConstraints") | fromYamlArray -}}
