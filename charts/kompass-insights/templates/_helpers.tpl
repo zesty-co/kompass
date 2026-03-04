@@ -300,12 +300,41 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- $global := default dict .global -}}
 {{- $component := default dict .component -}}
 {{- $fallback := include "zesty-k8s.workload.legacyImagePullSecrets" .root | fromYamlArray | default (list) -}}
-{{- include "zesty-k8s.workload.resolveListWithGlobalPrecedence" (dict
-  "global" $global
-  "component" $component
-  "fallback" $fallback
-  "key" "imagePullSecrets"
-) -}}
+{{- $key := "imagePullSecrets" -}}
+{{- $resolved := list -}}
+{{- $resolvedFromValues := false -}}
+
+{{- $globalValue := get $global $key -}}
+{{- if and (hasKey $global $key) (ne $globalValue nil) -}}
+{{- if not (kindIs "slice" $globalValue) -}}
+{{- fail (printf "Invalid type for workload list key '%s': expected list, got %s" $key (kindOf $globalValue)) -}}
+{{- end -}}
+{{- if gt (len $globalValue) 0 -}}
+{{- $resolved = $globalValue -}}
+{{- $resolvedFromValues = true -}}
+{{- end -}}
+{{- end -}}
+
+{{- if not $resolvedFromValues -}}
+{{- $componentValue := get $component $key -}}
+{{- if and (hasKey $component $key) (ne $componentValue nil) -}}
+{{- if not (kindIs "slice" $componentValue) -}}
+{{- fail (printf "Invalid type for workload list key '%s': expected list, got %s" $key (kindOf $componentValue)) -}}
+{{- end -}}
+{{- if gt (len $componentValue) 0 -}}
+{{- $resolved = $componentValue -}}
+{{- $resolvedFromValues = true -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{- if not $resolvedFromValues -}}
+{{- $resolved = $fallback -}}
+{{- end -}}
+
+{{- if gt (len ($resolved | default (list))) 0 -}}
+{{- toYaml $resolved -}}
+{{- end -}}
 {{- end }}
 
 {{- define "zesty-k8s.coralogix.envs" -}}
