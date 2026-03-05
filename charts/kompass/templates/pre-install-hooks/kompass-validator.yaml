@@ -3,13 +3,33 @@
 {{- $validatorPodAnnotations := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $validatorValues "key" "podAnnotations") | fromYaml -}}
 {{- $validatorPodLabels := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $validatorValues "key" "podLabels") | fromYaml -}}
 {{- $validatorAffinity := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $validatorValues "key" "affinity") | fromYaml -}}
-{{- $validatorImagePullSecrets := include "kompass.workload.resolveList" (dict "global" $globalValues "component" $validatorValues "key" "imagePullSecrets") | fromYamlArray -}}
+{{- $validatorHookImagePullSecretName := "" -}}
+{{- if and .Values.global.imagePullSecret.name .Values.global.imagePullSecret.dockerconfigjson -}}
+{{- $validatorHookImagePullSecretName = printf "%s-validator-hook" .Values.global.imagePullSecret.name | trunc 253 | trimSuffix "-" -}}
+{{- end -}}
+{{- $validatorImagePullSecrets := include "kompass.workload.resolveImagePullSecrets" (dict "global" $globalValues "component" $validatorValues "legacySecretName" $validatorHookImagePullSecretName) | fromYamlArray -}}
 {{- $validatorPodSecurityContext := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $validatorValues "key" "podSecurityContext") | fromYaml -}}
 {{- $validatorSecurityContext := include "kompass.workload.resolveContainerSecurityContext" (dict "global" $globalValues "component" $validatorValues) | fromYaml -}}
 {{- $validatorTopologySpreadConstraints := include "kompass.workload.resolveList" (dict "global" $globalValues "component" $validatorValues "key" "topologySpreadConstraints") | fromYamlArray -}}
 {{- $validatorAutomountServiceAccountToken := include "kompass.workload.resolveBool" (dict "global" $globalValues "component" $validatorValues "key" "automountServiceAccountToken") | trim -}}
 {{- $validatorRuntimeClassName := include "kompass.workload.resolveString" (dict "global" $globalValues "component" $validatorValues "key" "runtimeClassName") | trim -}}
 {{- $validatorServiceAccountName := index $validatorValues "serviceAccountName" | default "" | trim | default "kompass-validator" -}}
+{{- if $validatorHookImagePullSecretName }}
+---
+# Hook pull secret for validator job
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $validatorHookImagePullSecretName | quote }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-6"
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
+type: kubernetes.io/dockerconfigjson
+data:
+  .dockerconfigjson: {{ .Values.global.imagePullSecret.dockerconfigjson | quote }}
+{{- end }}
 ---
 # Service Account for the validation job
 apiVersion: v1

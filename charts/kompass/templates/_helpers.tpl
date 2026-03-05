@@ -218,6 +218,24 @@ Global value takes precedence when set.
 {{- end -}}
 
 {{/*
+Resolve imagePullSecrets from global/component lists.
+If both are empty, fallback to legacySecretName.
+*/}}
+{{- define "kompass.workload.resolveImagePullSecrets" -}}
+{{- $global := default (dict) .global -}}
+{{- $component := default (dict) .component -}}
+{{- $legacySecretName := default "" .legacySecretName | trim -}}
+{{- $resolved := include "kompass.workload.resolveList" (dict "global" $global "component" $component "key" "imagePullSecrets") | fromYamlArray | default (list) -}}
+{{- if gt (len $resolved) 0 -}}
+{{- toYaml $resolved -}}
+{{- else if not (empty $legacySecretName) -}}
+{{- toYaml (list (dict "name" $legacySecretName)) -}}
+{{- else -}}
+{{- toYaml (list) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Resolve a bool workload value from global/component values.
 Global value takes precedence and explicit false is preserved.
 */}}
