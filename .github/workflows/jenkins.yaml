@@ -2,6 +2,8 @@ name: trigger-jenkins
 
 on:
   pull_request:
+    paths:
+    - charts/kompass/**
 
 jobs:
   jenkins:
@@ -40,7 +42,7 @@ jobs:
         run: |
           QUEUE_URL="${{ steps.trigger.outputs.queue_url }}"
           BUILD_URL=""
-          echo "Waiting for build to start..."
+          echo "Waiting for build to start ..."
           TIMEOUT_SECONDS=1200
           INTERVAL_SECONDS=30
           END_TIME=$((SECONDS + TIMEOUT_SECONDS))
