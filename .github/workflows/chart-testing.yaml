@@ -62,16 +62,16 @@ jobs:
 
           default_sc="$(kubectl get storageclass -o jsonpath='{range .items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")]}{.metadata.name}{"\n"}{end}')"
           if [ -z "$default_sc" ]; then
-            cat <<'EOF' | kubectl apply -f -
-            apiVersion: storage.k8s.io/v1
-            kind: StorageClass
-            metadata:
-              name: ct-default
-              annotations:
-                storageclass.kubernetes.io/is-default-class: "true"
-            provisioner: kubernetes.io/no-provisioner
-            volumeBindingMode: WaitForFirstConsumer
-            EOF
+          kubectl apply -f - <<'EOF'
+          apiVersion: storage.k8s.io/v1
+          kind: StorageClass
+          metadata:
+            name: ct-default
+            annotations:
+              storageclass.kubernetes.io/is-default-class: "true"
+          provisioner: kubernetes.io/no-provisioner
+          volumeBindingMode: WaitForFirstConsumer
+          EOF
           fi
 
           kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.19.1/cert-manager.crds.yaml
