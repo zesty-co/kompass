@@ -6711,6 +6711,16 @@ entries:
     version: 2.1.91
   kompass-pod-placement:
   - apiVersion: v2
+    appVersion: v0.1.0
+    created: "2026-03-08T16:06:46.751937087Z"
+    description: Zesty Kompass Pod Placement for K8s
+    digest: ed829594d1aedb1c00bd0950fbab4ff3ac6283d04f252452153de1ff77df33fe
+    name: kompass-pod-placement
+    type: application
+    urls:
+    - https://github.com/zesty-co/kompass/releases/download/kompass-pod-placement-0.1.6/kompass-pod-placement-0.1.6.tgz
+    version: 0.1.6
+  - apiVersion: v2
     appVersion: 0.1.0
     created: "2026-03-06T08:38:28.607011238Z"
     description: Zesty Kompass Pod Placement for K8s
@@ -6770,4 +6780,4 @@ entries:
     urls:
     - https://github.com/zesty-co/kompass/releases/download/kompass-pod-placement-0.1.0/kompass-pod-placement-0.1.0.tgz
     version: 0.1.0
-generated: "2026-03-06T10:45:06.586993215Z"
+generated: "2026-03-08T16:06:46.752248006Z"
