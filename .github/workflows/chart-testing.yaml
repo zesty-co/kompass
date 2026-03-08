@@ -38,7 +38,7 @@ jobs:
       - name: Install helm-unittest plugin
         if: steps.changes.outputs.kompass == 'true'
         run: |
-          helm plugin install https://github.com/helm-unittest/helm-unittest --version v1.0.3
+          helm plugin install https://github.com/helm-unittest/helm-unittest --version v1.0.3 --verify=false
           helm plugin list
 
       - name: Set up chart-testing
