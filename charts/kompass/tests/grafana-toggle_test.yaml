@@ -1,0 +1,28 @@
+suite: grafana datasource configmap toggle
+templates:
+  - templates/dependencies/grafana.yaml
+tests:
+  - it: renders datasource configmap when grafana and datasource are enabled
+    set:
+      kompass-insights.orgID: ci-org
+      kompass-insights.encryptedCredentials: ci-encrypted
+      grafana.enabled: true
+      grafana.deployDataSource: true
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: ConfigMap
+      - equal:
+          path: apiVersion
+          value: v1
+
+  - it: skips datasource configmap when grafana is disabled
+    set:
+      kompass-insights.orgID: ci-org
+      kompass-insights.encryptedCredentials: ci-encrypted
+      grafana.enabled: false
+      grafana.deployDataSource: true
+    asserts:
+      - hasDocuments:
+          count: 0

@@ -1,0 +1,23 @@
+suite: victoria metrics auth topology validation
+templates:
+  - templates/dependencies/vmauth-config.yaml
+tests:
+  - it: fails when auth uses single without victoria metrics single enabled
+    set:
+      kompass-insights.orgID: ci-org
+      kompass-insights.encryptedCredentials: ci-encrypted
+      victoriaMetrics.enabled: false
+      victoriaMetricsAuth.useSingle: true
+    asserts:
+      - failedTemplate:
+          errorMessage: "invalid VictoriaMetrics topology: victoriaMetricsAuth.useSingle=true requires victoriaMetrics.enabled=true"
+
+  - it: fails when auth uses cluster without victoria metrics cluster enabled
+    set:
+      kompass-insights.orgID: ci-org
+      kompass-insights.encryptedCredentials: ci-encrypted
+      victoriaMetricsCluster.enabled: false
+      victoriaMetricsAuth.useSingle: false
+    asserts:
+      - failedTemplate:
+          errorMessage: "invalid VictoriaMetrics topology: victoriaMetricsAuth.useSingle=false requires victoriaMetricsCluster.enabled=true"

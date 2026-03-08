@@ -1,0 +1,12 @@
+victoriaMetrics:
+  enabled: false
+
+victoriaMetricsCluster:
+  enabled: true
+
+victoriaMetricsAuth:
+  useSingle: false
+
+kompass-insights:
+  orgID: ci-org
+  encryptedCredentials: ci-encrypted

@@ -1,0 +1,8 @@
+disk:
+  enabled: true
+  agentManager:
+    apiKey: ci-disk-api-key
+
+kompass-insights:
+  orgID: ci-org
+  encryptedCredentials: ci-encrypted

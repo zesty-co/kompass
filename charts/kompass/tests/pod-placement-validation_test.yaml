@@ -1,0 +1,13 @@
+suite: kompass pod placement validation
+templates:
+  - templates/validations.yaml
+tests:
+  - it: fails when pod placement is enabled without rightsizing
+    set:
+      kompass-insights.orgID: ci-org
+      kompass-insights.encryptedCredentials: ci-encrypted
+      kompass-pod-placement.enabled: true
+      rightsizing.enabled: false
+    asserts:
+      - failedTemplate:
+          errorMessage: "kompass-pod-placement requires rightsizing to be enabled. Add --set rightsizing.enabled=true"

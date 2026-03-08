@@ -1,0 +1,8 @@
+kubeStateMetrics:
+  enabled: false
+  serviceName: kube-state-metrics
+  serviceNamespace: kube-system
+
+kompass-insights:
+  orgID: ci-org
+  encryptedCredentials: ci-encrypted

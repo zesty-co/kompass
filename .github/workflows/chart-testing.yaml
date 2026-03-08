@@ -1,0 +1,82 @@
+name: chart-testing
+
+on:
+  pull_request:
+    paths:
+      - charts/kompass/**
+  push:
+    branches:
+      - main
+    paths:
+      - charts/kompass/**
+
+jobs:
+  ct:
+    name: Chart Testing
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Set up chart-testing
+        uses: helm/chart-testing-action@v2.7.0
+
+      - name: List changed charts
+        id: changed
+        run: |
+          changed_charts="$(ct list-changed --config .github/ct.yaml)"
+          if [ -n "$changed_charts" ]; then
+            echo "any_changed=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "charts<<EOF"
+              echo "$changed_charts"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+            echo "Changed charts:"
+            echo "$changed_charts"
+          else
+            echo "any_changed=false" >> "$GITHUB_OUTPUT"
+            echo "No chart changes detected."
+          fi
+
+      - name: Lint changed charts
+        if: steps.changed.outputs.any_changed == 'true'
+        run: ct lint --config .github/ct.yaml
+
+      - name: Create kind cluster
+        if: steps.changed.outputs.any_changed == 'true'
+        uses: helm/kind-action@v1.12.0
+        with:
+          cluster_name: chart-testing
+
+      - name: Prepare smoke prerequisites
+        if: steps.changed.outputs.any_changed == 'true'
+        run: |
+          kubectl create namespace ct-smoke --dry-run=client -o yaml | kubectl apply -f -
+
+          default_sc="$(kubectl get storageclass -o jsonpath='{range .items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")]}{.metadata.name}{"\n"}{end}')"
+          if [ -z "$default_sc" ]; then
+            cat <<'EOF' | kubectl apply -f -
+            apiVersion: storage.k8s.io/v1
+            kind: StorageClass
+            metadata:
+              name: ct-default
+              annotations:
+                storageclass.kubernetes.io/is-default-class: "true"
+            provisioner: kubernetes.io/no-provisioner
+            volumeBindingMode: WaitForFirstConsumer
+            EOF
+          fi
+
+          kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.19.1/cert-manager.crds.yaml
+
+      - name: Install changed charts (API smoke)
+        if: steps.changed.outputs.any_changed == 'true'
+        run: ct install --config .github/ct.yaml

@@ -1,0 +1,9 @@
+rightsizing:
+  enabled: true
+
+kompass-pod-placement:
+  enabled: true
+
+kompass-insights:
+  orgID: ci-org
+  encryptedCredentials: ci-encrypted

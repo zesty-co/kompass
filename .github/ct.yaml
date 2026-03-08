@@ -1,0 +1,25 @@
+chart-dirs:
+  - charts
+excluded-charts:
+  - kompass-insights
+  - kompass-pod-placement
+target-branch: main
+check-version-increment: true
+validate-maintainers: false
+validate-yaml: false
+validate-chart-schema: false
+chart-repos:
+  - zesty-kompass=https://zesty-co.github.io/kompass
+  - zesty-rightsizing=https://zesty-co.github.io/kompass-pod-rightsizing
+  - zesty-helm=https://zesty-co.github.io/zesty-helm
+  - victoria-metrics=https://victoriametrics.github.io/helm-charts
+  - prometheus-community=https://prometheus-community.github.io/helm-charts
+  - jetstack=https://charts.jetstack.io
+  - grafana=https://grafana.github.io/helm-charts
+  - kubernetes-sigs=https://kubernetes-sigs.github.io/metrics-server/
+  - zesty-admission=https://zesty-co.github.io/kompass-admission-controller
+namespace: ct-smoke
+release-label: app.kubernetes.io/instance
+helm-extra-args: --timeout 5m --wait=false --atomic=false
+additional-commands:
+  - helm unittest -f tests/**/*.yaml {{ .Path }}

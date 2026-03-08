@@ -1,0 +1,6 @@
+grafana:
+  enabled: true
+
+kompass-insights:
+  orgID: ci-org
+  encryptedCredentials: ci-encrypted
