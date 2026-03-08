@@ -17,47 +17,46 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Detect umbrella chart changes
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            kompass:
+              - charts/kompass/**
+
       - name: Checkout
+        if: steps.changes.outputs.kompass == 'true'
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Set up Helm
+        if: steps.changes.outputs.kompass == 'true'
         uses: azure/setup-helm@v4
 
+      - name: Install helm-unittest plugin
+        if: steps.changes.outputs.kompass == 'true'
+        run: |
+          helm plugin install https://github.com/helm-unittest/helm-unittest --version v1.0.3
+          helm plugin list
+
       - name: Set up chart-testing
+        if: steps.changes.outputs.kompass == 'true'
         uses: helm/chart-testing-action@v2.7.0
 
-      - name: List changed charts
-        id: changed
-        run: |
-          changed_charts="$(ct list-changed --config .github/ct.yaml)"
-          if [ -n "$changed_charts" ]; then
-            echo "any_changed=true" >> "$GITHUB_OUTPUT"
-            {
-              echo "charts<<EOF"
-              echo "$changed_charts"
-              echo "EOF"
-            } >> "$GITHUB_OUTPUT"
-            echo "Changed charts:"
-            echo "$changed_charts"
-          else
-            echo "any_changed=false" >> "$GITHUB_OUTPUT"
-            echo "No chart changes detected."
-          fi
-
       - name: Lint changed charts
-        if: steps.changed.outputs.any_changed == 'true'
+        if: steps.changes.outputs.kompass == 'true'
         run: ct lint --config .github/ct.yaml
 
       - name: Create kind cluster
-        if: steps.changed.outputs.any_changed == 'true'
+        if: steps.changes.outputs.kompass == 'true'
         uses: helm/kind-action@v1.12.0
         with:
           cluster_name: chart-testing
 
       - name: Prepare smoke prerequisites
-        if: steps.changed.outputs.any_changed == 'true'
+        if: steps.changes.outputs.kompass == 'true'
         run: |
           kubectl create namespace ct-smoke --dry-run=client -o yaml | kubectl apply -f -
 
@@ -78,5 +77,5 @@ jobs:
           kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.19.1/cert-manager.crds.yaml
 
       - name: Install changed charts (API smoke)
-        if: steps.changed.outputs.any_changed == 'true'
+        if: steps.changes.outputs.kompass == 'true'
         run: ct install --config .github/ct.yaml
