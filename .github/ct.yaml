@@ -20,6 +20,6 @@ chart-repos:
   - zesty-admission=https://zesty-co.github.io/kompass-admission-controller
 namespace: ct-smoke
 release-label: app.kubernetes.io/instance
-helm-extra-args: --timeout 5m --wait=false --atomic=false
+helm-extra-args: --timeout 5m --wait=hookOnly
 additional-commands:
   - helm unittest -f tests/**/*.yaml {{ .Path }}
