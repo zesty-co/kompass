@@ -129,6 +129,10 @@ validator:
   topologySpreadConstraints: []
 
 kompass-insights:
+  # -- (bool) Enable or disable the Kompass Insights feature components.
+  # This should be disabled only for distinct scenarios and is not recommended for most use-cases.
+  # Advise with Zesty support before disabling it.
+  enabled: true
   # -- (string) REQUIRED: Your Zesty organization ID.
   # Provided during the onboarding process. This value MUST be set.
   orgID: ""

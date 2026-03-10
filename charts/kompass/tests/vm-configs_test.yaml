@@ -1,0 +1,43 @@
+suite: VM config insights scrape jobs
+templates:
+  - templates/dependencies/vm-configs.yaml
+
+tests:
+  - it: does not render insights or recommendations scrape jobs when kompass-insights is disabled
+    documentSelector:
+      path: metadata.name
+      value: kompass-vmagent-config
+    set:
+      kompass-insights:
+        enabled: false
+        insights:
+          service: kompass-insights
+          metrics:
+            port: 8080
+        recommendations:
+          enabled: true
+          http:
+            port: 9090
+    asserts:
+      - notMatchRegex:
+          path: data["scrape.yml"]
+          pattern: "job_name: 'kompass-insights'"
+      - notMatchRegex:
+          path: data["scrape.yml"]
+          pattern: "job_name: 'recommendations'"
+
+  - it: renders insights scrape job when kompass-insights is enabled
+    documentSelector:
+      path: metadata.name
+      value: kompass-vmagent-config
+    set:
+      kompass-insights:
+        enabled: true
+        insights:
+          service: kompass-insights
+          metrics:
+            port: 8080
+    asserts:
+      - matchRegex:
+          path: data["scrape.yml"]
+          pattern: "job_name: 'kompass-insights'"
