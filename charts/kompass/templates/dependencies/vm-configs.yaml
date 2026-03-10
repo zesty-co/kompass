@@ -103,15 +103,21 @@ data:
         static_configs:
           - targets: ['http://{{- include "rightsizing.recommendationsMaker.name" . -}}.{{ .Release.Namespace }}:{{ .Values.rightsizing.recommendationsMaker.port }}/savings']
 
+      {{- $kompassInsights := (index .Values "kompass-insights" | default dict) }}
+      {{- $kompassInsightsEnabled := ne (index $kompassInsights "enabled") false }}
+      {{- $insightsConfig := (index $kompassInsights "insights" | default dict) }}
+      {{- $insightsMetricsConfig := (index $insightsConfig "metrics" | default dict) }}
+      {{- if and $kompassInsightsEnabled (hasKey $insightsConfig "service") (hasKey $insightsMetricsConfig "port") }}
       # for collecting insights metrics
       - job_name: 'kompass-insights'
         scrape_interval: {{ include "kompass.scrapeInterval" . }}
         static_configs:
-          - targets: ['http://{{ (index .Values "kompass-insights").insights.service }}.{{ .Release.Namespace }}:{{ (index .Values "kompass-insights").insights.metrics.port }}']
+          - targets: ['http://{{ $insightsConfig.service }}.{{ .Release.Namespace }}:{{ $insightsMetricsConfig.port }}']
         metric_relabel_configs:
           - source_labels: [__name__]
             regex: '(kompass_.*)'
             action: keep
+      {{- end }}
 
       {{- if .Values.victoriaMetrics.enabled }}
       # for collecting VM metrics
@@ -144,12 +150,14 @@ data:
           - targets: ['{{ .Values.victoriaMetricsAuth.fullnameOverride }}.{{ .Release.Namespace }}:8427']
       {{- end }}
 
-      {{- if (index .Values "kompass-insights").recommendations.enabled }}
+      {{- $recommendationsConfig := (index $kompassInsights "recommendations" | default dict) }}
+      {{- $recommendationsHTTPConfig := (index $recommendationsConfig "http" | default dict) }}
+      {{- if and $kompassInsightsEnabled (index $recommendationsConfig "enabled") (hasKey $recommendationsHTTPConfig "port") }}
       # for collecting recommendations
       - job_name: 'recommendations'
         scrape_interval: {{ include "kompass.scrapeInterval" . }}
         static_configs:
-          - targets: ['http://{{ include "zesty-k8s.recommendations.fullname" (dict "Values" (index .Values "kompass-insights") "Release" .Release "Chart" (dict "Name" "kompass-insights")) }}.{{ .Release.Namespace }}:{{ (index .Values "kompass-insights").recommendations.http.port }}']
+          - targets: ['http://{{ include "zesty-k8s.recommendations.fullname" (dict "Values" $kompassInsights "Release" .Release "Chart" (dict "Name" "kompass-insights")) }}.{{ .Release.Namespace }}:{{ $recommendationsHTTPConfig.port }}']
         metric_relabel_configs:
           - source_labels: [__name__]
             regex: '(workload_headroom_reduction_recommendation_min_replicas)'

@@ -1,0 +1,125 @@
+suite: Insights cluster id hook template
+templates:
+  - templates/pre-install-hooks/insights-cluster-id-hook.yaml
+
+tests:
+  - it: renders hook resources when kompass-insights is disabled
+    set:
+      kompass-insights:
+        enabled: false
+    asserts:
+      - hasDocuments:
+          count: 5
+
+  - it: renders fallback secret as first hook document when disabled
+    set:
+      kompass-insights:
+        enabled: false
+    documentIndex: 0
+    asserts:
+      - isKind:
+          of: Secret
+
+  - it: does not render hook resources when kompass-insights is enabled
+    set:
+      kompass-insights:
+        enabled: true
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: maps cluster id env inputs from insights values
+    set:
+      kompass-insights:
+        enabled: false
+        orgID: org-123
+        metadata:
+          accountID: acc-456
+          region: eu-west-1
+          clusterName: cluster-a
+    documentIndex: 4
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[0].value
+          value: org-123
+      - equal:
+          path: spec.template.spec.containers[0].env[1].value
+          value: acc-456
+      - equal:
+          path: spec.template.spec.containers[0].env[2].value
+          value: eu-west-1
+      - equal:
+          path: spec.template.spec.containers[0].env[3].value
+          value: cluster-a
+
+  - it: safely renders empty fallback fields when insights values are missing
+    set:
+      kompass-insights:
+        enabled: false
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: stringData.ORG_ID
+          value: ""
+      - equal:
+          path: stringData.ACCOUNT_ID
+          value: ""
+      - equal:
+          path: stringData.REGION
+          value: ""
+      - equal:
+          path: stringData.CLUSTER_NAME
+          value: ""
+
+  - it: maps secret fields from insights values without cluster id precomputed
+    set:
+      kompass-insights:
+        enabled: false
+        orgID: org-123
+        metadata:
+          accountID: acc-456
+          region: eu-west-1
+          clusterName: cluster-a
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: stringData.ORG_ID
+          value: org-123
+      - equal:
+          path: stringData.ACCOUNT_ID
+          value: acc-456
+      - equal:
+          path: stringData.REGION
+          value: eu-west-1
+      - equal:
+          path: stringData.CLUSTER_NAME
+          value: cluster-a
+      - notExists:
+          path: stringData.CLUSTER_ID
+
+  - it: renders coralogix api key only when global cxLogging is enabled
+    set:
+      kompass-insights:
+        enabled: false
+      global:
+        cxLogging:
+          enabled: true
+          apiKey: cx-api-key
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: stringData.CORALOGIX_API_KEY
+          value: cx-api-key
+
+  - it: omits coralogix api key when global cxLogging is disabled
+    set:
+      kompass-insights:
+        enabled: false
+      global:
+        cxLogging:
+          enabled: false
+          apiKey: cx-api-key
+    documentIndex: 0
+    asserts:
+      - notExists:
+          path: stringData.CORALOGIX_API_KEY

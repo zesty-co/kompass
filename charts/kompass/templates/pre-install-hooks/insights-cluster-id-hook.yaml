@@ -1,0 +1,137 @@
+{{- $kompassInsights := (index .Values "kompass-insights" | default dict) }}
+{{- $metadata := (index $kompassInsights "metadata" | default dict) }}
+{{- if eq (index $kompassInsights "enabled") false }}
+{{- $secretName := printf "%s-insights-secret" .Release.Name -}}
+{{- $hookServiceAccountName := printf "%s-insights-cluster-id-hook" .Release.Name | trunc 63 | trimSuffix "-" -}}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: "{{ .Release.Name }}-insights-secret"
+  namespace: "{{ .Release.Namespace }}"
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-10"
+  labels:
+    app.kubernetes.io/instance: "{{ .Release.Name }}-insights"
+    app.kubernetes.io/name: "{{ .Release.Name }}-insights"
+type: Opaque
+stringData:
+  ORG_ID: {{ index $kompassInsights "orgID" | default "" | quote }}
+  ACCOUNT_ID: {{ index $metadata "accountID" | default "" | quote }}
+  REGION: {{ index $metadata "region" | default "" | quote }}
+  CLUSTER_NAME: {{ index $metadata "clusterName" | default "" | quote }}
+  {{- if .Values.global.cxLogging.enabled }}
+  CORALOGIX_API_KEY: {{ .Values.global.cxLogging.apiKey | quote }}
+  {{- end }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ $hookServiceAccountName }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-10"
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ $hookServiceAccountName }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-10"
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: [{{ $secretName | quote }}]
+    verbs: ["get", "patch", "update"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ $hookServiceAccountName }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-10"
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
+subjects:
+  - kind: ServiceAccount
+    name: {{ $hookServiceAccountName }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ $hookServiceAccountName }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ $hookServiceAccountName }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      name: {{ $hookServiceAccountName }}
+      labels:
+        app.kubernetes.io/name: {{ $hookServiceAccountName }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      serviceAccountName: {{ $hookServiceAccountName }}
+      restartPolicy: Never
+      containers:
+        - name: cluster-id-injector
+          image: {{ .Values.validator.image.registry }}/{{ .Values.validator.image.repository }}:{{ .Values.validator.image.tag }}
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              CONCATENATED_INPUT="${ORG_ID}${ACCOUNT_ID}${REGION}${CLUSTER_NAME}"
+              CLUSTER_ID="$(printf '%s' "${CONCATENATED_INPUT}" | md5sum | cut -d ' ' -f1)"
+
+              if kubectl get secret "${SECRET_NAME}" -n "${RELEASE_NAMESPACE}" >/dev/null 2>&1; then
+                kubectl patch secret "${SECRET_NAME}" -n "${RELEASE_NAMESPACE}" --type merge -p "{\"stringData\":{\"CLUSTER_ID\":\"${CLUSTER_ID}\"}}"
+              else
+                kubectl create secret generic "${SECRET_NAME}" \
+                  -n "${RELEASE_NAMESPACE}" \
+                  --from-literal="CLUSTER_ID=${CLUSTER_ID}" \
+                  --dry-run=client \
+                  -o yaml \
+                | kubectl label --local -f - \
+                    app.kubernetes.io/managed-by=Helm \
+                    "app.kubernetes.io/instance=${SECRET_NAME}" \
+                    "app.kubernetes.io/name=${SECRET_NAME}" \
+                    -o yaml \
+                | kubectl annotate --local -f - \
+                    "meta.helm.sh/release-name={{ .Release.Name }}" \
+                    "meta.helm.sh/release-namespace={{ .Release.Namespace }}" \
+                    -o yaml \
+                | kubectl apply -f -
+              fi
+          env:
+            - name: ORG_ID
+              value: {{ index $kompassInsights "orgID" | default "" | quote }}
+            - name: ACCOUNT_ID
+              value: {{ index $metadata "accountID" | default "" | quote }}
+            - name: REGION
+              value: {{ index $metadata "region" | default "" | quote }}
+            - name: CLUSTER_NAME
+              value: {{ index $metadata "clusterName" | default "" | quote }}
+            - name: SECRET_NAME
+              value: {{ $secretName | quote }}
+            - name: RELEASE_NAMESPACE
+              value: {{ .Release.Namespace | quote }}
+{{- end }}
