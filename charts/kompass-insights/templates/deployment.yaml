@@ -85,7 +85,7 @@ spec:
   template:
     metadata:
       annotations:
-        timestamp: {{ now | quote }}
+        checksum/config: {{ include (print $.Template.BasePath "/configMap.yaml") . | sha256sum }}
         {{- with $insightsPodAnnotations }}
           {{- toYaml . | nindent 8 }}
         {{- end }}
