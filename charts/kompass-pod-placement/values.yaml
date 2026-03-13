@@ -83,13 +83,13 @@ probes:
     httpGet:
       path: /readyz
       port: healthz
-    initialDelaySeconds: 15
+    initialDelaySeconds: 0
     periodSeconds: 10
   liveness:
     httpGet:
       path: /healthz
       port: healthz
-    initialDelaySeconds: 15
+    initialDelaySeconds: 0
     periodSeconds: 10
 
 podDisruptionBudget:
