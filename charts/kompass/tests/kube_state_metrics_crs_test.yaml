@@ -1,0 +1,62 @@
+suite: kube-state-metrics Action CRS configuration
+templates:
+  - templates/dependencies/global-config.yaml
+  - charts/kubeStateMetrics/templates/crs-configmap.yaml
+
+tests:
+  - it: renders Action customResourceState metadata in global-config
+    template: templates/dependencies/global-config.yaml
+    documentSelector:
+      path: metadata.name
+      value: global-config
+    asserts:
+      - matchRegex:
+          path: data["monitoring_config"]
+          pattern: "custom_resource_state:[\\s\\S]*enabled: true"
+      - matchRegex:
+          path: data["monitoring_config"]
+          pattern: "action_crd_group: rightsizing.kompass.zesty.co"
+      - matchRegex:
+          path: data["monitoring_config"]
+          pattern: "action_crd_kind: Action"
+      - matchRegex:
+          path: data["monitoring_config"]
+          pattern: "action_crd_version: \"v1alpha1\""
+      - matchRegex:
+          path: data["monitoring_config"]
+          pattern: "rbac_extra_rules:[\\s\\S]*rightsizing.kompass.zesty.co[\\s\\S]*actions[\\s\\S]*list[\\s\\S]*watch"
+
+  - it: renders kube-state-metrics extra RBAC rules for Action resources when enabled
+    template: templates/dependencies/global-config.yaml
+    documentSelector:
+      path: metadata.name
+      value: global-config
+    asserts:
+      - matchRegex:
+          path: data["monitoring_config"]
+          pattern: "rbac_extra_rules:[\\s\\S]*apiGroups:[\\s\\S]*rightsizing.kompass.zesty.co"
+
+  - it: renders Action labelsFromPath mappings and quiet missing-path logging in kube-state-metrics config
+    template: charts/kubeStateMetrics/templates/crs-configmap.yaml
+    documentSelector:
+      path: metadata.name
+      value: kompass-kube-state-metrics-customresourcestate-config
+    asserts:
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: "labelsFromPath:[\\s\\S]*policy:[\\s\\S]*- spec[\\s\\S]*- policy"
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: "labelsFromPath:[\\s\\S]*action_type:[\\s\\S]*- spec[\\s\\S]*- actionType"
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: "labelsFromPath:[\\s\\S]*execution_method:[\\s\\S]*- spec[\\s\\S]*- executionMethod"
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: "labelsFromPath:[\\s\\S]*source_apc:[\\s\\S]*- spec[\\s\\S]*- sourceAPC"
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: "metrics:[\\s\\S]*name: action_info"
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: "errorLogV: 10"

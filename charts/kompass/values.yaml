@@ -433,6 +433,34 @@ victoriaMetricsMigration:
   # -- (array) Topology spread constraints for VictoriaMetrics migration job.
   topologySpreadConstraints: []
 
+metricsScrapeFilters:
+  kubeStateMetrics:
+    exact:
+      - kube_pod_info
+      - kube_pod_container_info
+      - kube_pod_owner
+      - kube_replicaset_owner
+      - kube_job_owner
+      - kube_pod_container_resource_requests
+      - kube_pod_container_resource_limits
+      - kube_pod_container_status_restarts_total
+      - kube_pod_container_status_last_terminated_reason
+      - kube_pod_container_status_terminated_reason
+      - kube_horizontalpodautoscaler_spec_target_metric
+      - kube_horizontalpodautoscaler_spec_min_replicas
+      - kube_horizontalpodautoscaler_info
+      - kube_horizontalpodautoscaler_status_current_replicas
+      - kube_namespace_status_phase
+      - kube_deployment_metadata_generation
+      - kube_statefulset_metadata_generation
+      - kube_job_metadata_generation
+      - kube_cronjob_metadata_generation
+      - kube_daemonset_metadata_generation
+      - kube_pod_created
+      - kube_pod_status_ready_time
+    prefixes:
+      - kompass_rs_
+
 victoriaMetricsAgent:
   enabled: true
   fullnameOverride: kompass-victoria-metrics-agent
@@ -535,6 +563,57 @@ kubeStateMetrics:
   fullnameOverride: kompass-kube-state-metrics
   extraArgs:
   - --metric-annotations-allowlist=pods=[*]
+  actionCustomResourceVersion: &actionCustomResourceVersion v1alpha1
+  customResourceState:
+    enabled: true
+    config:
+      kind: CustomResourceStateMetrics
+      spec:
+        resources:
+        - groupVersionKind:
+            group: rightsizing.kompass.zesty.co
+            kind: Action
+            version: *actionCustomResourceVersion
+          metricNamePrefix: kompass_rs
+          labelsFromPath:
+            namespace:
+            - metadata
+            - namespace
+            policy:
+            - spec
+            - policy
+            workload_name:
+            - spec
+            - workload
+            - name
+            action_type:
+            - spec
+            - actionType
+            source_apc:
+            - spec
+            - sourceAPC
+            execution_method:
+            - spec
+            - executionMethod
+          errorLogV: 10
+          metrics:
+            - name: action_info
+              help: "Kompass Rightsizing action CRD info"
+              each:
+                type: Gauge
+                gauge:
+                  path: [metadata, generation]
+  rbac:
+    # Required for Action CRD scraping by kube-state-metrics customResourceState.
+    # If kubeStateMetrics.enabled=false, apply this permission to your external KSM.
+    extraRules:
+    - apiGroups:
+      - rightsizing.kompass.zesty.co
+      resources:
+      - actions
+      verbs:
+      - list
+      - watch
 
 grafana:
   enabled: false

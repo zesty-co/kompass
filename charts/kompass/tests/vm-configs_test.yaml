@@ -41,3 +41,43 @@ tests:
       - matchRegex:
           path: data["scrape.yml"]
           pattern: "job_name: 'kompass-insights'"
+
+  - it: uses external kube-state-metrics service and namespace when installation is disabled
+    documentSelector:
+      path: metadata.name
+      value: kompass-vmagent-config
+    set:
+      kubeStateMetrics:
+        enabled: false
+        serviceName: external-ksm
+        serviceNamespace: observability
+    asserts:
+      - matchRegex:
+          path: data["scrape.yml"]
+          pattern: "job_name: 'kube-state-metrics'"
+      - matchRegex:
+          path: data["scrape.yml"]
+          pattern: 'source_labels: \[__meta_kubernetes_service_name\][\s\S]*regex: external-ksm'
+      - matchRegex:
+          path: data["scrape.yml"]
+          pattern: 'source_labels: \[__meta_kubernetes_namespace\][\s\S]*regex: observability'
+
+  - it: builds kube-state-metrics keep regex from top-level metricsScrapeFilters values
+    documentSelector:
+      path: metadata.name
+      value: kompass-vmagent-config
+    set:
+      metricsScrapeFilters:
+        kubeStateMetrics:
+          exact:
+            - kube_pod_info
+            - kube_job_owner
+          prefixes:
+            - kompass_rs_
+    asserts:
+      - matchRegex:
+          path: data["scrape.yml"]
+          pattern: "regex: '\\(kube_pod_info\\|kube_job_owner\\|kompass_rs_\\.\\*\\)'"
+      - notMatchRegex:
+          path: data["scrape.yml"]
+          pattern: "kube_namespace_status_phase"
