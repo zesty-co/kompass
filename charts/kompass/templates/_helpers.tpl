@@ -75,6 +75,16 @@ Generate service namespace for Kube State Metrics (KSM)
   {{- end -}}
 {{- end }}
 
+{{- define "kompass.kube-state-metrics.keepRegex" -}}
+{{- $filters := default (dict) .Values.metricsScrapeFilters.kubeStateMetrics -}}
+{{- $exact := default (list) $filters.exact -}}
+{{- $prefixPatterns := list -}}
+{{- range $prefix := default (list) $filters.prefixes -}}
+{{- $prefixPatterns = append $prefixPatterns (printf "%s.*" $prefix) -}}
+{{- end -}}
+{{- printf "(%s)" (join "|" (concat $exact $prefixPatterns)) -}}
+{{- end -}}
+
 {{- define "kompass.labels" -}}
 helm.sh/chart: {{ include "kompass.chart" . }}
 {{ include "kompass.selectorLabels" . }}
