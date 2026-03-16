@@ -59,6 +59,13 @@ data:
         app: vmstorage
     kube_state_metrics:
       enabled: {{ .Values.kubeStateMetrics.enabled }}
+      custom_resource_state:
+        enabled: {{ .Values.kubeStateMetrics.customResourceState.enabled }}
+        action_crd_group: rightsizing.kompass.zesty.co
+        action_crd_kind: Action
+        action_crd_version: {{ .Values.kubeStateMetrics.actionCustomResourceVersion | quote }}
+      rbac_extra_rules:
+{{- toYaml .Values.kubeStateMetrics.rbac.extraRules | nindent 8 }}
       {{- if .Values.kubeStateMetrics.enabled }}
       deployments:
       - {{ include "kompass.kube-state-metrics.selectorLabels" . | trim | replace "\n" "\n        " }}
