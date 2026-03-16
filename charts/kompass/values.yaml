@@ -628,6 +628,27 @@ kubeStateMetrics:
 grafana:
   enabled: false
   fullnameOverride: "kompass-grafana"
+  # Pod-level security context applied to the Grafana pod.
+  # Ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+  securityContext: {}
+  # Example (Grafana supports non-root with UID 472):
+  # securityContext:
+  #   runAsNonRoot: true
+  #   runAsUser: 472
+  #   runAsGroup: 472
+  #   fsGroup: 472
+  #   seccompProfile:
+  #     type: RuntimeDefault
+  # Container-level security context applied to the Grafana container.
+  containerSecurityContext: {}
+  # Example:
+  # containerSecurityContext:
+  #   allowPrivilegeEscalation: false
+  #   capabilities:
+  #     drop:
+  #       - ALL
+  #   seccompProfile:
+  #     type: RuntimeDefault
   deployDataSource: true
   deployDashboard: true
   persistence:

@@ -232,11 +232,27 @@ selfMonitoring:
   imagePullSecrets: ~
   podAnnotations: {}
   podLabels: {}
-  # Pod-level settings. These take precedence over legacy pod keys under `securityContext`.
+  # Pod-level security context applied to self-monitoring pods.
+  # Ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
   podSecurityContext: {}
+  # Example:
+  # podSecurityContext:
+  #   runAsNonRoot: true
+  #   runAsUser: 65532
+  #   runAsGroup: 65532
+  #   seccompProfile:
+  #     type: RuntimeDefault
   runtimeClassName: ~
-  # Container-level settings. Legacy pod-level keys mixed here are tolerated and moved to pod securityContext.
+  # Container-level security context applied to self-monitoring containers.
   securityContext: {}
+  # Example:
+  # securityContext:
+  #   allowPrivilegeEscalation: false
+  #   capabilities:
+  #     drop:
+  #       - ALL
+  #   seccompProfile:
+  #     type: RuntimeDefault
   topologySpreadConstraints: ~
   resources:
     requests:
