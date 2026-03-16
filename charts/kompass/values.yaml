@@ -582,6 +582,9 @@ kubeStateMetrics:
             policy:
             - spec
             - policy
+            horizontal_scaling_policy:
+            - spec
+            - horizontalScalingPolicy
             workload_name:
             - spec
             - workload
