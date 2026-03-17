@@ -7,7 +7,7 @@ on:
 
 jobs:
   release:
-    if: "!startsWith(github.event.head_commit.message, 'chore:')"
+    if: "!startsWith(github.event.head_commit.message, 'chore:') && !startsWith(github.event.head_commit.message, 'docs:')"
     permissions:
       contents: write
     runs-on: ubuntu-latest

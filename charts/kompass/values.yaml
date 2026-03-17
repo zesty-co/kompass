@@ -555,9 +555,13 @@ victoriaMetricsAuth:
       cpu: "0.1"
 
 kubeStateMetrics:
+  # Set to true to install and manage kube-state-metrics from this chart.
+  # Set to false to use a pre-existing external kube-state-metrics service.
   enabled: true
   force: false
+  # Required when enabled=false: service name of the external kube-state-metrics.
   serviceName: ""
+  # Required when enabled=false: namespace of the external kube-state-metrics.
   serviceNamespace: ""
   nameOverride: kube-state-metrics
   fullnameOverride: kompass-kube-state-metrics
@@ -566,6 +570,8 @@ kubeStateMetrics:
   actionCustomResourceVersion: &actionCustomResourceVersion v1alpha1
   customResourceState:
     enabled: true
+    # For enabled=false, configure this same customResourceState on your external
+    # kube-state-metrics so it exposes kompass_rs_action_info.
     config:
       kind: CustomResourceStateMetrics
       spec:
@@ -608,7 +614,8 @@ kubeStateMetrics:
                   path: [metadata, generation]
   rbac:
     # Required for Action CRD scraping by kube-state-metrics customResourceState.
-    # If kubeStateMetrics.enabled=false, apply this permission to your external KSM.
+    # If kubeStateMetrics.enabled=false, grant this list/watch permission to your
+    # external kube-state-metrics for rightsizing.kompass.zesty.co/actions.
     extraRules:
     - apiGroups:
       - rightsizing.kompass.zesty.co

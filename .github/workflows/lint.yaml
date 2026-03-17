@@ -9,7 +9,7 @@ on:
 
 jobs:
   lint:
-    if: "!startsWith(github.event.pull_request.title, 'chore:')"
+    if: "!startsWith(github.event.pull_request.title, 'chore:') && !startsWith(github.event.pull_request.title, 'docs:')"
     permissions:
       contents: read
     name: Helm Lint

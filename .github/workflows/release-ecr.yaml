@@ -8,7 +8,7 @@ on:
 
 jobs:
   deploy:
-    if: "!startsWith(github.event.head_commit.message, 'chore:')"
+    if: "!startsWith(github.event.head_commit.message, 'chore:') && !startsWith(github.event.head_commit.message, 'docs:')"
     runs-on: [gh-runner-production] # your self-hosted label (arm64 is fine)
     container:
       image: ubuntu:22.04
