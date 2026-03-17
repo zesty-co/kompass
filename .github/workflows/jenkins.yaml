@@ -5,7 +5,7 @@ on:
 
 jobs:
   jenkins:
-    if: "!startsWith(github.event.pull_request.title, 'chore:')"
+    if: "!startsWith(github.event.pull_request.title, 'chore:') && !startsWith(github.event.pull_request.title, 'docs:')"
     concurrency:
       group: jenkins-ci
       cancel-in-progress: false
