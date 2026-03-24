@@ -458,6 +458,7 @@ metricsScrapeFilters:
       - kube_daemonset_metadata_generation
       - kube_pod_created
       - kube_pod_status_ready_time
+      - kube_node_status_allocatable
     prefixes:
       - kompass_rs_
 
