@@ -140,7 +140,7 @@ spec:
               value: /tmp
             - name: XDG_CACHE_HOME
               value: /home/nonroot/.cache
-          args: ["schema", "apply", "--url", "sqlite://{{ .Values.persistence.mountPath}}/zesty.db", "--dev-url", "sqlite://:memory:", "--to",  "file:///bin/pkg/db/schema.sql", "--auto-approve", "--format", "json"]
+          args: ["schema", "apply", "--url", "sqlite://{{ .Values.persistence.mountPath}}/zesty.db", "--dev-url", "sqlite://dev?mode=memory", "--to",  "file:///bin/pkg/db/schema.sql", "--auto-approve", "--format", "json"]
       containers:
         - image: "{{ .Values.image.repository }}:{{ include "zesty-k8s.version" . }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
