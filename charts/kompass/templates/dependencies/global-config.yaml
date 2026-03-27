@@ -7,58 +7,79 @@ data:
   monitoring_config: |
     rightsizing:
       enabled: {{ .Values.rightsizing.enabled }}
+      matchLabels:
+        app.kubernetes.io/name: pod-rightsizing
+        control-plane: controller-manager
       deployments:
         - app.kubernetes.io/name: pod-rightsizing
           control-plane: controller-manager
     rightsizing_recommendations_maker:
       enabled: true
+      matchLabels:
+        app: kompass-rightsizing-recommendations-maker
       deployments:
         - app: kompass-rightsizing-recommendations-maker
     # Rightsizing metrics exporter is a CronJob
     #rightsizing_metrics_exporter:
     #  enabled: false
+    #  matchLabels:
+    #    app: kompass-rightsizing-metrics-exporter
     #  deployments:
     #    - app: kompass-rightsizing-metrics-exporter
     storage:
       enabled: {{ .Values.disk.enabled }} # Has a problem with component names being calculated in the chart and will break on change
+      matchLabels:
+        app.kubernetes.io/name: "kompass-storage"
       deployments:
         - app.kubernetes.io/name: "kompass-storage"
-      statefulsets: []
     victoria_metrics_agent:
       enabled: {{ .Values.victoriaMetricsAgent.enabled }}
+      matchLabels:
+        app.kubernetes.io/name: victoriaMetricsAgent
       deployments:
       - app.kubernetes.io/name: victoriaMetricsAgent
-      statefulsets: []
     victoria_metrics_alert:
       enabled: {{ .Values.victoriaMetricsAlert.enabled }}
+      matchLabels:
+        app.kubernetes.io/name: victoriaMetricsAlert
       deployments:
       - app.kubernetes.io/name: victoriaMetricsAlert
-      statefulsets: []
     victoria_metrics:
       enabled: {{ .Values.victoriaMetrics.enabled }}
-      deployments: []
+      matchLabels:
+        app.kubernetes.io/name: victoriaMetrics
       statefulsets:
       - app.kubernetes.io/name: victoriaMetrics
     victoria_metrics_cluster_vminsert:
       enabled: {{ .Values.victoriaMetricsCluster.enabled }}
+      matchLabels:
+        app.kubernetes.io/name: victoriaMetricsCluster
+        app: vminsert
       deployments:
       - app.kubernetes.io/name: victoriaMetricsCluster
         app: vminsert
-      statefulsets: []
     victoria_metrics_cluster_vmselect:
       enabled: {{ .Values.victoriaMetricsCluster.enabled }}
+      matchLabels:
+        app.kubernetes.io/name: victoriaMetricsCluster
+        app: vmselect
       deployments:
       - app.kubernetes.io/name: victoriaMetricsCluster
         app: vmselect
-      statefulsets: []
     victoria_metrics_cluster_vmstorage:
       enabled: {{ .Values.victoriaMetricsCluster.enabled }}
-      deployments: []
+      matchLabels:
+        app.kubernetes.io/name: victoriaMetricsCluster
+        app: vmstorage
       statefulsets:
       - app.kubernetes.io/name: victoriaMetricsCluster
         app: vmstorage
     kube_state_metrics:
       enabled: {{ .Values.kubeStateMetrics.enabled }}
+      {{- if .Values.kubeStateMetrics.enabled }}
+      matchLabels:
+        {{ include "kompass.kube-state-metrics.selectorLabels" . | trim | replace "\n" "\n        " }}
+      {{- end }}
       custom_resource_state:
         enabled: {{ .Values.kubeStateMetrics.customResourceState.enabled }}
         action_crd_group: rightsizing.kompass.zesty.co
@@ -69,36 +90,43 @@ data:
       {{- if .Values.kubeStateMetrics.enabled }}
       deployments:
       - {{ include "kompass.kube-state-metrics.selectorLabels" . | trim | replace "\n" "\n        " }}
-      {{- else }}
-      deployments: []
       {{- end }}
-      statefulsets: []
     grafana:
       enabled: {{ .Values.grafana.enabled }}
-      deployments: []
+      matchLabels:
+        app.kubernetes.io/name: {{ .Values.grafana.nameOverride | default "grafana" | quote }}
       statefulsets:
         - app.kubernetes.io/name: {{ .Values.grafana.nameOverride | default "grafana" | quote }}
     pod_placement:
       enabled: {{ index .Values "kompass-pod-placement" "enabled" }}
       {{- if index .Values "kompass-pod-placement" "enabled" }}
+      matchLabels:
+        {{- include "kompass.pod-placement.selectorLabels" . | nindent 8 }}
       deployments:
       - {{ include "kompass.pod-placement.selectorLabels" . | trim | replace "\n" "\n        " }}
       {{- end }}
     cert_manager:
       enabled: {{ index .Values "cert-manager" "enabled" }}
       {{- if index .Values "cert-manager" "enabled" }}
+      matchLabels:
+        app.kubernetes.io/name: cert-manager
       deployments:
       - app.kubernetes.io/name: cert-manager
       {{- end }}
     cert_manager_cainjector:
       enabled: {{ index .Values "cert-manager" "enabled" }}
       {{- if index .Values "cert-manager" "enabled" }}
+      matchLabels:
+        app.kubernetes.io/name: cainjector
       deployments:
       - app.kubernetes.io/name: cainjector
       {{- end }}
     cert_manager_webhook:
       enabled: {{ index .Values "cert-manager" "enabled" }}
       {{- if index .Values "cert-manager" "enabled" }}
+      matchLabels:
+        app.kubernetes.io/name: webhook
+        app.kubernetes.io/component: webhook
       deployments:
       - app.kubernetes.io/name: webhook
         app.kubernetes.io/component: webhook
