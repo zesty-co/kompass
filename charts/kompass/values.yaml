@@ -73,7 +73,7 @@ global:
     # -- (string) The URL endpoint for sending logs to Coralogix.
     # Used by Rightsizing (Coralogix SDK) to send logs to Coralogix.
     # Resolves to `CORALOGIX_LOG_URL` environment variable.
-    logUrl: https://ingress.eu2.coralogix.com:443/api/v1/logs
+    logUrl: https://ingress.eu2.coralogix.com:443/logs/v1/singles
     # -- (string) The URL endpoint for time synchronization with Coralogix.
     # Used by Rightsizing (Coralogix SDK) to send logs to Coralogix.
     # Resolves to `CORALOGIX_TIME_DELTA_URL` environment variable.
