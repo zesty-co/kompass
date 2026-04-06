@@ -10,7 +10,7 @@ dependencies:
   - name: kompass-insights
     condition: kompass-insights.enabled
     repository: "https://zesty-co.github.io/kompass"
-    version: "2.1.95"
+    version: "2.1.96"
   - name: pod-rightsizing
     alias: rightsizing
     repository: "https://zesty-co.github.io/kompass-pod-rightsizing"
@@ -23,7 +23,7 @@ dependencies:
   - name: kompass-pod-placement
     condition: kompass-pod-placement.enabled
     repository: "https://zesty-co.github.io/kompass"
-    version: 0.1.8
+    version: 0.1.9
   # mutual dependencies
   - name: victoria-metrics-single
     alias: victoriaMetrics
