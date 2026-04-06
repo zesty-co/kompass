@@ -3,4 +3,4 @@ name: kompass-pod-placement
 description: Zesty Kompass Pod Placement for K8s
 type: application
 version: 0.1.7
-appVersion: "v0.1.0"
+appVersion: "v0.3.0"
