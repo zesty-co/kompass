@@ -39,6 +39,15 @@ rules:
     - patch
     - update
 
+  # Events operations to record pod placement events
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+
   # Core operations.
   - apiGroups:
     - ""
