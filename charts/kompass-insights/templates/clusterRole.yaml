@@ -12,6 +12,7 @@ rules:
       - policies
       - actions
     verbs:
+      - get
       - list
       - watch
   - apiGroups:
