@@ -10,7 +10,7 @@ dependencies:
   - name: kompass-insights
     condition: kompass-insights.enabled
     repository: "https://zesty-co.github.io/kompass"
-    version: "2.1.97"
+    version: "2.1.96"
   - name: pod-rightsizing
     alias: rightsizing
     repository: "https://zesty-co.github.io/kompass-pod-rightsizing"
