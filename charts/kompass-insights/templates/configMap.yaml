@@ -62,12 +62,6 @@ data:
   GRPC_PORT: "{{ .Values.insights.grpc.server.port }}"
   MANAGER_HOST: "{{ .Values.admission.service.name }}"
   MANAGER_PORT: "{{ .Values.insights.grpc.port }}"
-  {{- if .Values.awsCluster.enabled }}
-  {{- if ne .Values.awsCluster.accessKeyID "" }}
-  AWS_ACCESS_KEY_ID: "{{ .Values.awsCluster.accessKeyID }}"
-  AWS_SECRET_ACCESS_KEY: "{{ .Values.awsCluster.secretAccessKey }}"
-  {{- end }}
-  {{- end }}
   SECRET_NAME: "{{ .Values.insights.secret }}"
   UPDATER: "{{ include "zesty-k8s.fullname" . }}-updater"
   VICTORIAMETRICS_URL: {{ include "zesty-k8s.victoriaMetrics.endpoint" . | quote }}
