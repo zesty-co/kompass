@@ -189,9 +189,6 @@ recommendations:
       cpu: 250m
       memory: 512Mi
 
-metricsServer:
-  enabled: false # enable it to install metrics-server
-
 admission:
   enabled: false
   service:

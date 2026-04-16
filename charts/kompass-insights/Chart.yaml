@@ -2,14 +2,10 @@ apiVersion: v2
 name: kompass-insights
 description: Kompass Insights for K8s
 type: application
-version: 2.2.0
+version: 2.2.1
 appVersion: "v1.161.0"
 
 dependencies:
-- name: metrics-server
-  condition: metricsServer.enabled
-  repository: https://kubernetes-sigs.github.io/metrics-server/
-  version: 3.12.1
 - name: kompass-admission-controller
   alias: admission
   condition: admission.enabled
