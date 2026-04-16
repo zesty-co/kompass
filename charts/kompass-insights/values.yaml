@@ -23,15 +23,6 @@ secret:
   name: zesty-k8s-agent-creds
   key: "zesty-k8s/encrypted-creds"
 
-awsCluster:
-  enabled: true
-  # if you put the values here, the secret won't be used
-  accessKeyID: ""
-  secretAccessKey: ""
-  secret:
-    name: aws-cluster-secret
-    key: "zesty/access-credentials"
-
 log:
   level: 0
   remote: true
