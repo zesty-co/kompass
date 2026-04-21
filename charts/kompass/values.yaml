@@ -229,6 +229,9 @@ victoriaMetrics:
       requests:
         memory: "3Gi"
         cpu: "0.5"
+      limits:
+        memory: "3Gi"
+        cpu: "0.5"
     extraArgs:
       retentionPeriod: 1w
       storageDataPath: /victoria-metrics-data
@@ -290,6 +293,9 @@ victoriaMetricsCluster:
       requests:
         memory: "512Mi"
         cpu: "0.5"
+      limits:
+        memory: "512Mi"
+        cpu: "0.5"
   vminsert:
     fullnameOverride: kompass-victoria-metrics-cluster-vminsert
     extraArgs:
@@ -329,6 +335,9 @@ victoriaMetricsCluster:
     replicaCount: 2
     resources:
       requests:
+        memory: "512Mi"
+        cpu: "0.5"
+      limits:
         memory: "512Mi"
         cpu: "0.5"
   vmstorage:
@@ -374,6 +383,9 @@ victoriaMetricsCluster:
     replicaCount: 2
     resources:
       requests:
+        memory: "3Gi"
+        cpu: "0.5"
+      limits:
         memory: "3Gi"
         cpu: "0.5"
 
@@ -552,6 +564,9 @@ victoriaMetricsAuth:
         type: RollingUpdate
   resources:
     requests:
+      memory: "128Mi"
+      cpu: "0.1"
+    limits:
       memory: "128Mi"
       cpu: "0.1"
 
