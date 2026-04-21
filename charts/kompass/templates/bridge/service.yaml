@@ -1,0 +1,36 @@
+{{- $bridgeValues := index .Values "kompass-bridge" | default (dict) -}}
+{{- if $bridgeValues.enabled }}
+{{- $service := $bridgeValues.service | default (dict) -}}
+{{- $servicePorts := $service.ports | default (dict) -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kompass.bridge.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kompass.bridge.labels" . | nindent 4 }}
+  {{- with $service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ $service.type | default "ClusterIP" }}
+  ports:
+    {{- with $servicePorts.grpc }}
+    - name: {{ .name | default "grpc" }}
+      port: {{ .port }}
+      targetPort: {{ .targetPort | default "grpc" }}
+      protocol: {{ .protocol | default "TCP" }}
+      {{- with .appProtocol }}
+      appProtocol: {{ . }}
+      {{- end }}
+    {{- end }}
+    {{- with $servicePorts.metrics }}
+    - name: {{ .name | default "metrics" }}
+      port: {{ .port }}
+      targetPort: {{ .targetPort | default "metrics" }}
+      protocol: {{ .protocol | default "TCP" }}
+    {{- end }}
+  selector:
+    {{- include "kompass.bridge.selectorLabels" . | nindent 4 }}
+{{- end }}
