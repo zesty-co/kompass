@@ -692,10 +692,8 @@ cert-manager:
 kompass-bridge:
   # -- (bool) Enable or disable the Kompass Bridge component.
   enabled: false
-
   # -- (int) Number of Bridge replicas when autoscaling is disabled.
   replicaCount: 2
-
   # -- (map) Container image for the Bridge.
   image:
     # -- (string) Image registry.
@@ -703,9 +701,9 @@ kompass-bridge:
     # -- (string) Image repository.
     repository: zesty-k8s/kompass-bridge
     # -- (string) Image tag. When empty, falls back to .Chart.AppVersion.
-    tag: ""
+    tag: "v0.0.0"
     # -- (string) Image pull policy.
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
 
   # -- (array) Pod imagePullSecrets for the Bridge deployment.
   imagePullSecrets: []
