@@ -44,3 +44,7 @@ groups:
         expr: (kube_pod_status_ready_time - kube_pod_created) * on (pod, namespace) group_left (created_by_name, created_by_kind, resource_id) max by (pod, namespace, created_by_name, created_by_kind, resource_id) (kompass_pod_info)
       - record: kompass_rs_initial_minus_desired
         expr: max by (resource_id, pod, resource_type) (kompass_pod_info{status="running"} * on(resource_id, pod) group_left(resource_type) max by (resource_id, pod, resource_type) (last_over_time(kompass_rs_initial_minus_desired{pod!=""}[1h])))
+      - record: kompass_pod_container_resource_requests
+        expr: avg(kube_pod_container_resource_requests{container!="",pod!=""} * on (pod, container) group_left (resource_id, created_by_name, created_by_kind, namespace) max(kompass_pod_info) by (container, pod, resource_id, created_by_name, created_by_kind, namespace)) by (container, resource, resource_id, created_by_name, created_by_kind, namespace)
+      - record: kompass_pod_container_resource_limits
+        expr: avg(kube_pod_container_resource_limits{container!="",pod!=""} * on (pod, container) group_left (resource_id, created_by_name, created_by_kind, namespace) max(kompass_pod_info) by (container, pod, resource_id, created_by_name, created_by_kind, namespace)) by (container, resource, resource_id, created_by_name, created_by_kind, namespace)
