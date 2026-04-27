@@ -627,7 +627,7 @@ kubeStateMetrics:
       - watch
 
 grafana:
-  enabled: false
+  enabled: true
   fullnameOverride: "kompass-grafana"
   # Pod-level security context applied to the Grafana pod.
   # Ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
