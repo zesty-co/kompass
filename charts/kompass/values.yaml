@@ -73,7 +73,7 @@ global:
     # -- (string) The URL endpoint for sending logs to Coralogix.
     # Used by Rightsizing (Coralogix SDK) to send logs to Coralogix.
     # Resolves to `CORALOGIX_LOG_URL` environment variable.
-    logUrl: https://ingress.eu2.coralogix.com:443/api/v1/logs
+    logUrl: https://ingress.eu2.coralogix.com:443/logs/v1/singles
     # -- (string) The URL endpoint for time synchronization with Coralogix.
     # Used by Rightsizing (Coralogix SDK) to send logs to Coralogix.
     # Resolves to `CORALOGIX_TIME_DELTA_URL` environment variable.
@@ -684,3 +684,134 @@ cert-manager:
     serviceAccount:
       annotations:
         helm.sh/hook: post-install,post-upgrade
+
+# -- (map) Kompass Bridge deployment.
+# The Bridge acts as a layer between in-cluster Kompass actors
+# and the Zesty backend. It exposes a gRPC endpoint for
+# inbound actor traffic and forwards messages to an external hub and vice versa.
+kompass-bridge:
+  # -- (bool) Enable or disable the Kompass Bridge component.
+  enabled: false
+  # -- (int) Number of Bridge replicas when autoscaling is disabled.
+  replicaCount: 2
+  # -- (map) Container image for the Bridge.
+  image:
+    # -- (string) Image registry.
+    registry: 672188301118.dkr.ecr.eu-west-1.amazonaws.com
+    # -- (string) Image repository.
+    repository: zesty-k8s/kompass-bridge
+    # -- (string) Image tag. When empty, falls back to .Chart.AppVersion.
+    tag: "v0.0.0"
+    # -- (string) Image pull policy.
+    pullPolicy: Always
+
+  # -- (array) Pod imagePullSecrets for the Bridge deployment.
+  imagePullSecrets: []
+  # -- (map) Pod annotations for the Bridge deployment.
+  podAnnotations: {}
+  # -- (map) Extra pod labels for the Bridge deployment.
+  podLabels: {}
+  # -- (map) Pod-level security context. Defaults mirror the Bridge container image
+  # which runs as non-root user/group 65532.
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+  # -- (map) Container-level security context for the Bridge container.
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+  # -- (map) Pod affinity.
+  affinity: {}
+  # -- (map) Pod nodeSelector.
+  nodeSelector: {}
+  # -- (array) Pod tolerations.
+  tolerations: []
+  # -- (array) Pod topology spread constraints.
+  topologySpreadConstraints: []
+  # -- (bool) automountServiceAccountToken for the Bridge pod. Set to null to inherit.
+  automountServiceAccountToken: true
+  # -- (string) runtimeClassName for the Bridge pod.
+  runtimeClassName: ""
+
+  # -- (map) Container resource requests/limits.
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  # -- (map) Container ports exposed by the Bridge.
+  ports:
+    # -- (map) gRPC endpoint consumed by in-cluster Kompass actors. Also
+    # used by the default gRPC liveness/readiness probes.
+    grpc:
+      name: grpc
+      containerPort: 9090
+      protocol: TCP
+    # -- (map) Prometheus metrics endpoint.
+    metrics:
+      name: metrics
+      containerPort: 8080
+      protocol: TCP
+
+  # -- (map) Liveness and readiness probes.
+  probes:
+    liveness:
+      grpc:
+        port: 9090
+      initialDelaySeconds: 15
+      periodSeconds: 20
+    readiness:
+      grpc:
+        port: 9090
+      initialDelaySeconds: 5
+      periodSeconds: 10
+
+  # -- (map) Kubernetes Service routing traffic across Bridge pods.
+  service:
+    # -- (string) Service type.
+    type: ClusterIP
+    # -- (map) Service annotations.
+    annotations: {}
+    # -- (map) Main service ports.
+    ports:
+      # -- (map) gRPC port exposed to in-cluster Kompass actors.
+      grpc:
+        name: grpc
+        port: 9090
+        targetPort: grpc
+        protocol: TCP
+      # -- (map) Metrics port exposed to in-cluster scrapers (vmagent etc).
+      metrics:
+        name: metrics
+        port: 8080
+        targetPort: metrics
+        protocol: TCP
+
+  # -- (map) ServiceAccount controls.
+  serviceAccount:
+    create: true
+
+  # -- (map) RBAC controls.
+  # When create=true, a namespace-scoped Role+RoleBinding is rendered granting
+  # the Bridge read access to ConfigMaps and Secrets in its own namespace
+  rbac:
+    create: true
+
+  # -- (map) PodDisruptionBudget for the Bridge.
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+  # -- (map) HorizontalPodAutoscaler configuration.
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80

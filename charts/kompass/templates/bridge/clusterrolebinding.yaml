@@ -1,0 +1,20 @@
+{{- $bridgeValues := index .Values "kompass-bridge" | default (dict) -}}
+{{- $rbac := $bridgeValues.rbac | default (dict) -}}
+{{- $clusterRole := $rbac.clusterRole | default (dict) -}}
+{{- $rules := $clusterRole.extraRules | default (list) -}}
+{{- if and $bridgeValues.enabled $rbac.create (gt (len $rules) 0) }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "kompass.bridge.fullname" . }}
+  labels:
+    {{- include "kompass.bridge.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "kompass.bridge.fullname" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "kompass.bridge.fullname" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}
