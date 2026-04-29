@@ -475,7 +475,7 @@ victoriaMetricsAgent:
   configMap: kompass-vmagent-config
   extraArgs:
     promscrape.configCheckInterval: 1m
-    promscrape.maxScrapeSize: 128MB
+    promscrape.maxScrapeSize: 4096MB
     enableTCP6: true
   remoteWrite:
   - url: *vmRemoteWritePrometheusUrl
