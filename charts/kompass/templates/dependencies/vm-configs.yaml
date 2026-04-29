@@ -195,7 +195,7 @@ data:
       - job_name: 'vmalert'
         scrape_interval: {{ include "kompass.scrapeInterval" . }}
         static_configs:
-          - targets: ['http://{{ .Values.victoriaMetricsAlert.fullnameOverride }}.{{ .Release.Namespace }}:8880']
+          - 'http://{{ printf "%s-server" .Values.victoriaMetricsAlert.fullnameOverride }}.{{ .Release.Namespace }}:{{ .Values.victoriaMetricsAlert.server.service.servicePort | default 8880 }}'
 ---
 apiVersion: v1
 kind: ConfigMap
