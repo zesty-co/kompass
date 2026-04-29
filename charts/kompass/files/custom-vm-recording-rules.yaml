@@ -49,3 +49,53 @@ groups:
         expr: avg(kube_pod_container_resource_requests{container!="",pod!=""} * on (namespace, pod, container) group_left (resource_id, created_by_name, created_by_kind) max(kompass_pod_info) by (container, pod, resource_id, created_by_name, created_by_kind, namespace)) by (container, resource, resource_id, created_by_name, created_by_kind, namespace)
       - record: kompass_pod_container_resource_limits
         expr: avg(kube_pod_container_resource_limits{container!="",pod!=""} * on (namespace, pod, container) group_left (resource_id, created_by_name, created_by_kind) max(kompass_pod_info) by (container, pod, resource_id, created_by_name, created_by_kind, namespace)) by (container, resource, resource_id, created_by_name, created_by_kind, namespace)
+
+      # NOTE: {status="running"} on the right-hand side of each group_left join below MUST NOT be removed.
+      # kompass_insights_pod_info can have multiple entries per (container, pod, namespace) with different
+      # status values (e.g. "running" and "terminated"). group_left requires at most one right-side match
+      # per join key, so removing this filter causes a "multiple matches for labels" error at query time.
+      - record: kompass_container_resource_requests
+        expr: >-
+          kube_pod_container_resource_requests
+          * on(container,pod,namespace) group_left(created_by_name,created_by_kind,capacity_type,resource_id,status)
+          max by(container,pod,namespace,created_by_name,created_by_kind,capacity_type,resource_id,status) (
+            kompass_insights_pod_info{status="running"}
+          )
+      - record: kompass_container_cpu_usage_avg
+        expr: >-
+          avg by(container,pod,created_by_name,created_by_kind,capacity_type,namespace,resource_id,status) (
+            rate(kubelet_resource_container_cpu_usage_seconds_total[1m])
+              * on(container,pod,namespace) group_left(created_by_kind,created_by_name,capacity_type,resource_id,status)
+            max by(container,pod,created_by_name,created_by_kind,capacity_type,namespace,resource_id,status) (
+              kompass_insights_pod_info{status="running"}
+            )
+          )
+      - record: kompass_container_memory_usage_avg
+        expr: >-
+          avg by(container,pod,created_by_name,created_by_kind,capacity_type,namespace,resource_id,status) (
+            kubelet_resource_container_memory_working_set_bytes
+              * on(container,pod,namespace) group_left(created_by_name,created_by_kind,capacity_type,resource_id,status)
+            max by(container,pod,created_by_name,created_by_kind,capacity_type,namespace,resource_id,status) (
+              kompass_insights_pod_info{status="running"}
+            )
+          )
+      - record: kompass_container_resource_limits
+        expr: >-
+          label_replace(
+            label_replace(
+              kube_pod_container_resource_limits,
+              "resource", "cpu_limit", "resource", "^cpu$"
+            ),
+            "resource", "memory_limit", "resource", "^memory$"
+          )
+          * on(container,pod,namespace) group_left(created_by_name,created_by_kind,capacity_type,resource_id,status)
+          max by(container,pod,namespace,created_by_name,created_by_kind,capacity_type,resource_id,status) (
+            kompass_insights_pod_info{status="running"}
+          )
+      - record: kompass_container_restarts
+        expr: >-
+          kube_pod_container_status_restarts_total
+            * on(container,pod,namespace) group_left(created_by_name,created_by_kind,capacity_type,resource_id,status)
+          max by(container,pod,namespace,created_by_name,created_by_kind,capacity_type,resource_id,status) (
+            kompass_insights_pod_info{status="running"}
+          )
