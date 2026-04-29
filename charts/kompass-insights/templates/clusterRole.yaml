@@ -16,6 +16,14 @@ rules:
       - list
       - watch
   - apiGroups:
+      - "horizontalscaling.kompass.zesty.co"
+    resources:
+      - policies
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
       - "kompass.zesty.co"
     resources:
       - virtualworkloads
