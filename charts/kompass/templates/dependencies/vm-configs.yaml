@@ -193,7 +193,7 @@ data:
       
       # vmalert metrics
       - job_name: 'vmalert'
-        scrape_interval: 30s
+        scrape_interval: {{ include "kompass.scrapeInterval" . }}
         static_configs:
           - targets: ['http://kompass-victoria-metrics-alert-server.zesty-system:8880']
 ---
