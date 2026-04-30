@@ -815,3 +815,6 @@ kompass-bridge:
     minReplicas: 2
     maxReplicas: 10
     targetCPUUtilizationPercentage: 80
+
+metricsServer:
+  enabled: false # enable it to install metrics-server
