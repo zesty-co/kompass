@@ -184,6 +184,27 @@ data:
             regex: '{{ include "kompass.kube-state-metrics.keepRegex" . }}'
             action: keep
 
+      {{- if index .Values "kompass-pod-placement" "enabled" }}
+      # for collecting pod-placement metrics
+      - job_name: 'pod-placement'
+        scrape_interval: {{ include "kompass.scrapeInterval" . }}
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - {{ .Release.Namespace }}
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+            regex: {{ include "kompass.pod-placement.name" . }}
+            action: keep
+          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_instance]
+            regex: {{ .Release.Name }}
+            action: keep
+          - source_labels: [__meta_kubernetes_pod_container_port_name]
+            regex: metrics
+            action: keep
+      {{- end }}
+
       #  vmagent's own metrics
       - job_name: 'vmagent'
         scrape_interval: {{ include "kompass.scrapeInterval" . }}
