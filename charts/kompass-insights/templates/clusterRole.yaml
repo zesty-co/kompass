@@ -177,6 +177,11 @@ rules:
       - nodeclaims
     {{- include "zesty-k8s.verbs" . | nindent 4 }}
   - apiGroups:
+      - "karpenter.k8s.aws"
+    resources:
+      - ec2nodeclasses
+    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+  - apiGroups:
       - "keda.sh"
     resources:
       - scaledjobs
