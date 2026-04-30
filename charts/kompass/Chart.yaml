@@ -64,6 +64,6 @@ dependencies:
     repository: https://grafana.github.io/helm-charts
     version: 8.10.4
   - name: metrics-server
-    condition: metricsServer.enabled
+    condition: metrics-server.enabled
     repository: https://kubernetes-sigs.github.io/metrics-server/
     version: 3.12.1
