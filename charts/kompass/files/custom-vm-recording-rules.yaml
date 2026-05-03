@@ -99,3 +99,14 @@ groups:
           max by(container,pod,namespace,created_by_name,created_by_kind,capacity_type,resource_id,status) (
             kompass_insights_pod_info{status="running"}
           )
+merge      {{- if index .Values "kompass-pod-placement" "enabled" }}
+      # kompass_pod_placement_pod_info is returned by all pod-placement pods
+      # `max without()` is used to deduplicate metrics from multiple instances/pods
+      - record: kompass_pod_placement_pod_info_extended
+        expr: >-
+          max without(instance,job) (kompass_pod_placement_pod_info)
+            * on(pod,namespace) group_left(created_by_name,created_by_kind,capacity_type,resource_id,status)
+          max by(pod,namespace,created_by_name,created_by_kind,capacity_type,resource_id,status) (
+            kompass_insights_pod_info{status="running"}
+          )
+      {{- end }}
