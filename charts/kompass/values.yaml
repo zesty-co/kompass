@@ -24,6 +24,10 @@ global:
   clusterIssuerName: kompass-selfsigned-issuer
   # -- (bool)
   useHelmPriorityHooks: true
+  # -- (map) Global configuration for KWOK support.
+  kwok:
+    # -- (bool) Enable KWOK-specific scrape jobs and relabeling rules.
+    enabled: false
   # -- (map) global node selector for Kompass components
   nodeSelector: {}
   # -- (array) global tolerations for Kompass components

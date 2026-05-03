@@ -19,6 +19,11 @@ data:
         kubernetes_sd_configs:
           - role: node
         relabel_configs:
+          {{- if and .Values.global.kwok .Values.global.kwok.enabled }}
+          - source_labels: [__meta_kubernetes_node_label_kwok_x_k8s_io_node]
+            regex: fake
+            action: drop
+          {{- end }}
           - source_labels: [__meta_kubernetes_node_name]
             target_label: node
           - target_label: __address__
@@ -43,6 +48,11 @@ data:
         kubernetes_sd_configs:
           - role: node
         relabel_configs:
+          {{- if and .Values.global.kwok .Values.global.kwok.enabled }}
+          - source_labels: [__meta_kubernetes_node_label_kwok_x_k8s_io_node]
+            regex: fake
+            action: drop
+          {{- end }}
           - source_labels: [__meta_kubernetes_node_name]
             target_label: node
           - target_label: __address__
@@ -71,6 +81,11 @@ data:
         kubernetes_sd_configs:
           - role: node
         relabel_configs:
+          {{- if and .Values.global.kwok .Values.global.kwok.enabled }}
+          - source_labels: [__meta_kubernetes_node_label_kwok_x_k8s_io_node]
+            regex: fake
+            action: drop
+          {{- end }}
           - source_labels: [__meta_kubernetes_node_name]
             target_label: node
           - target_label: __address__
@@ -86,6 +101,29 @@ data:
           - source_labels: [namespace]
             regex: "{{ .Release.Namespace }}"
             action: keep
+
+      {{- if and .Values.global.kwok .Values.global.kwok.enabled }}
+      - job_name: 'kwok-resource'
+        scrape_interval: {{ include "kompass.scrapeInterval" . }}
+        kubernetes_sd_configs:
+          - role: node
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_node_label_kwok_x_k8s_io_node]
+            regex: fake
+            action: keep
+          - source_labels: [__meta_kubernetes_node_name]
+            target_label: node
+          - target_label: __address__
+            replacement: kwok-controller.kube-system.svc:10247
+          - source_labels: [__meta_kubernetes_node_name]
+            regex: (.+)
+            target_label: __metrics_path__
+            replacement: /metrics/nodes/$1/metrics/resource
+        metric_relabel_configs:
+          - source_labels: [__name__]
+            regex: (container_cpu_usage_seconds_total|container_memory_working_set_bytes|node_cpu_usage_seconds_total|node_memory_working_set_bytes)
+            action: keep
+      {{- end }}
 
 
       # for collecting Pilot metrics
