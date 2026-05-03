@@ -2,7 +2,7 @@ apiVersion: v2
 name: kompass-insights
 description: Kompass Insights for K8s
 type: application
-version: 2.2.6
+version: 2.2.7
 appVersion: "v1.162.1"
 
 dependencies:
