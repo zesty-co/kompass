@@ -1,0 +1,20 @@
+{{- $bridgeValues := index .Values "kompass-bridge" | default (dict) -}}
+{{- $pdb := $bridgeValues.podDisruptionBudget | default (dict) -}}
+{{- if and $bridgeValues.enabled $pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "kompass.bridge.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kompass.bridge.labels" . | nindent 4 }}
+spec:
+  {{- if hasKey $pdb "maxUnavailable" }}
+  maxUnavailable: {{ $pdb.maxUnavailable }}
+  {{- else }}
+  minAvailable: {{ $pdb.minAvailable | default 1 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "kompass.bridge.selectorLabels" . | nindent 6 }}
+{{- end }}

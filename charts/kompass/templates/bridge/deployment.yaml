@@ -1,0 +1,129 @@
+{{- $bridgeValues := index .Values "kompass-bridge" | default (dict) -}}
+{{- if $bridgeValues.enabled }}
+{{- $globalValues := .Values.global | default (dict) -}}
+{{- $legacyPullSecret := (default (dict) $globalValues.imagePullSecret).name | default "" -}}
+{{- $podAnnotations := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $bridgeValues "key" "podAnnotations") | fromYaml -}}
+{{- $podLabels := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $bridgeValues "key" "podLabels") | fromYaml -}}
+{{- $affinity := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $bridgeValues "key" "affinity") | fromYaml -}}
+{{- $nodeSelector := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $bridgeValues "key" "nodeSelector") | fromYaml -}}
+{{- $tolerations := include "kompass.workload.resolveList" (dict "global" $globalValues "component" $bridgeValues "key" "tolerations") | fromYamlArray -}}
+{{- $topologySpreadConstraints := include "kompass.workload.resolveList" (dict "global" $globalValues "component" $bridgeValues "key" "topologySpreadConstraints") | fromYamlArray -}}
+{{- $podSecurityContext := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $bridgeValues "key" "podSecurityContext") | fromYaml -}}
+{{- $securityContext := include "kompass.workload.resolveContainerSecurityContext" (dict "global" $globalValues "component" $bridgeValues) | fromYaml -}}
+{{- $imagePullSecrets := include "kompass.workload.resolveImagePullSecrets" (dict "global" $globalValues "component" $bridgeValues "legacySecretName" $legacyPullSecret) | fromYamlArray -}}
+{{- $automountServiceAccountToken := include "kompass.workload.resolveBool" (dict "global" $globalValues "component" $bridgeValues "key" "automountServiceAccountToken") | trim -}}
+{{- $runtimeClassName := include "kompass.workload.resolveString" (dict "global" $globalValues "component" $bridgeValues "key" "runtimeClassName") | trim -}}
+{{- $image := $bridgeValues.image | default (dict) -}}
+{{- $autoscaling := $bridgeValues.autoscaling | default (dict) -}}
+{{- $ports := $bridgeValues.ports | default (dict) -}}
+{{- $probes := $bridgeValues.probes | default (dict) -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kompass.bridge.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kompass.bridge.labels" . | nindent 4 }}
+spec:
+  {{- if not $autoscaling.enabled }}
+  replicas: {{ $bridgeValues.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "kompass.bridge.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "kompass.bridge.selectorLabels" . | nindent 8 }}
+        {{- with $podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with $podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "kompass.bridge.fullname" . }}
+      {{- if ne $automountServiceAccountToken "null" }}
+      automountServiceAccountToken: {{ $automountServiceAccountToken }}
+      {{- end }}
+      {{- with $imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if $runtimeClassName }}
+      runtimeClassName: {{ $runtimeClassName }}
+      {{- end }}
+      {{- with $affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: bridge
+          image: {{ include "kompass.bridge.image" . | quote }}
+          imagePullPolicy: {{ $image.pullPolicy }}
+          {{- with $securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            {{- with $ports.grpc }}
+            - name: {{ .name }}
+              containerPort: {{ .containerPort }}
+              protocol: {{ .protocol | default "TCP" }}
+            {{- end }}
+            {{- with $ports.metrics }}
+            - name: {{ .name }}
+              containerPort: {{ .containerPort }}
+              protocol: {{ .protocol | default "TCP" }}
+            {{- end }}
+            {{- with $ports.health }}
+            - name: {{ .name }}
+              containerPort: {{ .containerPort }}
+              protocol: {{ .protocol | default "TCP" }}
+            {{- end }}
+          {{- with $bridgeValues.env }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $bridgeValues.envFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $probes.liveness }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $probes.readiness }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $bridgeValues.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $bridgeValues.extraVolumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with $bridgeValues.extraVolumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

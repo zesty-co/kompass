@@ -1,0 +1,19 @@
+{{- $bridgeValues := index .Values "kompass-bridge" | default (dict) -}}
+{{- $rbac := $bridgeValues.rbac | default (dict) -}}
+{{- if and $bridgeValues.enabled $rbac.create }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "kompass.bridge.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kompass.bridge.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "kompass.bridge.fullname" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "kompass.bridge.fullname" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}

@@ -16,6 +16,14 @@ rules:
       - list
       - watch
   - apiGroups:
+      - "horizontalscaling.kompass.zesty.co"
+    resources:
+      - policies
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
       - "kompass.zesty.co"
     resources:
       - virtualworkloads
@@ -167,6 +175,11 @@ rules:
     resources:
       - nodepools
       - nodeclaims
+    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+  - apiGroups:
+      - "karpenter.k8s.aws"
+    resources:
+      - ec2nodeclasses
     {{- include "zesty-k8s.verbs" . | nindent 4 }}
   - apiGroups:
       - "keda.sh"

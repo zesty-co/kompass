@@ -207,7 +207,7 @@ cxLogging:
   clusterName: ""
   apiKey: ""
   domain: "eu2.coralogix.com"
-  logUrl: "https://ingress.eu2.coralogix.com:443/api/v1/logs"
+  logUrl: "https://ingress.eu2.coralogix.com:443/logs/v1/singles"
   timeDeltaUrl: "https://ingress.eu2.coralogix.com:443/sdk/v1/time"
   ingressLogsUrl: "https://ingress.eu2.coralogix.com/logs/v1/singles"
   ingressUrl: "https://ingress.eu2.coralogix.com/"
