@@ -287,7 +287,7 @@ Global value takes precedence when explicitly set.
 Returns Kompass Pod Placement name
 */}}
 {{- define "kompass.pod-placement.name" -}}
-  {{- if and .Values.kubeStateMetrics.enabled -}}
+  {{- if index .Values "kompass-pod-placement" "enabled" -}}
   {{- $ctx := dict "Values" (index .Values "kompass-pod-placement") "Chart" (index .Subcharts "kompass-pod-placement" "Chart") "Release" .Release -}}
   {{- include "kompass-pod-placement.name" $ctx -}}
   {{- end -}}
@@ -297,7 +297,7 @@ Returns Kompass Pod Placement name
 Returns Kompass Pod Placement selector labels
 */}}
 {{- define "kompass.pod-placement.selectorLabels" -}}
-  {{- if and .Values.kubeStateMetrics.enabled -}}
+  {{- if index .Values "kompass-pod-placement" "enabled" -}}
   {{- $ctx := dict "Values" (index .Values "kompass-pod-placement") "Chart" (index .Subcharts "kompass-pod-placement" "Chart") "Release" .Release -}}
   {{- include "kompass-pod-placement.selectorLabels" $ctx -}}
   {{- end -}}
