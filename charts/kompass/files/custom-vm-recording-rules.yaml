@@ -57,25 +57,25 @@ groups:
       - record: kompass_container_resource_requests
         expr: >-
           kube_pod_container_resource_requests
-          * on(container,pod,namespace) group_left(created_by_name,created_by_kind,capacity_type,resource_id,status)
-          max by(container,pod,namespace,created_by_name,created_by_kind,capacity_type,resource_id,status) (
+          * on(container,pod,namespace) group_left(created_by_name,created_by_kind,capacity_type,node_resource_id,resource_id,status)
+          max by(container,pod,namespace,created_by_name,created_by_kind,capacity_type,node_resource_id,resource_id,status) (
             kompass_insights_pod_info{status="running"}
           )
       - record: kompass_container_cpu_usage_avg
         expr: >-
-          avg by(container,pod,created_by_name,created_by_kind,capacity_type,namespace,resource_id,status) (
+          avg by(container,pod,created_by_name,created_by_kind,capacity_type,node_resource_id,namespace,resource_id,status) (
             rate(kubelet_resource_container_cpu_usage_seconds_total[1m])
-              * on(container,pod,namespace) group_left(created_by_kind,created_by_name,capacity_type,resource_id,status)
-            max by(container,pod,created_by_name,created_by_kind,capacity_type,namespace,resource_id,status) (
+              * on(container,pod,namespace) group_left(created_by_kind,created_by_name,capacity_type,node_resource_id,resource_id,status)
+            max by(container,pod,created_by_name,created_by_kind,capacity_type,node_resource_id,namespace,resource_id,status) (
               kompass_insights_pod_info{status="running"}
             )
           )
       - record: kompass_container_memory_usage_avg
         expr: >-
-          avg by(container,pod,created_by_name,created_by_kind,capacity_type,namespace,resource_id,status) (
+          avg by(container,pod,created_by_name,created_by_kind,capacity_type,node_resource_id,namespace,resource_id,status) (
             kubelet_resource_container_memory_working_set_bytes
-              * on(container,pod,namespace) group_left(created_by_name,created_by_kind,capacity_type,resource_id,status)
-            max by(container,pod,created_by_name,created_by_kind,capacity_type,namespace,resource_id,status) (
+              * on(container,pod,namespace) group_left(created_by_name,created_by_kind,capacity_type,node_resource_id,resource_id,status)
+            max by(container,pod,created_by_name,created_by_kind,capacity_type,node_resource_id,namespace,resource_id,status) (
               kompass_insights_pod_info{status="running"}
             )
           )
@@ -88,15 +88,15 @@ groups:
             ),
             "resource", "memory_limit", "resource", "^memory$"
           )
-          * on(container,pod,namespace) group_left(created_by_name,created_by_kind,capacity_type,resource_id,status)
-          max by(container,pod,namespace,created_by_name,created_by_kind,capacity_type,resource_id,status) (
+          * on(container,pod,namespace) group_left(created_by_name,created_by_kind,capacity_type,node_resource_id,resource_id,status)
+          max by(container,pod,namespace,created_by_name,created_by_kind,capacity_type,node_resource_id,resource_id,status) (
             kompass_insights_pod_info{status="running"}
           )
       - record: kompass_container_restarts
         expr: >-
           kube_pod_container_status_restarts_total
-            * on(container,pod,namespace) group_left(created_by_name,created_by_kind,capacity_type,resource_id,status)
-          max by(container,pod,namespace,created_by_name,created_by_kind,capacity_type,resource_id,status) (
+            * on(container,pod,namespace) group_left(created_by_name,created_by_kind,capacity_type,node_resource_id,resource_id,status)
+          max by(container,pod,namespace,created_by_name,created_by_kind,capacity_type,node_resource_id,resource_id,status) (
             kompass_insights_pod_info{status="running"}
           )
       {{- if index .Values "kompass-pod-placement" "enabled" }}
