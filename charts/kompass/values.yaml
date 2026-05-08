@@ -791,14 +791,8 @@ kompass-bridge:
       # -- (map) gRPC port exposed to in-cluster Kompass actors.
       grpc:
         name: grpc
-        port: 9090
+        port: 50051
         targetPort: grpc
-        protocol: TCP
-      # -- (map) Metrics port exposed to in-cluster scrapers (vmagent etc).
-      metrics:
-        name: metrics
-        port: 8080
-        targetPort: metrics
         protocol: TCP
 
   # -- (map) ServiceAccount controls.
