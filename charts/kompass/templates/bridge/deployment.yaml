@@ -78,6 +78,13 @@ spec:
         - name: bridge
           image: {{ include "kompass.bridge.image" . | quote }}
           imagePullPolicy: {{ $image.pullPolicy }}
+          args:
+            - "--grpc-server-port=:{{ $bridgeValues.ports.grpc.containerPort }}"
+            - "--metrics-addr=:{{ $bridgeValues.ports.metrics.containerPort }}"
+            - "--probe-addr=:{{ $bridgeValues.ports.health.containerPort }}"
+            {{- range $bridgeValues.extraArgs }}
+            - {{ . | quote }}
+            {{- end }}
           {{- with $securityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
@@ -98,8 +105,45 @@ spec:
               containerPort: {{ .containerPort }}
               protocol: {{ .protocol | default "TCP" }}
             {{- end }}
-          {{- with $bridgeValues.env }}
           env:
+            - name: KOMPASS_CHART_VERSION
+              value: {{ .Chart.Version }}
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            {{- if and .Values.global.cxLogging .Values.global.cxLogging.enabled }}
+            - name: CX_CLUSTER_NAME
+              value: {{ .Values.global.cxLogging.clusterName }}
+            - name: CX_API_KEY
+              value: {{ .Values.global.cxLogging.apiKey }}
+            - name: CORALOGIX_INGRESS_URL
+              {{- /*
+                For backward compatibility, if the cxLogging.otelEndpoint is provided, use it to generate the ingressUrl.
+                To remove in the future.
+              */}}
+              {{- if .Values.global.cxLogging.otelEndpoint }}
+              value: https://{{ .Values.global.cxLogging.otelEndpoint }}/
+              {{- else }}
+              value: {{ .Values.global.cxLogging.ingressUrl }}
+              {{- end }}
+            {{- else if and $bridgeValues.cxLogging $bridgeValues.cxLogging.enabled }}
+            - name: CX_CLUSTER_NAME
+              value: {{ $bridgeValues.cxLogging.clusterName }}
+            - name: CX_API_KEY
+              value: {{ $bridgeValues.cxLogging.apiKey }}
+            - name: CORALOGIX_INGRESS_URL
+              {{- /*
+                For backward compatibility, if the cxLogging.otelEndpoint is provided, use it to generate the ingressUrl.
+                To remove in the future.
+              */}}
+              {{- if $bridgeValues.cxLogging.otelEndpoint }}
+              value: https://{{ $bridgeValues.cxLogging.otelEndpoint }}/
+              {{- else }}
+              value: {{ $bridgeValues.cxLogging.ingressUrl }}
+              {{- end }}
+            {{- end }}
+          {{- with $bridgeValues.env }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
           {{- with $bridgeValues.envFrom }}

@@ -752,25 +752,32 @@ kompass-bridge:
     # used by the default gRPC liveness/readiness probes.
     grpc:
       name: grpc
-      containerPort: 9090
+      containerPort: 50051
       protocol: TCP
     # -- (map) Prometheus metrics endpoint.
     metrics:
       name: metrics
       containerPort: 8080
       protocol: TCP
+    # -- (map) Health check endpoint.
+    health:
+      name: healthz
+      containerPort: 8081
+      protocol: TCP
 
   # -- (map) Liveness and readiness probes.
   probes:
     liveness:
-      grpc:
-        port: 9090
-      initialDelaySeconds: 15
-      periodSeconds: 20
+      httpGet:
+        path: /readyz
+        port: healthz
+      initialDelaySeconds: 0
+      periodSeconds: 10
     readiness:
-      grpc:
-        port: 9090
-      initialDelaySeconds: 5
+      httpGet:
+        path: /readyz
+        port: healthz
+      initialDelaySeconds: 0
       periodSeconds: 10
 
   # -- (map) Kubernetes Service routing traffic across Bridge pods.
