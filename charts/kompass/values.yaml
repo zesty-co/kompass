@@ -54,6 +54,14 @@ global:
   imagePullSecret:
     name: ""
     dockerconfigjson: ""
+  # -- (object) Kompass Bridge service
+  kompass-bridge:
+    # -- (string) Kompass Bridge service name
+    name: kompass-bridge
+    # -- (object) Kompass Bridge service configuration
+    service:
+      # -- (string) Kompass Bridge gRPC service port
+      grpc_port: 50051
   # -- (map) global cxLogging for Kompass components
   cxLogging:
     # -- (bool) Enable or disable sending CX logs to Zesty.
@@ -791,7 +799,7 @@ kompass-bridge:
       # -- (map) gRPC port exposed to in-cluster Kompass actors.
       grpc:
         name: grpc
-        port: 50051
+        # Service port is configured through the global
         targetPort: grpc
         protocol: TCP
 
