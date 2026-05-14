@@ -11,10 +11,7 @@ rules:
     resources:
       - policies
       - actions
-    verbs:
-      - get
-      - list
-      - watch
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups:
       - "horizontalscaling.kompass.zesty.co"
     resources:
