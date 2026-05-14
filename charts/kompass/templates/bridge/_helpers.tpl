@@ -52,3 +52,10 @@ Falls back to .Chart.AppVersion when image.tag is empty.
 {{ $repository }}:{{ $tag }}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Kompass Brigde service
+*/}}
+{{- define "kompass.bridge.service" -}}
+{{- (index .Values.global "kompass-bridge").name -}}
+{{- end -}}
