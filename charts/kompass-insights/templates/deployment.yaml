@@ -178,6 +178,9 @@ spec:
           volumeMounts:
             - mountPath: {{ .Values.persistence.mountPath }}
               name: {{ .Values.persistence.volumeName }}
+            - mountPath: /var/configs/pricing
+              name: pricing-config
+              readOnly: true
           envFrom:
             - configMapRef:
                 name: "{{ include "zesty-k8s.configmap" . }}"
@@ -232,3 +235,7 @@ spec:
           emptyDir: {}
         - name: migrate-cache
           emptyDir: {}
+        - name: pricing-config
+          configMap:
+            name: "{{ .Values.pricingConfig.configMapName }}"
+            optional: true
