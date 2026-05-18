@@ -237,5 +237,5 @@ spec:
           emptyDir: {}
         - name: pricing-config
           configMap:
-            name: "{{ .Values.pricingConfig.configMapName }}"
+            name: "{{ .Values.pricing.configMapName }}"
             optional: true

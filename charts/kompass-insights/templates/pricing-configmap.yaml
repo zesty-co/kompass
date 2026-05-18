@@ -1,32 +1,25 @@
 {{- /*
-  Per-cluster pricing rates rendered from .Values.pricingConfig into the
+  Per-cluster pricing rates rendered from .Values.pricing.config into the
   shape OpenCost expects for its CustomPricing struct, then mounted into
   the insights-agent pod at /var/configs/pricing/pricing.json.
 
-  Created only when pricingConfig.enabled=true. CPU and RAM are mandatory.
+  Created only when pricing.enabled=true. CPU and RAM are mandatory.
 */}}
-{{- if .Values.pricingConfig.enabled }}
-{{- if not .Values.pricingConfig.CPU }}
-{{- fail "pricingConfig.CPU is required when pricingConfig.enabled=true" }}
+{{- if .Values.pricing.enabled }}
+{{- if not .Values.pricing.config.CPU }}
+{{- fail "pricing.config.CPU is required when pricing.enabled=true" }}
 {{- end }}
-{{- if not .Values.pricingConfig.RAM }}
-{{- fail "pricingConfig.RAM is required when pricingConfig.enabled=true" }}
+{{- if not .Values.pricing.config.RAM }}
+{{- fail "pricing.config.RAM is required when pricing.enabled=true" }}
 {{- end }}
-{{- $p := dict
-    "provider" "custom"
-    "CPU" (toString .Values.pricingConfig.CPU)
-    "RAM" (toString .Values.pricingConfig.RAM)
-}}
-{{- if .Values.pricingConfig.spotCPU }}{{- $_ := set $p "spotCPU" (toString .Values.pricingConfig.spotCPU) }}{{- end }}
-{{- if .Values.pricingConfig.spotRAM }}{{- $_ := set $p "spotRAM" (toString .Values.pricingConfig.spotRAM) }}{{- end }}
-{{- if .Values.pricingConfig.GPU }}{{- $_ := set $p "GPU" (toString .Values.pricingConfig.GPU) }}{{- end }}
-{{- if .Values.pricingConfig.storage }}{{- $_ := set $p "storage" (toString .Values.pricingConfig.storage) }}{{- end }}
-{{- if .Values.pricingConfig.currencyCode }}{{- $_ := set $p "currencyCode" (toString .Values.pricingConfig.currencyCode) }}{{- end }}
-{{- if .Values.pricingConfig.customPricesEnabled }}{{- $_ := set $p "customPricesEnabled" (toString .Values.pricingConfig.customPricesEnabled) }}{{- end }}
+{{- $config := dict "provider" "custom" }}
+{{- range $k, $v := .Values.pricing.config }}
+{{- $_ := set $config $k (toString $v) }}
+{{- end }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: "{{ .Values.pricingConfig.configMapName }}"
+  name: "{{ .Values.pricing.configMapName }}"
   namespace: "{{ .Release.Namespace }}"
   labels:
     app.kubernetes.io/instance: "{{ include "zesty-k8s.fullname" . }}"
@@ -34,5 +27,5 @@ metadata:
     app.kubernetes.io/component: pricing-config
 data:
   pricing.json: |-
-{{ toPrettyJson $p | indent 4 }}
+{{ toPrettyJson $config | indent 4 }}
 {{- end }}
