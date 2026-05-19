@@ -6,16 +6,15 @@
   Created only when pricing.enabled=true. CPU and RAM are mandatory.
 */}}
 {{- if .Values.pricing.enabled }}
-{{- if not .Values.pricing.config.CPU }}
-{{- fail "pricing.config.CPU is required when pricing.enabled=true" }}
-{{- end }}
-{{- if not .Values.pricing.config.RAM }}
-{{- fail "pricing.config.RAM is required when pricing.enabled=true" }}
-{{- end }}
-{{- $config := dict "provider" "custom" }}
+{{- $_ := required "pricing.config.CPU is required when pricing.enabled=true" .Values.pricing.config.CPU }}
+{{- $_ := required "pricing.config.RAM is required when pricing.enabled=true" .Values.pricing.config.RAM }}
 {{- range $k, $v := .Values.pricing.config }}
-{{- $_ := set $config $k (toString $v) }}
+  {{- if ne (kindOf $v) "string" }}
+    {{- fail (printf "pricing.config.%s must be a quoted string (got %s: %v). Example: %s: \"%v\"" $k (kindOf $v) $v $k $v) }}
+  {{- end }}
 {{- end }}
+{{- $config := deepCopy .Values.pricing.config }}
+{{- $_ := set $config "provider" "custom" }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
