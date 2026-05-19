@@ -7,7 +7,12 @@ metadata:
 data:
   scrape.yml: |
     scrape_configs:
-      # For container CPU and memory metrics
+      # For container CPU and memory metrics.
+      # Nodes with annotation kompass.zesty.co/metrics-path can override the default metrics base path.
+      # The annotation value must be the full proxy path up to (but not including) the metrics suffix,
+      # e.g. /api/v1/nodes/<NODE>/proxy/metrics/nodes/<NODE>/metrics
+      # Each scrape job appends its own suffix (/cadvisor, /resource, or nothing).
+      # This is useful for virtual nodes (e.g. KWOK) that expose metrics at a non-standard path.
       - job_name: 'kubelet'
         scrape_interval: {{ include "kompass.scrapeInterval" . }}
         scheme: https
@@ -27,6 +32,11 @@ data:
             regex: (.+)
             target_label: __metrics_path__
             replacement: /api/v1/nodes/$1/proxy/metrics/cadvisor
+          - source_labels: [__meta_kubernetes_node_annotation_kompass_zesty_co_metrics_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+            replacement: $1/cadvisor
         metric_relabel_configs:
           - source_labels: [__name__]
             regex: '(container_memory_usage_bytes|container_memory_working_set_bytes|container_cpu_usage_seconds_total|container_cpu_cfs_throttled_seconds_total)'
@@ -51,6 +61,11 @@ data:
             regex: (.+)
             target_label: __metrics_path__
             replacement: /api/v1/nodes/$1/proxy/metrics/resource
+          - source_labels: [__meta_kubernetes_node_annotation_kompass_zesty_co_metrics_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+            replacement: $1/resource
         metric_relabel_configs:
           - source_labels: [__name__]
             regex: (.+)
@@ -79,6 +94,11 @@ data:
             regex: (.+)
             target_label: __metrics_path__
             replacement: /api/v1/nodes/$1/proxy/metrics
+          - source_labels: [__meta_kubernetes_node_annotation_kompass_zesty_co_metrics_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+            replacement: $1
         metric_relabel_configs:
           - source_labels: [__name__]
             regex: (kubelet_volume_stats_capacity_bytes|kubelet_volume_stats_used_bytes)
