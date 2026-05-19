@@ -143,6 +143,16 @@ spec:
               value: {{ $bridgeValues.cxLogging.ingressUrl }}
               {{- end }}
             {{- end }}
+            - name: KAFKA_USERNAME
+              value: {{ $bridgeValues.kafka.username | quote }}
+            - name: KAFKA_PASSWORD
+              value: {{ $bridgeValues.kafka.password | quote }}
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: {{ $bridgeValues.kafka.bootstrapServers }}
+            - name: KAFKA_TLS_ENABLED
+              value: {{ $bridgeValues.kafka.tls.enabled }}
+            - name: KAFKA_TLS_CA
+              value: {{ $bridgeValues.kafka.tls.certificate }}
           {{- with $bridgeValues.env }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
