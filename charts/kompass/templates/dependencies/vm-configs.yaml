@@ -10,14 +10,19 @@ data:
       scrape_timeout: 29s
     scrape_configs:
       # For container CPU and memory metrics.
-      # Nodes with annotation kompass.zesty.co/metrics-path can override the default metrics base path.
-      # The annotation value must be the full proxy path up to (but not including) the metrics suffix,
-      # e.g. /api/v1/nodes/<NODE>/proxy/metrics/nodes/<NODE>/metrics
-      # Each scrape job appends its own suffix (/cadvisor, /resource, or nothing).
-      # This is useful for virtual nodes (e.g. KWOK) that expose metrics at a non-standard path.
+      # Three node annotations allow overriding the scrape target per node (e.g. KWOK virtual nodes):
+      #   kompass.zesty.co/metrics-scheme: http|https
+      #     Overrides the scheme. Default: https
+      #   kompass.zesty.co/metrics-host: <host:port>
+      #     Overrides the scrape address. Default: kubernetes.default.svc:443
+      #   kompass.zesty.co/metrics-path: <path>
+      #     Overrides the metrics base path (without the job-specific suffix).
+      #     Must be the full path up to (but not including) the trailing /cadvisor, /resource, etc.
+      #     e.g. /api/v1/nodes/<NODE>/proxy/metrics/nodes/<NODE>/metrics
+      #     e.g. /metrics/nodes/<NODE>/metrics
+      #     Each scrape job appends its own suffix (/cadvisor, /resource, or nothing).
       - job_name: 'kubelet'
         scrape_interval: {{ include "kompass.scrapeInterval" . }}
-        scheme: https
         tls_config:
           insecure_skip_verify: true
           ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
@@ -28,8 +33,18 @@ data:
         relabel_configs:
           - source_labels: [__meta_kubernetes_node_name]
             target_label: node
+          - target_label: __scheme__
+            replacement: https
+          - source_labels: [__meta_kubernetes_node_annotation_kompass_zesty_co_metrics_scheme]
+            action: replace
+            target_label: __scheme__
+            regex: (https?)
           - target_label: __address__
             replacement: kubernetes.default.svc:443
+          - source_labels: [__meta_kubernetes_node_annotation_kompass_zesty_co_metrics_host]
+            action: replace
+            target_label: __address__
+            regex: (.+)
           - source_labels: [__meta_kubernetes_node_name]
             regex: (.+)
             target_label: __metrics_path__
@@ -46,7 +61,6 @@ data:
 
       - job_name: 'kubelet-resource'
         scrape_interval: {{ include "kompass.scrapeInterval" . }}
-        scheme: https
         tls_config:
           insecure_skip_verify: true
           ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
@@ -57,8 +71,18 @@ data:
         relabel_configs:
           - source_labels: [__meta_kubernetes_node_name]
             target_label: node
+          - target_label: __scheme__
+            replacement: https
+          - source_labels: [__meta_kubernetes_node_annotation_kompass_zesty_co_metrics_scheme]
+            action: replace
+            target_label: __scheme__
+            regex: (https?)
           - target_label: __address__
             replacement: kubernetes.default.svc:443
+          - source_labels: [__meta_kubernetes_node_annotation_kompass_zesty_co_metrics_host]
+            action: replace
+            target_label: __address__
+            regex: (.+)
           - source_labels: [__meta_kubernetes_node_name]
             regex: (.+)
             target_label: __metrics_path__
@@ -79,7 +103,6 @@ data:
 
       - job_name: 'kubelet-volume'
         scrape_interval: {{ include "kompass.scrapeIntervalVolume" . }}
-        scheme: https
         tls_config:
           insecure_skip_verify: true
           ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
@@ -90,8 +113,18 @@ data:
         relabel_configs:
           - source_labels: [__meta_kubernetes_node_name]
             target_label: node
+          - target_label: __scheme__
+            replacement: https
+          - source_labels: [__meta_kubernetes_node_annotation_kompass_zesty_co_metrics_scheme]
+            action: replace
+            target_label: __scheme__
+            regex: (https?)
           - target_label: __address__
             replacement: kubernetes.default.svc:443
+          - source_labels: [__meta_kubernetes_node_annotation_kompass_zesty_co_metrics_host]
+            action: replace
+            target_label: __address__
+            regex: (.+)
           - source_labels: [__meta_kubernetes_node_name]
             regex: (.+)
             target_label: __metrics_path__
