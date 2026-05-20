@@ -712,6 +712,22 @@ kompass-bridge:
     tag: "v0.0.0"
     # -- (string) Image pull policy.
     pullPolicy: Always
+  # -- (object) Kompass Bridge kafka configuration
+  kafka:
+    # -- (string) kafka username
+    username: ""
+    # -- (string) kafka password
+    password: ""
+    # -- (string) comma-separated list of bootstrap servers
+    bootstrapServers: ""
+    # -- (string) kafka tls configuration
+    tls:
+      # -- (string) enables or disables tls functionality
+      enabled: "true"
+      # -- (string) tls certificate
+      certificate: ""
+  # -- (string) additional Kompass Bridge environment variables
+  env: {}
 
   # -- (array) Pod imagePullSecrets for the Bridge deployment.
   imagePullSecrets: []
