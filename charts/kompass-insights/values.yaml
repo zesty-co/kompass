@@ -119,6 +119,34 @@ config:
 podMinuteMetrics:
   enabled: true
 
+# pricing defines per-cluster CPU/RAM/etc. rates used by the insights-agent
+# for cost calculation.
+# To update prices later: edit values.yaml and run `helm upgrade` (or push
+# the change through ArgoCD/Flux).
+pricing:
+  # Toggle the custom pricing feature. When false, no ConfigMap is rendered and the
+  # agent falls back to cloud catalog pricing (AWS/GCP/Azure) or skips cost
+  # collection on on-prem clusters.
+  enabled: false
+  configMapName: "kompass-pricing-config"
+  config:
+    # Required when pricing.enabled=true. Hourly USD rate per 1 vCPU /
+    # 1 GiB RAM. Must parse as non-negative floats; the chart fails the
+    # install otherwise so the agent never starts on a half-configured
+    # ConfigMap.
+    CPU: ""
+    RAM: ""
+    # Safe defaults that match the agent's expectations on cloud providers.
+    # `customPricesEnabled: "true"` tells OpenCost to actually use the
+    # flat CPU/RAM values above instead of the per-instance catalog price.
+    currencyCode: "USD"
+    customPricesEnabled: "true"
+    # Optional. Uncomment to override the corresponding OpenCost defaults.
+    # spotCPU: ""
+    # spotRAM: ""
+    # GPU: ""
+    # storage: ""
+
 insights:
   extraEnv: []
 
