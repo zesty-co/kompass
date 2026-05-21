@@ -148,11 +148,11 @@ spec:
             - name: KAFKA_PASSWORD
               value: {{ $bridgeValues.kafka.password | quote }}
             - name: KAFKA_BOOTSTRAP_SERVERS
-              value: {{ $bridgeValues.kafka.bootstrapServers }}
+              value: {{ $bridgeValues.kafka.bootstrapServers | quote }}
             - name: KAFKA_TLS_ENABLED
-              value: {{ $bridgeValues.kafka.tls.enabled }}
+              value: {{ $bridgeValues.kafka.tls.enabled | quote }}
             - name: KAFKA_TLS_CA
-              value: {{ $bridgeValues.kafka.tls.certificate }}
+              value: |-{{ $bridgeValues.kafka.tls.certificate | nindent 16 }}
           {{- with $bridgeValues.env }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
