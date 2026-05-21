@@ -56,6 +56,8 @@ global:
     dockerconfigjson: ""
   # -- (object) Kompass Bridge service
   kompass-bridge:
+    # -- (bool) Enable or disable the Kompass Bridge component.
+    enabled: false
     # -- (string) Kompass Bridge service name
     name: kompass-bridge
     # -- (object) Kompass Bridge service configuration
@@ -698,8 +700,6 @@ cert-manager:
 # and the Zesty backend. It exposes a gRPC endpoint for
 # inbound actor traffic and forwards messages to an external hub and vice versa.
 kompass-bridge:
-  # -- (bool) Enable or disable the Kompass Bridge component.
-  enabled: false
   # -- (int) Number of Bridge replicas when autoscaling is disabled.
   replicaCount: 2
   # -- (map) Container image for the Bridge.

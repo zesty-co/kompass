@@ -1,6 +1,7 @@
+{{- $bridgeEnabled := index .Values.global "kompass-bridge" "enabled" | default false -}}
 {{- $bridgeValues := index .Values "kompass-bridge" | default (dict) -}}
 {{- $pdb := $bridgeValues.podDisruptionBudget | default (dict) -}}
-{{- if and $bridgeValues.enabled $pdb.enabled }}
+{{- if and $bridgeEnabled $pdb.enabled }}
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
