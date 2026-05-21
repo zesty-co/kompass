@@ -1,8 +1,9 @@
+{{- $bridgeEnabled := index .Values.global "kompass-bridge" "enabled" | default false -}}
 {{- $bridgeValues := index .Values "kompass-bridge" | default (dict) -}}
 {{- $rbac := $bridgeValues.rbac | default (dict) -}}
 {{- $clusterRole := $rbac.clusterRole | default (dict) -}}
 {{- $rules := $clusterRole.extraRules | default (list) -}}
-{{- if and $bridgeValues.enabled $rbac.create (gt (len $rules) 0) }}
+{{- if and $bridgeEnabled $rbac.create (gt (len $rules) 0) }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:

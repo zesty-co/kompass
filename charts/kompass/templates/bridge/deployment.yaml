@@ -1,5 +1,6 @@
+{{- $bridgeEnabled := index .Values.global "kompass-bridge" "enabled" | default false -}}
 {{- $bridgeValues := index .Values "kompass-bridge" | default (dict) -}}
-{{- if $bridgeValues.enabled }}
+{{- if $bridgeEnabled }}
 {{- $globalValues := .Values.global | default (dict) -}}
 {{- $legacyPullSecret := (default (dict) $globalValues.imagePullSecret).name | default "" -}}
 {{- $podAnnotations := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $bridgeValues "key" "podAnnotations") | fromYaml -}}
