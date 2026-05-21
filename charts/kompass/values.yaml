@@ -726,8 +726,8 @@ kompass-bridge:
       enabled: "true"
       # -- (string) tls certificate
       certificate: ""
-  # -- (string) additional Kompass Bridge environment variables
-  env: {}
+  # -- (array) additional Kompass Bridge environment variables
+  env: []
 
   # -- (array) Pod imagePullSecrets for the Bridge deployment.
   imagePullSecrets: []
