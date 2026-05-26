@@ -6,6 +6,8 @@ metadata:
   namespace: {{ .Release.Namespace }}
 data:
   scrape.yml: |
+    global:
+      scrape_timeout: 25s
     scrape_configs:
       # For container CPU and memory metrics
       - job_name: 'kubelet'
