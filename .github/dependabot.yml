@@ -1,0 +1,10 @@
+version: 2
+
+updates:
+  - package-ecosystem: "helm"
+    directories:
+      - "/charts/kompass"
+      - "/charts/kompass-insights"
+      - "/charts/kompass-pod-placement"
+    schedule:
+      interval: "daily"
