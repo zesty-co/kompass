@@ -125,6 +125,7 @@ rules:
       - pods
       - replicationcontrollers
       - services
+      - endpoints
       - nodes/proxy
     {{- include "zesty-k8s.verbs" . | nindent 4 }}
   - apiGroups:
