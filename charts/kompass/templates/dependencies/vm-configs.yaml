@@ -21,6 +21,10 @@ data:
       #     e.g. /api/v1/nodes/<NODE>/proxy/metrics/nodes/<NODE>/metrics
       #     e.g. /metrics/nodes/<NODE>/metrics
       #     Each scrape job appends its own suffix (/cadvisor, /resource, or nothing).
+      # KWOK virtual nodes (label kwok.x-k8s.io/node=fake):
+      #   The metrics path is derived automatically from the actual node name, overriding any
+      #   kompass.zesty.co/metrics-path annotation. Only kompass.zesty.co/metrics-host is
+      #   required on KWOK nodes to redirect scraping to the kwok-controller service.
       - job_name: 'kubelet'
         scrape_interval: {{ include "kompass.scrapeInterval" . }}
         tls_config:
@@ -54,6 +58,10 @@ data:
             target_label: __metrics_path__
             regex: (.+)
             replacement: $1/cadvisor
+          - source_labels: [__meta_kubernetes_node_label_kwok_x_k8s_io_node, __meta_kubernetes_node_name]
+            regex: 'fake;(.+)'
+            target_label: __metrics_path__
+            replacement: /metrics/nodes/$1/metrics/cadvisor
         metric_relabel_configs:
           - source_labels: [__name__]
             regex: '(container_memory_usage_bytes|container_memory_working_set_bytes|container_cpu_usage_seconds_total|container_cpu_cfs_throttled_seconds_total)'
@@ -92,6 +100,10 @@ data:
             target_label: __metrics_path__
             regex: (.+)
             replacement: $1/resource
+          - source_labels: [__meta_kubernetes_node_label_kwok_x_k8s_io_node, __meta_kubernetes_node_name]
+            regex: 'fake;(.+)'
+            target_label: __metrics_path__
+            replacement: /metrics/nodes/$1/metrics/resource
         metric_relabel_configs:
           - source_labels: [__name__]
             regex: (.+)
@@ -134,6 +146,10 @@ data:
             target_label: __metrics_path__
             regex: (.+)
             replacement: $1
+          - source_labels: [__meta_kubernetes_node_label_kwok_x_k8s_io_node, __meta_kubernetes_node_name]
+            regex: 'fake;(.+)'
+            target_label: __metrics_path__
+            replacement: /metrics/nodes/$1/metrics
         metric_relabel_configs:
           - source_labels: [__name__]
             regex: (kubelet_volume_stats_capacity_bytes|kubelet_volume_stats_used_bytes)
