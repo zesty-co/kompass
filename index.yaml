@@ -9161,6 +9161,22 @@ entries:
   kompass-insights:
   - apiVersion: v2
     appVersion: v1.164.1
+    created: "2026-05-26T18:02:21.248726324Z"
+    dependencies:
+    - alias: admission
+      condition: admission.enabled
+      name: kompass-admission-controller
+      repository: https://zesty-co.github.io/kompass-admission-controller
+      version: 0.1.20
+    description: Kompass Insights for K8s
+    digest: 1d6f21ac4344d6c68fc35b8dd8e22ca8abac6ea28ca7022a55e53782f9a63dda
+    name: kompass-insights
+    type: application
+    urls:
+    - https://github.com/zesty-co/kompass/releases/download/kompass-insights-2.2.13/kompass-insights-2.2.13.tgz
+    version: 2.2.13
+  - apiVersion: v2
+    appVersion: v1.164.1
     created: "2026-05-21T14:06:15.649265248Z"
     dependencies:
     - alias: admission
@@ -9586,4 +9602,4 @@ entries:
     urls:
     - https://github.com/zesty-co/kompass/releases/download/kompass-pod-placement-0.1.0/kompass-pod-placement-0.1.0.tgz
     version: 0.1.0
-generated: "2026-05-26T17:12:40.915357065Z"
+generated: "2026-05-26T18:02:21.249236918Z"
