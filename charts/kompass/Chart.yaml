@@ -44,7 +44,7 @@ dependencies:
     alias: victoriaMetricsAlert
     condition: victoriaMetricsAlert.enabled
     repository: https://victoriametrics.github.io/helm-charts
-    version: 0.18.0
+    version: 0.41.0
   - name: victoria-metrics-auth
     alias: victoriaMetricsAuth
     condition: victoriaMetricsAuth.enabled
