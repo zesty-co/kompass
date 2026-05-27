@@ -62,6 +62,18 @@ tests:
           path: data["scrape.yml"]
           pattern: 'source_labels: \[__meta_kubernetes_namespace\][\s\S]*regex: observability'
 
+  - it: renders dedicated kube-state-metrics scrape interval and derived timeout
+    documentSelector:
+      path: metadata.name
+      value: kompass-vmagent-config
+    set:
+      kubeStateMetrics:
+        kompassScrapeInterval: 45s
+    asserts:
+      - matchRegex:
+          path: data["scrape.yml"]
+          pattern: "job_name: 'kube-state-metrics'[\\s\\S]*scrape_interval: 45s[\\s\\S]*scrape_timeout: 44s"
+
   - it: builds kube-state-metrics keep regex from top-level metricsScrapeFilters values
     documentSelector:
       path: metadata.name
