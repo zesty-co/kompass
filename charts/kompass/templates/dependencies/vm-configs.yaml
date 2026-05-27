@@ -168,7 +168,8 @@ data:
 
       # For pod and node metrics
       - job_name: 'kube-state-metrics'
-        scrape_interval: {{ include "kompass.scrapeInterval" . }}
+        scrape_interval: {{ include "kompass.scrapeIntervalKubeStateMetrics" . }}
+        scrape_timeout: {{ include "kompass.scrapeTimeoutKubeStateMetrics" . }}
         kubernetes_sd_configs:
           - role: service
         relabel_configs:
