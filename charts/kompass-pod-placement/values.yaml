@@ -147,5 +147,6 @@ evictionWindow:
   schedule: ""
   # How long each eviction window stays open after the schedule fires.
   # Required when schedule is non-empty.
-  # Example: "8h"  →  a window opened at 22:00 closes at 06:00 the next day
+  # Uses Go duration format (h, m, s are supported; days are not — use 24h instead).
+  # Examples: "8h" (8 hours), "30m" (30 minutes), "1h30m" (1 hour 30 minutes)
   duration: ""
