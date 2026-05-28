@@ -57,6 +57,10 @@ spec:
             {{- range .Values.extraArgs }}
             - {{ . | quote }}
             {{- end }}
+            {{- if .Values.adaptivePodPlacement.eviction.windowSchedule }}
+            - "--eviction-window-schedule={{ .Values.adaptivePodPlacement.eviction.windowSchedule }}"
+            - "--eviction-window-duration={{ .Values.adaptivePodPlacement.eviction.windowDuration }}"
+            {{- end }}
           env:
             - name: ZESTY_SECRET_NAME
               value: {{ .Values.kompassInsightSecret }}
