@@ -57,9 +57,9 @@ spec:
             {{- range .Values.extraArgs }}
             - {{ . | quote }}
             {{- end }}
-            {{- if .Values.adaptivePodPlacement.eviction.windowSchedule }}
-            - "--eviction-window-schedule={{ .Values.adaptivePodPlacement.eviction.windowSchedule }}"
-            - "--eviction-window-duration={{ .Values.adaptivePodPlacement.eviction.windowDuration }}"
+            {{- if .Values.evictionWindow.schedule }}
+            - "--eviction-window-schedule={{ .Values.evictionWindow.schedule }}"
+            - "--eviction-window-duration={{ .Values.evictionWindow.duration }}"
             {{- end }}
           env:
             - name: ZESTY_SECRET_NAME

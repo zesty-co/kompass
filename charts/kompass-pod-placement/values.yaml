@@ -131,22 +131,21 @@ webhook:
   failurePolicy: Ignore
   timeoutSeconds: 5
 
-adaptivePodPlacement:
-  eviction:
-    # Cron expression (5-field: minute hour day-of-month month day-of-week) that
-    # defines when eviction windows open.
-    # Leave empty (default) to allow evictions at any time.
-    #
-    # A single trigger per period is the common case:
-    #   "0 22 * * 1-5"   →  one window opens Mon–Fri at 22:00
-    #
-    # Multiple triggers per period are also supported. The behaviour then depends
-    # on windowDuration relative to the interval between triggers:
-    #   "*/15 22 * * 1-5" fires at 22:00, 22:15, 22:30, 22:45 on weekdays.
-    #   - windowDuration >= 15m  →  windows overlap, effectively one continuous window
-    #   - windowDuration <  15m  →  four separate short windows with gaps between them
-    windowSchedule: ""
-    # How long each eviction window stays open after the schedule fires.
-    # Required when windowSchedule is non-empty.
-    # Example: "8h"  →  a window opened at 22:00 closes at 06:00 the next day
-    windowDuration: ""
+evictionWindow:
+  # Cron expression (5-field: minute hour day-of-month month day-of-week) that
+  # defines when eviction windows open.
+  # Leave empty (default) to allow evictions at any time.
+  #
+  # A single trigger per period is the common case:
+  #   "0 22 * * 1-5"   →  one window opens Mon–Fri at 22:00
+  #
+  # Multiple triggers per period are also supported. The behaviour then depends
+  # on duration relative to the interval between triggers:
+  #   "*/15 22 * * 1-5" fires at 22:00, 22:15, 22:30, 22:45 on weekdays.
+  #   - duration >= 15m  →  windows overlap, effectively one continuous window
+  #   - duration <  15m  →  four separate short windows with gaps between them
+  schedule: ""
+  # How long each eviction window stays open after the schedule fires.
+  # Required when schedule is non-empty.
+  # Example: "8h"  →  a window opened at 22:00 closes at 06:00 the next day
+  duration: ""
