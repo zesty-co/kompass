@@ -260,6 +260,7 @@ spec:
             fi
           else
             KSM_SVC_NAME="{{ index .Values "kubeStateMetrics" "serviceName" | default "" }}"
+            KSM_SCRAPE_MODE="{{ index .Values "kubeStateMetrics" "scrape" "mode" | default "perResource" }}"
             # Only check service name, not namespace, for backward compatibility
             if [ -z "$KSM_SVC_NAME" ]; then
               echo "❌ kubeStateMetrics.enabled is set to false but kubeStateMetrics.serviceName is not provided"
@@ -267,6 +268,10 @@ spec:
               exit 1
             fi
             echo "⚠️ kubeStateMetrics.enabled is set to false — kubeStateMetrics will not be installed, going to use the existing service: $KSM_SVC_NAME"
+            if [ "$KSM_SCRAPE_MODE" = "perResource" ]; then
+              echo "⚠️ kubeStateMetrics.scrape.mode=perResource requires external kube-state-metrics >= v2.18.0"
+              echo "⚠️ Set kubeStateMetrics.scrape.mode=single when using an older external kube-state-metrics"
+            fi
             echo "✅ Skipping kubeStateMetrics validation"
           fi
           echo ""

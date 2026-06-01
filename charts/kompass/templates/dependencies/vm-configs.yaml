@@ -166,6 +166,36 @@ data:
             action: keep
       {{- end }}
 
+      {{- $ksmScrape := .Values.kubeStateMetrics.scrape | default dict }}
+      {{- $ksmScrapeMode := default "perResource" $ksmScrape.mode }}
+      {{- $ksmScrapeResources := default (list "actions" "pods" "replicasets" "jobs" "cronjobs" "deployments" "statefulsets" "daemonsets" "horizontalpodautoscalers" "namespaces" "nodes") $ksmScrape.resources }}
+      {{- if eq $ksmScrapeMode "perResource" }}
+      # For pod and node metrics, split by kube-state-metrics resource
+      {{- range $resource := $ksmScrapeResources }}
+      - job_name: 'kube-state-metrics-{{ $resource }}'
+        scrape_interval: {{ include "kompass.scrapeIntervalKubeStateMetrics" $ }}
+        scrape_timeout: {{ include "kompass.scrapeTimeoutKubeStateMetrics" $ }}
+        params:
+          resources:
+            - {{ $resource | quote }}
+        kubernetes_sd_configs:
+          - role: service
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_name]
+            regex: {{ include "kompass.kube-state-metrics.serviceName" $ }}
+            action: keep
+          {{- /* For backward compatibility, add namespace config, only if the namespace was provided */}}
+          {{- if (include "kompass.kube-state-metrics.serviceNamespace" $ ) }}
+          - source_labels: [__meta_kubernetes_namespace]
+            regex: {{ include "kompass.kube-state-metrics.serviceNamespace" $ }}
+            action: keep
+          {{- end }}
+        metric_relabel_configs:
+          - source_labels: [__name__]
+            regex: '{{ include "kompass.kube-state-metrics.keepRegex" $ }}'
+            action: keep
+      {{- end }}
+      {{- else if eq $ksmScrapeMode "single" }}
       # For pod and node metrics
       - job_name: 'kube-state-metrics'
         scrape_interval: {{ include "kompass.scrapeIntervalKubeStateMetrics" . }}
@@ -186,6 +216,9 @@ data:
           - source_labels: [__name__]
             regex: '{{ include "kompass.kube-state-metrics.keepRegex" . }}'
             action: keep
+      {{- else }}
+      {{- fail (printf "kubeStateMetrics.scrape.mode must be either perResource or single, got %q" $ksmScrapeMode) }}
+      {{- end }}
 
       {{- if index .Values "kompass-pod-placement" "enabled" }}
       # for collecting pod-placement metrics

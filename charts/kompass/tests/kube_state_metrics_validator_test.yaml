@@ -1,0 +1,20 @@
+suite: kube-state-metrics validator compatibility messaging
+templates:
+  - templates/pre-install-hooks/kompass-validator.yaml
+
+tests:
+  - it: warns external kube-state-metrics users about per-resource version requirements
+    documentSelector:
+      path: metadata.name
+      value: kompass-validation
+    set:
+      kubeStateMetrics:
+        enabled: false
+        serviceName: external-ksm
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].command[2]
+          pattern: "kubeStateMetrics.scrape.mode=perResource requires external kube-state-metrics >= v2.18.0"
+      - matchRegex:
+          path: spec.template.spec.containers[0].command[2]
+          pattern: "Set kubeStateMetrics.scrape.mode=single when using an older external kube-state-metrics"
