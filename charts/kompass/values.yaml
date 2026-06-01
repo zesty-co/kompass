@@ -76,6 +76,12 @@ global:
     # Provided during the onboarding process specifically for CX logging.
     # Resolves to `CX_API_KEY` environment variable.
     apiKey: ""
+    # -- (map) Kubernetes Secret reference for CX logging API key.
+    # When apiKey is non-empty, this chart creates the Secret. When apiKey is empty,
+    # workloads reference this existing Secret.
+    apiKeySecret:
+      name: kompass-cx-logging
+      key: CX_API_KEY
     # -- (string) The domain of the Coralogix ingress endpoint.
     # Used by OTEL collector (Kompass Compute) to send logs to Coralogix.
     # Resolves to `CORALOGIX_DOMAIN` environment variable.
@@ -188,6 +194,9 @@ kompass-insights:
     # -- (string) REQUIRED if cxLogging.enabled is true: The API Key for CX logging.
     # Provided during the onboarding process specifically for CX logging.
     apiKey: ""
+    apiKeySecret:
+      name: kompass-cx-logging
+      key: CX_API_KEY
     # -- (string) domain: The domain of the Coralogix ingress endpoint.
     # -- (string) logUrl: The URL endpoint for sending logs to Coralogix.
     # -- (string) timeDeltaUrl: The URL endpoint for time synchronization with Coralogix.

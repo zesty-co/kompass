@@ -42,6 +42,27 @@ Create chart name and version as used by the chart label.
   {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
+{{- define "kompass.cxLogging.apiKeySecretName" -}}
+{{- $cxLogging := .cxLogging | default dict -}}
+{{- $apiKeySecret := $cxLogging.apiKeySecret | default dict -}}
+{{- default "kompass-cx-logging" $apiKeySecret.name -}}
+{{- end -}}
+
+{{- define "kompass.cxLogging.apiKeySecretKey" -}}
+{{- $cxLogging := .cxLogging | default dict -}}
+{{- $apiKeySecret := $cxLogging.apiKeySecret | default dict -}}
+{{- default "CX_API_KEY" $apiKeySecret.key -}}
+{{- end -}}
+
+{{- define "kompass.cxLogging.apiKeyEnv" -}}
+- name: {{ .envName | default "CX_API_KEY" }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "kompass.cxLogging.apiKeySecretName" . | quote }}
+      key: {{ include "kompass.cxLogging.apiKeySecretKey" . | quote }}
+      optional: true
+{{- end -}}
+
 {{- define "kompass.kube-state-metrics.selectorLabels" -}}
   {{- if and .Values.kubeStateMetrics.enabled -}}
   {{- $ctx := dict "Values" .Values.kubeStateMetrics "Chart" .Chart "Release" .Release -}}
