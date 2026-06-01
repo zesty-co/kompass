@@ -116,8 +116,7 @@ spec:
             {{- if and .Values.global.cxLogging .Values.global.cxLogging.enabled }}
             - name: CX_CLUSTER_NAME
               value: {{ .Values.global.cxLogging.clusterName }}
-            - name: CX_API_KEY
-              value: {{ .Values.global.cxLogging.apiKey }}
+            {{- include "kompass.cxLogging.apiKeyEnv" (dict "cxLogging" .Values.global.cxLogging "envName" "CX_API_KEY") | nindent 12 }}
             - name: CORALOGIX_INGRESS_URL
               {{- /*
                 For backward compatibility, if the cxLogging.otelEndpoint is provided, use it to generate the ingressUrl.
@@ -131,8 +130,7 @@ spec:
             {{- else if and $bridgeValues.cxLogging $bridgeValues.cxLogging.enabled }}
             - name: CX_CLUSTER_NAME
               value: {{ $bridgeValues.cxLogging.clusterName }}
-            - name: CX_API_KEY
-              value: {{ $bridgeValues.cxLogging.apiKey }}
+            {{- include "kompass.cxLogging.apiKeyEnv" (dict "cxLogging" $bridgeValues.cxLogging "envName" "CX_API_KEY") | nindent 12 }}
             - name: CORALOGIX_INGRESS_URL
               {{- /*
                 For backward compatibility, if the cxLogging.otelEndpoint is provided, use it to generate the ingressUrl.
