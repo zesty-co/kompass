@@ -3,6 +3,9 @@ global:
     enabled: false
     clusterName: ""
     apiKey: ""
+    apiKeySecret:
+      name: kompass-cx-logging
+      key: CX_API_KEY
     ingressUrl: https://ingress.eu2.coralogix.com/
     otelEndpoint: ""
   imagePullSecrets: []
@@ -104,6 +107,9 @@ cxLogging:
   enabled: false
   clusterName: ""
   apiKey: ""
+  apiKeySecret:
+    name: kompass-cx-logging
+    key: CX_API_KEY
   ingressUrl: https://ingress.eu2.coralogix.com/
   otelEndpoint: ""
 
