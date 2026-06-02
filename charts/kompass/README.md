@@ -55,6 +55,14 @@ kubeStateMetrics:
   serviceNamespace: monitoring
 ```
 
+By default, Kompass scrapes KSM per resource with `resources=<resource>` query parameters. This requires kube-state-metrics `v2.18.0` or newer. If your external KSM is older, keep using the legacy single scrape job:
+
+```yaml
+kubeStateMetrics:
+  scrape:
+    mode: single
+```
+
 `kompass_rs_action_info` is produced by KSM `customResourceState` (not by vmagent), so your external KSM must include the Action CRD metric config:
 
 ```yaml
@@ -68,6 +76,7 @@ customResourceState:
             group: rightsizing.kompass.zesty.co
             kind: Action
             version: v1alpha1
+          resourcePlural: actions
           metricNamePrefix: kompass_rs
           labelsFromPath:
             namespace: [metadata, namespace]

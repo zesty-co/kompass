@@ -54,13 +54,34 @@ tests:
     asserts:
       - matchRegex:
           path: data["scrape.yml"]
-          pattern: "job_name: 'kube-state-metrics'"
+          pattern: "job_name: 'kube-state-metrics-actions'"
+      - matchRegex:
+          path: data["scrape.yml"]
+          pattern: "job_name: 'kube-state-metrics-actions'[\\s\\S]*params:[\\s\\S]*resources:[\\s\\S]*- \"actions\""
       - matchRegex:
           path: data["scrape.yml"]
           pattern: 'source_labels: \[__meta_kubernetes_service_name\][\s\S]*regex: external-ksm'
       - matchRegex:
           path: data["scrape.yml"]
           pattern: 'source_labels: \[__meta_kubernetes_namespace\][\s\S]*regex: observability'
+
+  - it: renders per-resource kube-state-metrics scrape jobs by default
+    documentSelector:
+      path: metadata.name
+      value: kompass-vmagent-config
+    asserts:
+      - matchRegex:
+          path: data["scrape.yml"]
+          pattern: "job_name: 'kube-state-metrics-actions'[\\s\\S]*params:[\\s\\S]*resources:[\\s\\S]*- \"actions\""
+      - matchRegex:
+          path: data["scrape.yml"]
+          pattern: "job_name: 'kube-state-metrics-pods'[\\s\\S]*params:[\\s\\S]*resources:[\\s\\S]*- \"pods\""
+      - matchRegex:
+          path: data["scrape.yml"]
+          pattern: "job_name: 'kube-state-metrics-horizontalpodautoscalers'"
+      - notMatchRegex:
+          path: data["scrape.yml"]
+          pattern: "job_name: 'kube-state-metrics'\n"
 
   - it: renders dedicated kube-state-metrics scrape interval and derived timeout
     documentSelector:
@@ -72,7 +93,47 @@ tests:
     asserts:
       - matchRegex:
           path: data["scrape.yml"]
-          pattern: "job_name: 'kube-state-metrics'[\\s\\S]*scrape_interval: 45s[\\s\\S]*scrape_timeout: 44s"
+          pattern: "job_name: 'kube-state-metrics-actions'[\\s\\S]*scrape_interval: 45s[\\s\\S]*scrape_timeout: 44s"
+
+  - it: renders legacy single kube-state-metrics scrape job when configured
+    documentSelector:
+      path: metadata.name
+      value: kompass-vmagent-config
+    set:
+      kubeStateMetrics:
+        scrape:
+          mode: single
+    asserts:
+      - matchRegex:
+          path: data["scrape.yml"]
+          pattern: "job_name: 'kube-state-metrics'\n"
+      - notMatchRegex:
+          path: data["scrape.yml"]
+          pattern: "params:[\\s\\S]*resources:"
+      - notMatchRegex:
+          path: data["scrape.yml"]
+          pattern: "job_name: 'kube-state-metrics-actions'"
+
+  - it: renders only configured kube-state-metrics resources in per-resource mode
+    documentSelector:
+      path: metadata.name
+      value: kompass-vmagent-config
+    set:
+      kubeStateMetrics:
+        scrape:
+          resources:
+            - pods
+            - nodes
+    asserts:
+      - matchRegex:
+          path: data["scrape.yml"]
+          pattern: "job_name: 'kube-state-metrics-pods'[\\s\\S]*params:[\\s\\S]*resources:[\\s\\S]*- \"pods\""
+      - matchRegex:
+          path: data["scrape.yml"]
+          pattern: "job_name: 'kube-state-metrics-nodes'[\\s\\S]*params:[\\s\\S]*resources:[\\s\\S]*- \"nodes\""
+      - notMatchRegex:
+          path: data["scrape.yml"]
+          pattern: "job_name: 'kube-state-metrics-actions'"
 
   - it: builds kube-state-metrics keep regex from top-level metricsScrapeFilters values
     documentSelector:

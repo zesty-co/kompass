@@ -56,6 +56,9 @@ tests:
           pattern: "labelsFromPath:[\\s\\S]*source_apc:[\\s\\S]*- spec[\\s\\S]*- sourceAPC"
       - matchRegex:
           path: data["config.yaml"]
+          pattern: "resourcePlural: actions"
+      - matchRegex:
+          path: data["config.yaml"]
           pattern: "metrics:[\\s\\S]*name: action_info"
       - matchRegex:
           path: data["config.yaml"]
