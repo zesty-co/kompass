@@ -499,6 +499,12 @@ victoriaMetricsAgent:
   remoteWrite:
   - url: *vmRemoteWritePrometheusUrl
 
+  rbac:
+    extraRules:
+    - apiGroups: [""]
+      resources:
+      - nodes/proxy
+      verbs: ["get"]
 victoriaMetricsAlert:
   enabled: true
   fullnameOverride: kompass-victoria-metrics-alert
