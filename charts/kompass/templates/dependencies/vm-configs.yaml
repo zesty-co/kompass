@@ -168,7 +168,7 @@ data:
 
       {{- $ksmScrape := .Values.kubeStateMetrics.scrape | default dict }}
       {{- $ksmScrapeMode := default "perResource" $ksmScrape.mode }}
-      {{- $ksmScrapeResources := default (list "actions" "pods" "replicasets" "jobs" "cronjobs" "deployments" "statefulsets" "daemonsets" "horizontalpodautoscalers" "namespaces" "nodes") $ksmScrape.resources }}
+      {{- $ksmScrapeResources := default (list "actions" "pods" "replicasets" "jobs" "deployments" "statefulsets" "daemonsets" "horizontalpodautoscalers" "namespaces" "nodes") $ksmScrape.resources }}
       {{- if eq $ksmScrapeMode "perResource" }}
       # For pod and node metrics, split by kube-state-metrics resource
       {{- range $resource := $ksmScrapeResources }}
