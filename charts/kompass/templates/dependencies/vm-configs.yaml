@@ -170,7 +170,7 @@ data:
       {{- $ksmScrapeMode := default "perResource" $ksmScrape.mode }}
       {{- $ksmScrapeResources := default (list "actions" "pods" "replicasets" "jobs" "deployments" "statefulsets" "daemonsets" "horizontalpodautoscalers" "namespaces" "nodes") $ksmScrape.resources }}
       {{- if eq $ksmScrapeMode "perResource" }}
-      # For pod and node metrics, split by kube-state-metrics resource
+      # split by kube-state-metrics resource
       {{- range $resource := $ksmScrapeResources }}
       - job_name: 'kube-state-metrics-{{ $resource }}'
         scrape_interval: {{ include "kompass.scrapeIntervalKubeStateMetrics" $ }}
@@ -192,11 +192,10 @@ data:
           {{- end }}
         metric_relabel_configs:
           - source_labels: [__name__]
-            regex: '{{ include "kompass.kube-state-metrics.keepRegex" $ }}'
+            regex: '{{ include "kompass.kube-state-metrics.keepRegex" (dict "root" $ "resource" $resource) }}'
             action: keep
       {{- end }}
       {{- else if eq $ksmScrapeMode "single" }}
-      # For pod and node metrics
       - job_name: 'kube-state-metrics'
         scrape_interval: {{ include "kompass.scrapeIntervalKubeStateMetrics" . }}
         scrape_timeout: {{ include "kompass.scrapeTimeoutKubeStateMetrics" . }}
@@ -214,7 +213,7 @@ data:
           {{- end }}
         metric_relabel_configs:
           - source_labels: [__name__]
-            regex: '{{ include "kompass.kube-state-metrics.keepRegex" . }}'
+            regex: '{{ include "kompass.kube-state-metrics.keepRegex" (dict "root" .) }}'
             action: keep
       {{- else }}
       {{- fail (printf "kubeStateMetrics.scrape.mode must be either perResource or single, got %q" $ksmScrapeMode) }}

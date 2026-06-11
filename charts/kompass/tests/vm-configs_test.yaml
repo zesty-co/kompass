@@ -78,7 +78,13 @@ tests:
           pattern: "job_name: 'kube-state-metrics-pods'[\\s\\S]*params:[\\s\\S]*resources:[\\s\\S]*- \"pods\""
       - matchRegex:
           path: data["scrape.yml"]
+          pattern: "job_name: 'kube-state-metrics-cronjobs'[\\s\\S]*params:[\\s\\S]*resources:[\\s\\S]*- \"cronjobs\""
+      - matchRegex:
+          path: data["scrape.yml"]
           pattern: "job_name: 'kube-state-metrics-horizontalpodautoscalers'"
+      - matchRegex:
+          path: data["scrape.yml"]
+          pattern: "job_name: 'kube-state-metrics-deployments'[\\s\\S]*regex: '\\(kube_deployment_metadata_generation\\)'"
       - notMatchRegex:
           path: data["scrape.yml"]
           pattern: "job_name: 'kube-state-metrics'\n"
@@ -140,6 +146,9 @@ tests:
       path: metadata.name
       value: kompass-vmagent-config
     set:
+      kubeStateMetrics:
+        scrape:
+          mode: single
       metricsScrapeFilters:
         kubeStateMetrics:
           exact:

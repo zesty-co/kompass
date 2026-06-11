@@ -97,10 +97,17 @@ Generate service namespace for Kube State Metrics (KSM)
 {{- end }}
 
 {{- define "kompass.kube-state-metrics.keepRegex" -}}
-{{- $filters := default (dict) .Values.metricsScrapeFilters.kubeStateMetrics -}}
-{{- $exact := default (list) $filters.exact -}}
+{{- $root := .root -}}
+{{- $resource := default "" .resource -}}
+{{- $filters := default (dict) $root.Values.metricsScrapeFilters.kubeStateMetrics -}}
+{{- $resourceFilters := default (dict) $filters.resources -}}
+{{- $activeFilters := $filters -}}
+{{- if and $resource (hasKey $resourceFilters $resource) -}}
+{{- $activeFilters = default (dict) (index $resourceFilters $resource) -}}
+{{- end -}}
+{{- $exact := default (list) $activeFilters.exact -}}
 {{- $prefixPatterns := list -}}
-{{- range $prefix := default (list) $filters.prefixes -}}
+{{- range $prefix := default (list) $activeFilters.prefixes -}}
 {{- $prefixPatterns = append $prefixPatterns (printf "%s.*" $prefix) -}}
 {{- end -}}
 {{- printf "(%s)" (join "|" (concat $exact $prefixPatterns)) -}}

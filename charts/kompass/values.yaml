@@ -454,6 +454,7 @@ victoriaMetricsMigration:
 
 metricsScrapeFilters:
   kubeStateMetrics:
+    # Used by scrape.mode=single and as fallback for custom per-resource resources.
     exact:
       - kube_pod_info
       - kube_pod_container_info
@@ -473,13 +474,56 @@ metricsScrapeFilters:
       - kube_deployment_metadata_generation
       - kube_statefulset_metadata_generation
       - kube_job_metadata_generation
-      - kube_cronjob_metadata_generation
       - kube_daemonset_metadata_generation
       - kube_pod_created
       - kube_pod_status_ready_time
       - kube_node_status_allocatable
     prefixes:
       - kompass_rs_
+    resources:
+      actions:
+        prefixes:
+        - kompass_rs_
+      pods:
+        exact:
+        - kube_pod_info
+        - kube_pod_container_info
+        - kube_pod_owner
+        - kube_pod_container_resource_requests
+        - kube_pod_container_resource_limits
+        - kube_pod_container_status_restarts_total
+        - kube_pod_container_status_last_terminated_reason
+        - kube_pod_container_status_terminated_reason
+        - kube_pod_created
+        - kube_pod_status_ready_time
+      replicasets:
+        exact:
+        - kube_replicaset_owner
+      jobs:
+        exact:
+        - kube_job_owner
+        - kube_job_metadata_generation
+      deployments:
+        exact:
+        - kube_deployment_metadata_generation
+      statefulsets:
+        exact:
+        - kube_statefulset_metadata_generation
+      daemonsets:
+        exact:
+        - kube_daemonset_metadata_generation
+      horizontalpodautoscalers:
+        exact:
+        - kube_horizontalpodautoscaler_spec_target_metric
+        - kube_horizontalpodautoscaler_spec_min_replicas
+        - kube_horizontalpodautoscaler_info
+        - kube_horizontalpodautoscaler_status_current_replicas
+      namespaces:
+        exact:
+        - kube_namespace_status_phase
+      nodes:
+        exact:
+        - kube_node_status_allocatable
 
 victoriaMetricsAgent:
   enabled: true
@@ -583,6 +627,7 @@ kubeStateMetrics:
     # perResource requires kube-state-metrics >= v2.18.0.
     # Use single when scraping an older external kube-state-metrics.
     mode: perResource
+    # Keep aligned with metricsScrapeFilters.kubeStateMetrics.
     resources:
     - actions
     - pods
