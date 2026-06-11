@@ -459,6 +459,7 @@ metricsScrapeFilters:
       - kube_pod_info
       - kube_pod_container_info
       - kube_pod_owner
+      - kube_pod_annotations
       - kube_replicaset_owner
       - kube_job_owner
       - kube_pod_container_resource_requests
@@ -473,7 +474,6 @@ metricsScrapeFilters:
       - kube_namespace_status_phase
       - kube_deployment_metadata_generation
       - kube_statefulset_metadata_generation
-      - kube_job_metadata_generation
       - kube_daemonset_metadata_generation
       - kube_pod_created
       - kube_pod_status_ready_time
@@ -489,6 +489,7 @@ metricsScrapeFilters:
         - kube_pod_info
         - kube_pod_container_info
         - kube_pod_owner
+        - kube_pod_annotations
         - kube_pod_container_resource_requests
         - kube_pod_container_resource_limits
         - kube_pod_container_status_restarts_total
@@ -502,7 +503,6 @@ metricsScrapeFilters:
       jobs:
         exact:
         - kube_job_owner
-        - kube_job_metadata_generation
       deployments:
         exact:
         - kube_deployment_metadata_generation

@@ -78,16 +78,25 @@ tests:
           pattern: "job_name: 'kube-state-metrics-pods'[\\s\\S]*params:[\\s\\S]*resources:[\\s\\S]*- \"pods\""
       - matchRegex:
           path: data["scrape.yml"]
-          pattern: "job_name: 'kube-state-metrics-cronjobs'[\\s\\S]*params:[\\s\\S]*resources:[\\s\\S]*- \"cronjobs\""
+          pattern: "job_name: 'kube-state-metrics-replicasets'[\\s\\S]*params:[\\s\\S]*resources:[\\s\\S]*- \"replicasets\""
+      - matchRegex:
+          path: data["scrape.yml"]
+          pattern: "job_name: 'kube-state-metrics-jobs'[\\s\\S]*params:[\\s\\S]*resources:[\\s\\S]*- \"jobs\""
       - matchRegex:
           path: data["scrape.yml"]
           pattern: "job_name: 'kube-state-metrics-horizontalpodautoscalers'"
+      - matchRegex:
+          path: data["scrape.yml"]
+          pattern: "job_name: 'kube-state-metrics-nodes'[\\s\\S]*params:[\\s\\S]*resources:[\\s\\S]*- \"nodes\""
       - matchRegex:
           path: data["scrape.yml"]
           pattern: "job_name: 'kube-state-metrics-deployments'[\\s\\S]*regex: '\\(kube_deployment_metadata_generation\\)'"
       - notMatchRegex:
           path: data["scrape.yml"]
           pattern: "job_name: 'kube-state-metrics'\n"
+      - notMatchRegex:
+          path: data["scrape.yml"]
+          pattern: "job_name: 'kube-state-metrics-cronjobs'"
 
   - it: renders dedicated kube-state-metrics scrape interval and derived timeout
     documentSelector:
