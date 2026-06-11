@@ -1,9 +1,9 @@
-suite: kube-state-metrics validator compatibility messaging
+suite: kube-state-metrics validator values
 templates:
   - templates/pre-install-hooks/kompass-validator.yaml
 
 tests:
-  - it: warns external kube-state-metrics users about per-resource version requirements
+  - it: passes external kube-state-metrics per-resource settings to the validator
     documentSelector:
       path: metadata.name
       value: kompass-validation
@@ -11,10 +11,42 @@ tests:
       kubeStateMetrics:
         enabled: false
         serviceName: external-ksm
+        scrape:
+          mode: perResource
     asserts:
-      - matchRegex:
-          path: spec.template.spec.containers[0].command[2]
-          pattern: "kubeStateMetrics.scrape.mode=perResource requires external kube-state-metrics >= v2.18.0"
-      - matchRegex:
-          path: spec.template.spec.containers[0].command[2]
-          pattern: "Set kubeStateMetrics.scrape.mode=single when using an older external kube-state-metrics"
+      - contains:
+          path: spec.template.spec.containers[?(@.name == "kompass-validator")].env
+          content:
+            name: KSM_ENABLED
+            value: "false"
+      - contains:
+          path: spec.template.spec.containers[?(@.name == "kompass-validator")].env
+          content:
+            name: KSM_SVC_NAME
+            value: external-ksm
+      - contains:
+          path: spec.template.spec.containers[?(@.name == "kompass-validator")].env
+          content:
+            name: KSM_SCRAPE_MODE
+            value: perResource
+
+  - it: passes managed kube-state-metrics settings to the validator
+    documentSelector:
+      path: metadata.name
+      value: kompass-validation
+    set:
+      kubeStateMetrics:
+        enabled: true
+        scrape:
+          mode: perResource
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[?(@.name == "kompass-validator")].env
+          content:
+            name: KSM_ENABLED
+            value: "true"
+      - contains:
+          path: spec.template.spec.containers[?(@.name == "kompass-validator")].env
+          content:
+            name: KSM_SCRAPE_MODE
+            value: perResource
