@@ -54,9 +54,6 @@ tests:
     asserts:
       - matchRegex:
           path: data["scrape.yml"]
-          pattern: "job_name: 'kube-state-metrics-actions'"
-      - matchRegex:
-          path: data["scrape.yml"]
           pattern: "job_name: 'kube-state-metrics-actions'[\\s\\S]*params:[\\s\\S]*resources:[\\s\\S]*- \"actions\""
       - matchRegex:
           path: data["scrape.yml"]
