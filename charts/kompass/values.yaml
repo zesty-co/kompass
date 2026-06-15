@@ -517,6 +517,8 @@ victoriaMetricsAlert:
       evaluationInterval: 30s
       enableTCP6: true
     configMap: kompass-vm-custom-recording-rules
+    service:
+      clusterIP: ""
 
 victoriaMetricsAuth:
   enabled: true
