@@ -1,0 +1,26 @@
+{{- /*
+  Per-cluster pricing rates rendered into the shape OpenCost expects for its
+  CustomPricing struct, then mounted into the insights-agent pod at
+  /var/configs/pricing/pricing.json.
+
+  Empty CPU/RAM values intentionally render through and mean no custom pricing.
+  Partial CPU/RAM values also render through so the agent can report the invalid
+  pricing configuration while retaining any last-known-good prices.
+*/}}
+{{- $pricing := .Values.pricing | default dict }}
+{{- $pricingConfig := deepCopy ((get $pricing "config") | default dict) }}
+{{- $_ := set $pricingConfig "provider" "custom" }}
+{{- $_ := set $pricingConfig "currencyCode" "USD" }}
+{{- $_ := set $pricingConfig "customPricesEnabled" "true" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kompass-pricing-config
+  namespace: "{{ .Release.Namespace }}"
+  labels:
+    app.kubernetes.io/instance: "{{ include "zesty-k8s.fullname" . }}"
+    app.kubernetes.io/name: "{{ include "zesty-k8s.fullname" . }}"
+    app.kubernetes.io/component: pricing-config
+data:
+  pricing.json: |-
+{{ toPrettyJson $pricingConfig | indent 4 }}

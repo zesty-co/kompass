@@ -10,6 +10,7 @@ data:
   ORG_ID: "{{ .Values.orgID }}"
   PODMINUTEMETRICS_ENABLED: "{{ .Values.podMinuteMetrics.enabled }}"
   PATHS_MOUNTPATH: "{{ .Values.persistence.mountPath }}"
+  PATHS_PRICINGCONFIGPATH: "/var/configs/pricing/pricing.json"
   STORAGE_SIZE: "{{ .Values.persistence.spec.resources.requests.storage }}"
   EXTERNAL_ID: "{{ .Values.externalID }}"
   {{- if .Values.prometheus.url }}
