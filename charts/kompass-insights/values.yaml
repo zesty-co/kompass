@@ -221,6 +221,8 @@ selfMonitoring:
   affinity: {}
   automountServiceAccountToken: ~
   imagePullSecrets: ~
+  serviceAccount:
+    annotations: {}
   podAnnotations: {}
   podLabels: {}
   # Pod-level security context applied to self-monitoring pods.
