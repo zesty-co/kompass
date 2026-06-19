@@ -206,6 +206,10 @@ data:
           - source_labels: [__meta_kubernetes_pod_container_port_name]
             regex: metrics
             action: keep
+        metric_relabel_configs:
+          - source_labels: [__name__]
+            regex: '(kompass_pod_placement_pod_info)'
+            action: keep
       {{- end }}
 
       # for collecting action-taker metrics
