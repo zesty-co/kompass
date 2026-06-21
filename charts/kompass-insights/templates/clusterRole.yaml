@@ -9,8 +9,7 @@ rules:
   - apiGroups:
       - "rightsizing.kompass.zesty.co"
     resources:
-      - policies
-      - actions
+      - "*"
     verbs:
       - get
       - list
@@ -18,7 +17,7 @@ rules:
   - apiGroups:
       - "horizontalscaling.kompass.zesty.co"
     resources:
-      - policies
+      - "*"
     verbs:
       - get
       - list
@@ -26,7 +25,7 @@ rules:
   - apiGroups:
       - "kompass.zesty.co"
     resources:
-      - virtualworkloads
+      - "*"
     verbs:
       - get
       - list
@@ -125,6 +124,7 @@ rules:
       - pods
       - replicationcontrollers
       - services
+      - endpoints
       - nodes/proxy
     {{- include "zesty-k8s.verbs" . | nindent 4 }}
   - apiGroups:

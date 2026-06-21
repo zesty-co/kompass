@@ -62,6 +62,11 @@ data:
   GRPC_PORT: "{{ .Values.insights.grpc.server.port }}"
   MANAGER_HOST: "{{ .Values.admission.service.name }}"
   MANAGER_PORT: "{{ .Values.insights.grpc.port }}"
+  SERVER_HOST: "{{ .Values.insights.service }}"
+  SERVER_PORT: "{{ .Values.insights.grpc.server.port }}"
+  BRIDGE_ENABLED: {{ (index .Values.global "kompass-bridge").enabled | quote }}
+  BRIDGE_HOST: {{ (index .Values.global "kompass-bridge").name | quote }}
+  BRIDGE_PORT: {{ (index .Values.global "kompass-bridge").service.grpc_port | quote }}
   SECRET_NAME: "{{ .Values.insights.secret }}"
   UPDATER: "{{ include "zesty-k8s.fullname" . }}-updater"
   VICTORIAMETRICS_URL: {{ include "zesty-k8s.victoriaMetrics.endpoint" . | quote }}

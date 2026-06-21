@@ -1,11 +1,12 @@
+{{- $bridgeEnabled := index .Values.global "kompass-bridge" "enabled" | default false -}}
 {{- $bridgeValues := index .Values "kompass-bridge" | default (dict) -}}
-{{- if $bridgeValues.enabled }}
+{{- if $bridgeEnabled }}
 {{- $service := $bridgeValues.service | default (dict) -}}
 {{- $servicePorts := $service.ports | default (dict) -}}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "kompass.bridge.fullname" . }}
+  name: {{ include "kompass.bridge.service" . }}
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "kompass.bridge.labels" . | nindent 4 }}
@@ -18,7 +19,7 @@ spec:
   ports:
     {{- with $servicePorts.grpc }}
     - name: {{ .name | default "grpc" }}
-      port: {{ .port }}
+      port: {{ index $.Values.global "kompass-bridge" "service" "grpc_port" }}
       targetPort: {{ .targetPort | default "grpc" }}
       protocol: {{ .protocol | default "TCP" }}
       {{- with .appProtocol }}

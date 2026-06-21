@@ -1,5 +1,6 @@
+{{- $bridgeEnabled := index .Values.global "kompass-bridge" "enabled" | default false -}}
 {{- $bridgeValues := index .Values "kompass-bridge" | default (dict) -}}
-{{- if $bridgeValues.enabled }}
+{{- if $bridgeEnabled }}
 {{- $globalValues := .Values.global | default (dict) -}}
 {{- $legacyPullSecret := (default (dict) $globalValues.imagePullSecret).name | default "" -}}
 {{- $podAnnotations := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $bridgeValues "key" "podAnnotations") | fromYaml -}}
@@ -115,8 +116,7 @@ spec:
             {{- if and .Values.global.cxLogging .Values.global.cxLogging.enabled }}
             - name: CX_CLUSTER_NAME
               value: {{ .Values.global.cxLogging.clusterName }}
-            - name: CX_API_KEY
-              value: {{ .Values.global.cxLogging.apiKey }}
+            {{- include "kompass.cxLogging.apiKeyEnv" (dict "cxLogging" .Values.global.cxLogging "envName" "CX_API_KEY") | nindent 12 }}
             - name: CORALOGIX_INGRESS_URL
               {{- /*
                 For backward compatibility, if the cxLogging.otelEndpoint is provided, use it to generate the ingressUrl.
@@ -130,8 +130,7 @@ spec:
             {{- else if and $bridgeValues.cxLogging $bridgeValues.cxLogging.enabled }}
             - name: CX_CLUSTER_NAME
               value: {{ $bridgeValues.cxLogging.clusterName }}
-            - name: CX_API_KEY
-              value: {{ $bridgeValues.cxLogging.apiKey }}
+            {{- include "kompass.cxLogging.apiKeyEnv" (dict "cxLogging" $bridgeValues.cxLogging "envName" "CX_API_KEY") | nindent 12 }}
             - name: CORALOGIX_INGRESS_URL
               {{- /*
                 For backward compatibility, if the cxLogging.otelEndpoint is provided, use it to generate the ingressUrl.
@@ -143,6 +142,16 @@ spec:
               value: {{ $bridgeValues.cxLogging.ingressUrl }}
               {{- end }}
             {{- end }}
+            - name: KAFKA_USERNAME
+              value: {{ $bridgeValues.kafka.username | quote }}
+            - name: KAFKA_PASSWORD
+              value: {{ $bridgeValues.kafka.password | quote }}
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: {{ $bridgeValues.kafka.bootstrapServers | quote }}
+            - name: KAFKA_TLS_ENABLED
+              value: {{ $bridgeValues.kafka.tls.enabled | quote }}
+            - name: KAFKA_TLS_CA
+              value: |-{{ $bridgeValues.kafka.tls.certificate | nindent 16 }}
           {{- with $bridgeValues.env }}
             {{- toYaml . | nindent 12 }}
           {{- end }}

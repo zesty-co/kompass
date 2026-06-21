@@ -69,6 +69,7 @@ jobs:
             --set rightsizing.cxLogging.enabled=true \
             --set rightsizing.enabled=true \
             --set disk.enabled=true \
+            --set victoriaMetricsCluster.enabled=true \
             --set grafana.enabled=true \
             | grep -E '(^|\s)-?\s*image:' \
             | sed -E 's/.*image:[[:space:]]*"?([^"]+)"?/\1/' | sort -u)

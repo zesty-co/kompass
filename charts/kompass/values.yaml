@@ -58,6 +58,16 @@ global:
   imagePullSecret:
     name: ""
     dockerconfigjson: ""
+  # -- (object) Kompass Bridge service
+  kompass-bridge:
+    # -- (bool) Enable or disable the Kompass Bridge component.
+    enabled: false
+    # -- (string) Kompass Bridge service name
+    name: kompass-bridge
+    # -- (object) Kompass Bridge service configuration
+    service:
+      # -- (string) Kompass Bridge gRPC service port
+      grpc_port: 50051
   # -- (map) global cxLogging for Kompass components
   cxLogging:
     # -- (bool) Enable or disable sending CX logs to Zesty.
@@ -70,6 +80,12 @@ global:
     # Provided during the onboarding process specifically for CX logging.
     # Resolves to `CX_API_KEY` environment variable.
     apiKey: ""
+    # -- (map) Kubernetes Secret reference for CX logging API key.
+    # When apiKey is non-empty, this chart creates the Secret. When apiKey is empty,
+    # workloads reference this existing Secret.
+    apiKeySecret:
+      name: kompass-cx-logging
+      key: CX_API_KEY
     # -- (string) The domain of the Coralogix ingress endpoint.
     # Used by OTEL collector (Kompass Compute) to send logs to Coralogix.
     # Resolves to `CORALOGIX_DOMAIN` environment variable.
@@ -182,6 +198,9 @@ kompass-insights:
     # -- (string) REQUIRED if cxLogging.enabled is true: The API Key for CX logging.
     # Provided during the onboarding process specifically for CX logging.
     apiKey: ""
+    apiKeySecret:
+      name: kompass-cx-logging
+      key: CX_API_KEY
     # -- (string) domain: The domain of the Coralogix ingress endpoint.
     # -- (string) logUrl: The URL endpoint for sending logs to Coralogix.
     # -- (string) timeDeltaUrl: The URL endpoint for time synchronization with Coralogix.
@@ -502,6 +521,8 @@ victoriaMetricsAlert:
       evaluationInterval: 30s
       enableTCP6: true
     configMap: kompass-vm-custom-recording-rules
+    service:
+      clusterIP: ""
 
 victoriaMetricsAuth:
   enabled: true
@@ -563,6 +584,7 @@ kubeStateMetrics:
   # Set to true to install and manage kube-state-metrics from this chart.
   # Set to false to use a pre-existing external kube-state-metrics service.
   enabled: true
+  kompassScrapeInterval: 30s
   force: false
   # Required when enabled=false: service name of the external kube-state-metrics.
   serviceName: ""
@@ -694,8 +716,6 @@ cert-manager:
 # and the Zesty backend. It exposes a gRPC endpoint for
 # inbound actor traffic and forwards messages to an external hub and vice versa.
 kompass-bridge:
-  # -- (bool) Enable or disable the Kompass Bridge component.
-  enabled: false
   # -- (int) Number of Bridge replicas when autoscaling is disabled.
   replicaCount: 2
   # -- (map) Container image for the Bridge.
@@ -708,6 +728,22 @@ kompass-bridge:
     tag: "v0.0.0"
     # -- (string) Image pull policy.
     pullPolicy: Always
+  # -- (object) Kompass Bridge kafka configuration
+  kafka:
+    # -- (string) kafka username
+    username: ""
+    # -- (string) kafka password
+    password: ""
+    # -- (string) comma-separated list of bootstrap servers
+    bootstrapServers: ""
+    # -- (string) kafka tls configuration
+    tls:
+      # -- (string) enables or disables tls functionality
+      enabled: "true"
+      # -- (string) tls certificate
+      certificate: ""
+  # -- (array) additional Kompass Bridge environment variables
+  env: []
 
   # -- (array) Pod imagePullSecrets for the Bridge deployment.
   imagePullSecrets: []
@@ -795,7 +831,7 @@ kompass-bridge:
       # -- (map) gRPC port exposed to in-cluster Kompass actors.
       grpc:
         name: grpc
-        port: 50051
+        # Service port is configured through the global
         targetPort: grpc
         protocol: TCP
 

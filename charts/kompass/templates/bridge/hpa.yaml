@@ -1,6 +1,7 @@
+{{- $bridgeEnabled := index .Values.global "kompass-bridge" "enabled" | default false -}}
 {{- $bridgeValues := index .Values "kompass-bridge" | default (dict) -}}
 {{- $autoscaling := $bridgeValues.autoscaling | default (dict) -}}
-{{- if and $bridgeValues.enabled $autoscaling.enabled }}
+{{- if and $bridgeEnabled $autoscaling.enabled }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:

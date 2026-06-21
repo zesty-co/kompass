@@ -42,6 +42,27 @@ Create chart name and version as used by the chart label.
   {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
+{{- define "kompass.cxLogging.apiKeySecretName" -}}
+{{- $cxLogging := .cxLogging | default dict -}}
+{{- $apiKeySecret := $cxLogging.apiKeySecret | default dict -}}
+{{- default "kompass-cx-logging" $apiKeySecret.name -}}
+{{- end -}}
+
+{{- define "kompass.cxLogging.apiKeySecretKey" -}}
+{{- $cxLogging := .cxLogging | default dict -}}
+{{- $apiKeySecret := $cxLogging.apiKeySecret | default dict -}}
+{{- default "CX_API_KEY" $apiKeySecret.key -}}
+{{- end -}}
+
+{{- define "kompass.cxLogging.apiKeyEnv" -}}
+- name: {{ .envName | default "CX_API_KEY" }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "kompass.cxLogging.apiKeySecretName" . | quote }}
+      key: {{ include "kompass.cxLogging.apiKeySecretKey" . | quote }}
+      optional: true
+{{- end -}}
+
 {{- define "kompass.kube-state-metrics.selectorLabels" -}}
   {{- if and .Values.kubeStateMetrics.enabled -}}
   {{- $ctx := dict "Values" .Values.kubeStateMetrics "Chart" .Chart "Release" .Release -}}
@@ -112,6 +133,33 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 
 {{- define "kompass.scrapeIntervalVolume" -}}
 {{- default "600s" .Values.victoriaMetricsAgent.scrapeIntervalVolume -}}
+{{- end }}
+
+{{- define "kompass.scrapeIntervalKubeStateMetrics" -}}
+{{- default (include "kompass.scrapeInterval" .) .Values.kubeStateMetrics.kompassScrapeInterval -}}
+{{- end }}
+
+{{- define "kompass.durationSeconds" -}}
+{{- $name := .name -}}
+{{- $value := printf "%v" .value | trim -}}
+{{- if regexMatch "^[0-9]+s$" $value -}}
+{{- int (regexReplaceAll "s$" $value "") -}}
+{{- else if regexMatch "^[0-9]+m$" $value -}}
+{{- mul (int (regexReplaceAll "m$" $value "")) 60 -}}
+{{- else if regexMatch "^[0-9]+h$" $value -}}
+{{- mul (int (regexReplaceAll "h$" $value "")) 3600 -}}
+{{- else -}}
+{{- fail (printf "%s must be a whole-number duration ending in s, m, or h, got %q" $name $value) -}}
+{{- end -}}
+{{- end }}
+
+{{- define "kompass.scrapeTimeoutKubeStateMetrics" -}}
+{{- $interval := include "kompass.scrapeIntervalKubeStateMetrics" . | trim -}}
+{{- $seconds := include "kompass.durationSeconds" (dict "name" "kubeStateMetrics.kompassScrapeInterval" "value" $interval) | int -}}
+{{- if lt $seconds 2 -}}
+{{- fail (printf "kubeStateMetrics.kompassScrapeInterval must be at least 2s to derive scrape_timeout, got %q" $interval) -}}
+{{- end -}}
+{{- printf "%ds" (sub $seconds 1) -}}
 {{- end }}
 
 {{/*

@@ -1,0 +1,26 @@
+suite: Bridge CX logging API key secret references
+templates:
+  - templates/bridge/deployment.yaml
+
+tests:
+  - it: uses custom secret name and key in bridge env secret reference
+    set:
+      global:
+        kompass-bridge:
+          enabled: true
+        cxLogging:
+          enabled: true
+          apiKey: ""
+          apiKeySecret:
+            name: existing-cx-secret
+            key: custom-api-key
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[3].valueFrom.secretKeyRef.name
+          value: existing-cx-secret
+      - equal:
+          path: spec.template.spec.containers[0].env[3].valueFrom.secretKeyRef.key
+          value: custom-api-key
+      - equal:
+          path: spec.template.spec.containers[0].env[3].valueFrom.secretKeyRef.optional
+          value: true

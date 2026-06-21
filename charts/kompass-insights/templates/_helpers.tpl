@@ -34,6 +34,27 @@ Create chart name and version as used by the chart label.
   {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
+{{- define "zesty-k8s.coralogix.apiKeySecretName" -}}
+{{- $cxLogging := .cxLogging | default dict -}}
+{{- $apiKeySecret := $cxLogging.apiKeySecret | default dict -}}
+{{- default "kompass-cx-logging" $apiKeySecret.name -}}
+{{- end -}}
+
+{{- define "zesty-k8s.coralogix.apiKeySecretKey" -}}
+{{- $cxLogging := .cxLogging | default dict -}}
+{{- $apiKeySecret := $cxLogging.apiKeySecret | default dict -}}
+{{- default "CX_API_KEY" $apiKeySecret.key -}}
+{{- end -}}
+
+{{- define "zesty-k8s.coralogix.apiKeyEnv" -}}
+- name: {{ .envName | default "CX_API_KEY" }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ include "zesty-k8s.coralogix.apiKeySecretName" . | quote }}
+      key: {{ include "zesty-k8s.coralogix.apiKeySecretKey" . | quote }}
+      optional: true
+{{- end -}}
+
 {{/*
 Create a version as used by the chart and image tag.
 */}}
@@ -341,12 +362,11 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- if and .Values.global.cxLogging .Values.global.cxLogging.enabled -}}
 - name: CX_CLUSTER_NAME
   value: {{ .Values.global.cxLogging.clusterName }}
-{{- if .coralogixApiKey }}
-- name: CORALOGIX_API_KEY
+{{ if .coralogixApiKey }}
+{{- include "zesty-k8s.coralogix.apiKeyEnv" (dict "cxLogging" .Values.global.cxLogging "envName" "CORALOGIX_API_KEY") }}
 {{- else }}
-- name: CX_API_KEY
+{{- include "zesty-k8s.coralogix.apiKeyEnv" (dict "cxLogging" .Values.global.cxLogging "envName" "CX_API_KEY") }}
 {{- end }}
-  value: {{ .Values.global.cxLogging.apiKey }}
 {{- if .domain }}
 - name: CORALOGIX_DOMAIN
   value: {{ .Values.global.cxLogging.domain }}
@@ -380,12 +400,11 @@ To remove in the future.
 {{- else if and .Values.cxLogging .Values.cxLogging.enabled }}
 - name: CX_CLUSTER_NAME
   value: {{ .Values.cxLogging.clusterName }}
-{{- if .coralogixApiKey }}
-- name: CORALOGIX_API_KEY
+{{ if .coralogixApiKey }}
+{{- include "zesty-k8s.coralogix.apiKeyEnv" (dict "cxLogging" .Values.cxLogging "envName" "CORALOGIX_API_KEY") }}
 {{- else }}
-- name: CX_API_KEY
+{{- include "zesty-k8s.coralogix.apiKeyEnv" (dict "cxLogging" .Values.cxLogging "envName" "CX_API_KEY") }}
 {{- end }}
-  value: {{ .Values.cxLogging.apiKey }}
 {{- if .domain }}
 - name: CORALOGIX_DOMAIN
   value: {{ .Values.cxLogging.domain }}

@@ -1,6 +1,7 @@
+{{- $bridgeEnabled := index .Values.global "kompass-bridge" "enabled" | default false -}}
 {{- $bridgeValues := index .Values "kompass-bridge" | default (dict) -}}
 {{- $rbac := $bridgeValues.rbac | default (dict) -}}
-{{- if and $bridgeValues.enabled $rbac.create }}
+{{- if and $bridgeEnabled $rbac.create }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:

@@ -1,6 +1,7 @@
+{{- $bridgeEnabled := index .Values.global "kompass-bridge" "enabled" | default false -}}
 {{- $bridgeValues := index .Values "kompass-bridge" | default (dict) -}}
 {{- $rbac := $bridgeValues.rbac | default (dict) -}}
-{{- if and $bridgeValues.enabled $rbac.create }}
+{{- if and $bridgeEnabled $rbac.create }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -12,6 +13,15 @@ rules:
   - apiGroups: [""]
     resources:
       - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - patch
+      - update
+  - apiGroups: [""]
+    resources:
       - secrets
     verbs:
       - get
