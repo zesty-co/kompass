@@ -21,3 +21,11 @@
 .idea/
 *.tmproj
 .vscode/
+
+# Large generated files and logs
+all.yaml
+tmpl
+helm_install.log
+install_debug.log
+crds.yaml
+
