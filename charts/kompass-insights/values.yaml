@@ -119,6 +119,12 @@ config:
 podMinuteMetrics:
   enabled: true
 
+pricing:
+  cpu: ""
+  ram: ""
+  spotcpu: ""
+  spotram: ""
+
 insights:
   extraEnv: []
 
