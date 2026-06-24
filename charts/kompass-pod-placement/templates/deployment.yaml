@@ -54,12 +54,12 @@ spec:
           args:
             - "--probe-addr=:{{ .Values.ports.health.containerPort }}"
             - "--metrics-addr=:{{ .Values.ports.metrics.containerPort }}"
-            {{- range .Values.extraArgs }}
-            - {{ . | quote }}
-            {{- end }}
             {{- if .Values.evictionWindow.schedule }}
             - "--eviction-window-schedule={{ .Values.evictionWindow.schedule }}"
             - "--eviction-window-duration={{ .Values.evictionWindow.duration }}"
+            {{- end }}
+            {{- range .Values.extraArgs }}
+            - {{ . | quote }}
             {{- end }}
           env:
             - name: ZESTY_SECRET_NAME
@@ -70,6 +70,8 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: READ_ONLY_MODE
+              value: {{ not .Values.enabled | toString | quote }}
             {{- if and .Values.global.cxLogging .Values.global.cxLogging.enabled }}
             - name: CX_CLUSTER_NAME
               value: {{ .Values.global.cxLogging.clusterName }}
