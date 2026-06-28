@@ -20,7 +20,7 @@ rules:
       - get
       - list
       - watch
-  {{- end }}
+  {{- else }}
   - apiGroups:
       - "rightsizing.kompass.zesty.co"
       - "horizontalscaling.kompass.zesty.co"
@@ -213,3 +213,4 @@ rules:
       - mutatingwebhookconfigurations
       - validatingwebhookconfigurations
     {{- include "zesty-k8s.verbs" . | nindent 4 }}
+  {{- end }}
