@@ -491,11 +491,28 @@ victoriaMetricsAgent:
     name: kompass-victoria-metrics-agent
   service:
     type: ClusterIP
-  configMap: kompass-vmagent-config
+  configMap: kompass-vmagent-main-config
   extraArgs:
     promscrape.configCheckInterval: 1m
     promscrape.maxScrapeSize: 4096MB
     enableTCP6: true
+  # Mount scrape config fragments as individual files so multiple ConfigMaps can
+  # contribute files under the same directory consumed by scrape_config_files.
+  extraVolumeMounts:
+    - mountPath: /config/scrape-configs/kompass-scrape-config.yml
+      name: kompass-scrape-configs
+      subPath: kompass-scrape-config.yml
+    - mountPath: /config/scrape-configs/rightsizing-custom-scrape-config.yml
+      name: rightsizing-custom-scrape-config
+      subPath: rightsizing-custom-scrape-config.yml
+  extraVolumes:
+    - configMap:
+        name: kompass-vmagent-kompass-scrape-configs
+      name: kompass-scrape-configs
+    - configMap:
+        name: kompass-vmagent-rightsizing-custom-scrape-config
+        optional: true
+      name: rightsizing-custom-scrape-config
   remoteWrite:
   - url: *vmRemoteWritePrometheusUrl
 

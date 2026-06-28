@@ -3,10 +3,22 @@ templates:
   - templates/dependencies/vm-configs.yaml
 
 tests:
+  - it: renders main vmagent config with scrape config fragments directory
+    documentSelector:
+      path: metadata.name
+      value: kompass-vmagent-main-config
+    asserts:
+      - matchRegex:
+          path: data["scrape.yml"]
+          pattern: "scrape_config_files:[\\s\\S]*- /config/scrape-configs/\\*.yaml[\\s\\S]*- /config/scrape-configs/\\*.yml"
+      - notMatchRegex:
+          path: data["scrape.yml"]
+          pattern: "- /config/scrape/\\*.yml"
+
   - it: does not render insights or recommendations scrape jobs when kompass-insights is disabled
     documentSelector:
       path: metadata.name
-      value: kompass-vmagent-config
+      value: kompass-vmagent-kompass-scrape-configs
     set:
       kompass-insights:
         enabled: false
@@ -20,16 +32,16 @@ tests:
             port: 9090
     asserts:
       - notMatchRegex:
-          path: data["scrape.yml"]
+          path: data["kompass-scrape-config.yml"]
           pattern: "job_name: 'kompass-insights'"
       - notMatchRegex:
-          path: data["scrape.yml"]
+          path: data["kompass-scrape-config.yml"]
           pattern: "job_name: 'recommendations'"
 
   - it: renders insights scrape job when kompass-insights is enabled
     documentSelector:
       path: metadata.name
-      value: kompass-vmagent-config
+      value: kompass-vmagent-kompass-scrape-configs
     set:
       kompass-insights:
         enabled: true
@@ -39,13 +51,13 @@ tests:
             port: 8080
     asserts:
       - matchRegex:
-          path: data["scrape.yml"]
+          path: data["kompass-scrape-config.yml"]
           pattern: "job_name: 'kompass-insights'"
 
   - it: uses external kube-state-metrics service and namespace when installation is disabled
     documentSelector:
       path: metadata.name
-      value: kompass-vmagent-config
+      value: kompass-vmagent-kompass-scrape-configs
     set:
       kubeStateMetrics:
         enabled: false
@@ -53,31 +65,31 @@ tests:
         serviceNamespace: observability
     asserts:
       - matchRegex:
-          path: data["scrape.yml"]
+          path: data["kompass-scrape-config.yml"]
           pattern: "job_name: 'kube-state-metrics'"
       - matchRegex:
-          path: data["scrape.yml"]
+          path: data["kompass-scrape-config.yml"]
           pattern: 'source_labels: \[__meta_kubernetes_service_name\][\s\S]*regex: external-ksm'
       - matchRegex:
-          path: data["scrape.yml"]
+          path: data["kompass-scrape-config.yml"]
           pattern: 'source_labels: \[__meta_kubernetes_namespace\][\s\S]*regex: observability'
 
   - it: renders dedicated kube-state-metrics scrape interval and derived timeout
     documentSelector:
       path: metadata.name
-      value: kompass-vmagent-config
+      value: kompass-vmagent-kompass-scrape-configs
     set:
       kubeStateMetrics:
         kompassScrapeInterval: 45s
     asserts:
       - matchRegex:
-          path: data["scrape.yml"]
+          path: data["kompass-scrape-config.yml"]
           pattern: "job_name: 'kube-state-metrics'[\\s\\S]*scrape_interval: 45s[\\s\\S]*scrape_timeout: 44s"
 
   - it: builds kube-state-metrics keep regex from top-level metricsScrapeFilters values
     documentSelector:
       path: metadata.name
-      value: kompass-vmagent-config
+      value: kompass-vmagent-kompass-scrape-configs
     set:
       metricsScrapeFilters:
         kubeStateMetrics:
@@ -88,8 +100,8 @@ tests:
             - kompass_rs_
     asserts:
       - matchRegex:
-          path: data["scrape.yml"]
+          path: data["kompass-scrape-config.yml"]
           pattern: "regex: '\\(kube_pod_info\\|kube_job_owner\\|kompass_rs_\\.\\*\\)'"
       - notMatchRegex:
-          path: data["scrape.yml"]
+          path: data["kompass-scrape-config.yml"]
           pattern: "kube_namespace_status_phase"
