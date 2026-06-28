@@ -25,6 +25,22 @@ rules:
       - "*"
     verbs:
       - "*"
+  - apiGroups:
+      - "qscaler.qubex.ai"
+    resources:
+      - qcacherevisioncreations
+    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+  - apiGroups:
+      - ""
+    resources:
+      - persistentvolumeclaims
+    verbs: ["get", "list", "watch", "patch"]
+  - apiGroups:
+      - "qscaler.qubex.ai"
+    resources:
+      - workloadprotections
+      - qnodes
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   {{- if not .Values.insights.clusterRole.allowAll }}
   - apiGroups:
       - "argoproj.io"
@@ -103,11 +119,6 @@ rules:
       - horizontalrunnerautoscalers
     {{- include "zesty-k8s.verbs" . | nindent 4 }}
   - apiGroups:
-      - "qscaler.qubex.ai"
-    resources:
-      - qcacherevisioncreations
-    {{- include "zesty-k8s.verbs" . | nindent 4 }}
-  - apiGroups:
       - ""
     resources:
       - configmaps
@@ -121,11 +132,6 @@ rules:
       - endpoints
       - nodes/proxy
     {{- include "zesty-k8s.verbs" . | nindent 4 }}
-  - apiGroups:
-      - ""
-    resources:
-      - persistentvolumeclaims
-    verbs: ["get", "list", "watch", "patch"]
   - apiGroups:
       - ""
     resources:
@@ -186,12 +192,6 @@ rules:
     resources:
       - horizontalpodautoscalers
     {{- include "zesty-k8s.verbs" . | nindent 4 }}
-  - apiGroups:
-      - "qscaler.qubex.ai"
-    resources:
-      - workloadprotections
-      - qnodes
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups:
       - "apiextensions.k8s.io"
     resources:
