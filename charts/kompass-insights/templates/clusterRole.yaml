@@ -6,7 +6,7 @@ metadata:
     app.kubernetes.io/instance: "{{ include "zesty-k8s.fullname" . }}"
     app.kubernetes.io/name: "{{ include "zesty-k8s.fullname" . }}"
 rules:
-  # Write permissions. Always required and not affected by fullRO.
+  # Write permissions.
   - apiGroups:
       - "rightsizing.kompass.zesty.co"
       - "horizontalscaling.kompass.zesty.co"
