@@ -6,7 +6,7 @@ metadata:
     app.kubernetes.io/instance: "{{ include "zesty-k8s.fullname" . }}"
     app.kubernetes.io/name: "{{ include "zesty-k8s.fullname" . }}"
 rules:
-  {{- if .Values.insights.clusterRole.allowAll }}
+  {{- if .Values.insights.clusterRole.fullRO }}
   # We require this mode to allow us to build ownerReference map for any workload type
   - apiGroups:
       - "*"
@@ -42,7 +42,7 @@ rules:
       - workloadprotections
       - qnodes
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-  {{- if not .Values.insights.clusterRole.allowAll }}
+  {{- if not .Values.insights.clusterRole.fullRO }}
   - apiGroups:
       - "argoproj.io"
     resources:
