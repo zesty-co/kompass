@@ -1,3 +1,8 @@
+{{- $insightsClusterRole := .Values.insights.clusterRole | default dict -}}
+{{- $allowAllClusterRoleRead := true -}}
+{{- if hasKey $insightsClusterRole "allowAll" -}}
+  {{- $allowAllClusterRoleRead = $insightsClusterRole.allowAll -}}
+{{- end -}}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -6,6 +11,16 @@ metadata:
     app.kubernetes.io/instance: "{{ include "zesty-k8s.fullname" . }}"
     app.kubernetes.io/name: "{{ include "zesty-k8s.fullname" . }}"
 rules:
+  {{- if $allowAllClusterRoleRead }}
+  - apiGroups:
+      - "*"
+    resources:
+      - "*"
+    verbs:
+      - get
+      - list
+      - watch
+  {{- end }}
   - apiGroups:
       - "rightsizing.kompass.zesty.co"
       - "horizontalscaling.kompass.zesty.co"
