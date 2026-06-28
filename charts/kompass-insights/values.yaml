@@ -120,10 +120,11 @@ podMinuteMetrics:
   enabled: true
 
 pricing:
-  cpu: ""
-  ram: ""
-  spotcpu: ""
-  spotram: ""
+  enabled: false
+  cpu: 0
+  ram: 0
+  spotCpu:
+  spotRam:
 
 insights:
   extraEnv: []
