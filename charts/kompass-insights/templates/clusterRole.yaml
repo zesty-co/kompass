@@ -7,6 +7,7 @@ metadata:
     app.kubernetes.io/name: "{{ include "zesty-k8s.fullname" . }}"
 rules:
   {{- if .Values.insights.clusterRole.allowAll }}
+  # We require this mode to allow us to build ownerReference map for any workload type
   - apiGroups:
       - "*"
     resources:
