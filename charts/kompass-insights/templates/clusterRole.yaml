@@ -8,30 +8,13 @@ metadata:
 rules:
   - apiGroups:
       - "rightsizing.kompass.zesty.co"
-    resources:
-      - "*"
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
       - "horizontalscaling.kompass.zesty.co"
-    resources:
-      - "*"
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
       - "kompass.zesty.co"
+      - "zesty.co"
     resources:
       - "*"
     verbs:
-      - get
-      - list
-      - patch
-      - update
-      - watch
+      - "*"
   - apiGroups:
       - "argoproj.io"
     resources:
@@ -198,27 +181,6 @@ rules:
       - workloadprotections
       - qnodes
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-  - apiGroups:
-      - "kompass.zesty.co"
-    resources:
-      - workloaddescriptors
-      - autopilotconfigs
-      - jobpilotconfigs
-      - actions
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-  - apiGroups:
-      - "kompass.zesty.co"
-    resources:
-      - workloaddescriptors/status
-      - autopilotconfigs/status
-      - jobpilotconfigs/status
-    verbs: [ "get", "update", "patch" ]
-  - apiGroups:
-      - "zesty.co"
-    resources:
-      - managedworkloads
-      - managednodepools
-    verbs: ["get", "list"]
   - apiGroups:
       - "apiextensions.k8s.io"
     resources:
