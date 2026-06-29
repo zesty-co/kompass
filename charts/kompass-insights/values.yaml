@@ -124,6 +124,8 @@ insights:
 
   affinity: {}
   automountServiceAccountToken: ~
+  clusterRole:
+    fullRO: true
   imagePullSecrets: ~
   podAnnotations: {}
   podLabels: {}

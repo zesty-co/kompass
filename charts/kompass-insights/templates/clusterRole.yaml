@@ -6,32 +6,45 @@ metadata:
     app.kubernetes.io/instance: "{{ include "zesty-k8s.fullname" . }}"
     app.kubernetes.io/name: "{{ include "zesty-k8s.fullname" . }}"
 rules:
+  # Write permissions.
   - apiGroups:
       - "rightsizing.kompass.zesty.co"
-    resources:
-      - "*"
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
       - "horizontalscaling.kompass.zesty.co"
-    resources:
-      - "*"
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
       - "kompass.zesty.co"
+      - "zesty.co"
+    resources:
+      - "*"
+    verbs:
+      - "*"
+  - apiGroups:
+      - "qscaler.qubex.ai"
+    resources:
+      - qcacherevisioncreations
+    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+  - apiGroups:
+      - ""
+    resources:
+      - persistentvolumeclaims
+    verbs: ["get", "list", "watch", "patch"]
+  - apiGroups:
+      - "qscaler.qubex.ai"
+    resources:
+      - workloadprotections
+      - qnodes
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  {{- if .Values.insights.clusterRole.fullRO }}
+  # fullRO=true. Full read-only discovery for building ownerReference maps.
+  - apiGroups:
+      - "*"
     resources:
       - "*"
     verbs:
       - get
       - list
-      - patch
-      - update
       - watch
+  {{- end }}
+  {{- if not .Values.insights.clusterRole.fullRO }}
+  # fullRO=false. Explicit resource coverage instead of wildcard read-only discovery.
   - apiGroups:
       - "argoproj.io"
     resources:
@@ -109,11 +122,6 @@ rules:
       - horizontalrunnerautoscalers
     {{- include "zesty-k8s.verbs" . | nindent 4 }}
   - apiGroups:
-      - "qscaler.qubex.ai"
-    resources:
-      - qcacherevisioncreations
-    {{- include "zesty-k8s.verbs" . | nindent 4 }}
-  - apiGroups:
       - ""
     resources:
       - configmaps
@@ -127,11 +135,6 @@ rules:
       - endpoints
       - nodes/proxy
     {{- include "zesty-k8s.verbs" . | nindent 4 }}
-  - apiGroups:
-      - ""
-    resources:
-      - persistentvolumeclaims
-    verbs: ["get", "list", "watch", "patch"]
   - apiGroups:
       - ""
     resources:
@@ -193,33 +196,6 @@ rules:
       - horizontalpodautoscalers
     {{- include "zesty-k8s.verbs" . | nindent 4 }}
   - apiGroups:
-      - "qscaler.qubex.ai"
-    resources:
-      - workloadprotections
-      - qnodes
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-  - apiGroups:
-      - "kompass.zesty.co"
-    resources:
-      - workloaddescriptors
-      - autopilotconfigs
-      - jobpilotconfigs
-      - actions
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-  - apiGroups:
-      - "kompass.zesty.co"
-    resources:
-      - workloaddescriptors/status
-      - autopilotconfigs/status
-      - jobpilotconfigs/status
-    verbs: [ "get", "update", "patch" ]
-  - apiGroups:
-      - "zesty.co"
-    resources:
-      - managedworkloads
-      - managednodepools
-    verbs: ["get", "list"]
-  - apiGroups:
       - "apiextensions.k8s.io"
     resources:
       - customresourcedefinitions
@@ -236,3 +212,4 @@ rules:
       - mutatingwebhookconfigurations
       - validatingwebhookconfigurations
     {{- include "zesty-k8s.verbs" . | nindent 4 }}
+  {{- end }}
