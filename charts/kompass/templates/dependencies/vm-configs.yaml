@@ -2,257 +2,253 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: kompass-vmagent-config
+  name: kompass-vmagent-scrape-configs
   namespace: {{ .Release.Namespace }}
 data:
-  scrape.yml: |
-    global:
-      scrape_timeout: 29s
-    scrape_configs:
-      # For container CPU and memory metrics
-      - job_name: 'kubelet'
-        scrape_interval: {{ include "kompass.scrapeInterval" . }}
-        scheme: https
-        tls_config:
-          insecure_skip_verify: true
-          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-        authorization:
-          credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-        kubernetes_sd_configs:
-          - role: node
-        relabel_configs:
-          - source_labels: [__meta_kubernetes_node_name]
-            target_label: node
-          - target_label: __address__
-            replacement: kubernetes.default.svc:443
-          - source_labels: [__meta_kubernetes_node_name]
-            regex: (.+)
-            target_label: __metrics_path__
-            replacement: /api/v1/nodes/$1/proxy/metrics/cadvisor
-        metric_relabel_configs:
-          - source_labels: [__name__]
-            regex: '(container_memory_usage_bytes|container_memory_working_set_bytes|container_cpu_usage_seconds_total|container_cpu_cfs_throttled_seconds_total)'
-            action: keep
+  kompass-scrape-config.yml: |
+    # For container CPU and memory metrics
+    - job_name: 'kubelet'
+      scrape_interval: {{ include "kompass.scrapeInterval" . }}
+      scheme: https
+      tls_config:
+        insecure_skip_verify: true
+        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+      authorization:
+        credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+      kubernetes_sd_configs:
+        - role: node
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_node_name]
+          target_label: node
+        - target_label: __address__
+          replacement: kubernetes.default.svc:443
+        - source_labels: [__meta_kubernetes_node_name]
+          regex: (.+)
+          target_label: __metrics_path__
+          replacement: /api/v1/nodes/$1/proxy/metrics/cadvisor
+      metric_relabel_configs:
+        - source_labels: [__name__]
+          regex: '(container_memory_usage_bytes|container_memory_working_set_bytes|container_cpu_usage_seconds_total|container_cpu_cfs_throttled_seconds_total)'
+          action: keep
 
-      - job_name: 'kubelet-resource'
-        scrape_interval: {{ include "kompass.scrapeInterval" . }}
-        scheme: https
-        tls_config:
-          insecure_skip_verify: true
-          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-        authorization:
-          credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-        kubernetes_sd_configs:
-          - role: node
-        relabel_configs:
-          - source_labels: [__meta_kubernetes_node_name]
-            target_label: node
-          - target_label: __address__
-            replacement: kubernetes.default.svc:443
-          - source_labels: [__meta_kubernetes_node_name]
-            regex: (.+)
-            target_label: __metrics_path__
-            replacement: /api/v1/nodes/$1/proxy/metrics/resource
-        metric_relabel_configs:
-          - source_labels: [__name__]
-            regex: (.+)
-            target_label: __name__
-            replacement: kubelet_resource_$1
-          - source_labels: [__name__]
-            regex: '(kubelet_resource_container_cpu_usage_seconds_total|kubelet_resource_container_memory_working_set_bytes|kubelet_resource_node_cpu_usage_seconds_total|kubelet_resource_node_memory_working_set_bytes)'
-            action: keep
+    - job_name: 'kubelet-resource'
+      scrape_interval: {{ include "kompass.scrapeInterval" . }}
+      scheme: https
+      tls_config:
+        insecure_skip_verify: true
+        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+      authorization:
+        credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+      kubernetes_sd_configs:
+        - role: node
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_node_name]
+          target_label: node
+        - target_label: __address__
+          replacement: kubernetes.default.svc:443
+        - source_labels: [__meta_kubernetes_node_name]
+          regex: (.+)
+          target_label: __metrics_path__
+          replacement: /api/v1/nodes/$1/proxy/metrics/resource
+      metric_relabel_configs:
+        - source_labels: [__name__]
+          regex: (.+)
+          target_label: __name__
+          replacement: kubelet_resource_$1
+        - source_labels: [__name__]
+          regex: '(kubelet_resource_container_cpu_usage_seconds_total|kubelet_resource_container_memory_working_set_bytes|kubelet_resource_node_cpu_usage_seconds_total|kubelet_resource_node_memory_working_set_bytes)'
+          action: keep
 
-      - job_name: 'kubelet-volume'
-        scrape_interval: {{ include "kompass.scrapeIntervalVolume" . }}
-        scheme: https
-        tls_config:
-          insecure_skip_verify: true
-          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-        authorization:
-          credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-        kubernetes_sd_configs:
-          - role: node
-        relabel_configs:
-          - source_labels: [__meta_kubernetes_node_name]
-            target_label: node
-          - target_label: __address__
-            replacement: kubernetes.default.svc:443
-          - source_labels: [__meta_kubernetes_node_name]
-            regex: (.+)
-            target_label: __metrics_path__
-            replacement: /api/v1/nodes/$1/proxy/metrics
-        metric_relabel_configs:
-          - source_labels: [__name__]
-            regex: (kubelet_volume_stats_capacity_bytes|kubelet_volume_stats_used_bytes)
-            action: keep
-          - source_labels: [namespace]
-            regex: "{{ .Release.Namespace }}"
-            action: keep
+    - job_name: 'kubelet-volume'
+      scrape_interval: {{ include "kompass.scrapeIntervalVolume" . }}
+      scheme: https
+      tls_config:
+        insecure_skip_verify: true
+        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+      authorization:
+        credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+      kubernetes_sd_configs:
+        - role: node
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_node_name]
+          target_label: node
+        - target_label: __address__
+          replacement: kubernetes.default.svc:443
+        - source_labels: [__meta_kubernetes_node_name]
+          regex: (.+)
+          target_label: __metrics_path__
+          replacement: /api/v1/nodes/$1/proxy/metrics
+      metric_relabel_configs:
+        - source_labels: [__name__]
+          regex: (kubelet_volume_stats_capacity_bytes|kubelet_volume_stats_used_bytes)
+          action: keep
+        - source_labels: [namespace]
+          regex: "{{ .Release.Namespace }}"
+          action: keep
 
 
-      # for collecting Pilot metrics
-      - job_name: 'pilot'
-        scrape_interval: {{ include "kompass.scrapeInterval" . }}
-        static_configs:
-          - targets: ['http://{{- include "rightsizing.recommendationsMaker.name" . -}}.{{ .Release.Namespace }}:{{ .Values.rightsizing.recommendationsMaker.port }}']
-        metric_relabel_configs:
-          - source_labels: [__name__]
-            regex: '(kompass_.*)'
-            action: keep
+    # for collecting Pilot metrics
+    - job_name: 'pilot'
+      scrape_interval: {{ include "kompass.scrapeInterval" . }}
+      static_configs:
+        - targets: ['http://{{- include "rightsizing.recommendationsMaker.name" . -}}.{{ .Release.Namespace }}:{{ .Values.rightsizing.recommendationsMaker.port }}']
+      metric_relabel_configs:
+        - source_labels: [__name__]
+          regex: '(kompass_.*)'
+          action: keep
+    
+    - job_name: 'rightsizing-savings'
+      scrape_interval: {{ include "kompass.scrapeInterval" . }}
+      static_configs:
+        - targets: ['http://{{- include "rightsizing.recommendationsMaker.name" . -}}.{{ .Release.Namespace }}:{{ .Values.rightsizing.recommendationsMaker.port }}/savings']
 
-      - job_name: 'rightsizing-savings'
-        scrape_interval: {{ include "kompass.scrapeInterval" . }}
-        static_configs:
-          - targets: ['http://{{- include "rightsizing.recommendationsMaker.name" . -}}.{{ .Release.Namespace }}:{{ .Values.rightsizing.recommendationsMaker.port }}/savings']
+    {{- $kompassInsights := (index .Values "kompass-insights" | default dict) }}
+    {{- $kompassInsightsEnabled := ne (index $kompassInsights "enabled") false }}
+    {{- $insightsConfig := (index $kompassInsights "insights" | default dict) }}
+    {{- $insightsMetricsConfig := (index $insightsConfig "metrics" | default dict) }}
+    {{- if and $kompassInsightsEnabled (hasKey $insightsConfig "service") (hasKey $insightsMetricsConfig "port") }}
+    # for collecting insights metrics
+    - job_name: 'kompass-insights'
+      scrape_interval: {{ include "kompass.scrapeInterval" . }}
+      static_configs:
+        - targets: ['http://{{ $insightsConfig.service }}.{{ .Release.Namespace }}:{{ $insightsMetricsConfig.port }}']
+      metric_relabel_configs:
+        - source_labels: [__name__]
+          regex: '(kompass_.*)'
+          action: keep
+    {{- end }}
 
-      {{- $kompassInsights := (index .Values "kompass-insights" | default dict) }}
-      {{- $kompassInsightsEnabled := ne (index $kompassInsights "enabled") false }}
-      {{- $insightsConfig := (index $kompassInsights "insights" | default dict) }}
-      {{- $insightsMetricsConfig := (index $insightsConfig "metrics" | default dict) }}
-      {{- if and $kompassInsightsEnabled (hasKey $insightsConfig "service") (hasKey $insightsMetricsConfig "port") }}
-      # for collecting insights metrics
-      - job_name: 'kompass-insights'
-        scrape_interval: {{ include "kompass.scrapeInterval" . }}
-        static_configs:
-          - targets: ['http://{{ $insightsConfig.service }}.{{ .Release.Namespace }}:{{ $insightsMetricsConfig.port }}']
-        metric_relabel_configs:
-          - source_labels: [__name__]
-            regex: '(kompass_.*)'
-            action: keep
-      {{- end }}
+    {{- if .Values.victoriaMetrics.enabled }}
+    # for collecting VM metrics
+    - job_name: 'vmetrics'
+      scrape_interval: {{ include "kompass.scrapeInterval" . }}
+      static_configs:
+        - targets: ['{{ .Values.victoriaMetrics.server.fullnameOverride }}.{{ .Release.Namespace }}:8428']
+    {{- end }}
+    
+    {{- if .Values.victoriaMetricsCluster.enabled }}
+    - job_name: 'vmselect'
+      scrape_interval: {{ include "kompass.scrapeInterval" . }}
+      static_configs:
+        - targets: ['http://{{ .Values.victoriaMetricsCluster.vmselect.fullnameOverride }}.{{ .Release.Namespace }}:8481']
+    - job_name: 'vminsert'
+      scrape_interval: {{ include "kompass.scrapeInterval" . }}
+      static_configs:
+        - targets: ['http://{{ .Values.victoriaMetricsCluster.vminsert.fullnameOverride }}.{{ .Release.Namespace }}:8480']
+    - job_name: 'vmstorage'
+      scrape_interval: {{ include "kompass.scrapeInterval" . }}
+      static_configs:
+        - targets: ['http://{{ .Values.victoriaMetricsCluster.vmstorage.fullnameOverride }}.{{ .Release.Namespace }}:8482']
+    {{- end }}
 
-      {{- if .Values.victoriaMetrics.enabled }}
-      # for collecting VM metrics
-      - job_name: 'vmetrics'
-        scrape_interval: {{ include "kompass.scrapeInterval" . }}
-        static_configs:
-          - targets: ['{{ .Values.victoriaMetrics.server.fullnameOverride }}.{{ .Release.Namespace }}:8428']
-      {{- end }}
+    {{- if .Values.victoriaMetricsAuth.enabled }}
+    # for collecting VM metrics
+    - job_name: 'vmauth'
+      scrape_interval: {{ include "kompass.scrapeInterval" . }}
+      static_configs:
+        - targets: ['{{ .Values.victoriaMetricsAuth.fullnameOverride }}.{{ .Release.Namespace }}:8427']
+    {{- end }}
+    
+    {{- $recommendationsConfig := (index $kompassInsights "recommendations" | default dict) }}
+    {{- $recommendationsHTTPConfig := (index $recommendationsConfig "http" | default dict) }}
+    {{- if and $kompassInsightsEnabled (index $recommendationsConfig "enabled") (hasKey $recommendationsHTTPConfig "port") }}
+    # for collecting recommendations
+    - job_name: 'recommendations'
+      scrape_interval: {{ include "kompass.scrapeInterval" . }}
+      static_configs:
+        - targets: ['http://{{ include "zesty-k8s.recommendations.fullname" (dict "Values" $kompassInsights "Release" .Release "Chart" (dict "Name" "kompass-insights")) }}.{{ .Release.Namespace }}:{{ $recommendationsHTTPConfig.port }}']
+      metric_relabel_configs:
+        - source_labels: [__name__]
+          regex: '(workload_headroom_reduction_recommendation_min_replicas)'
+          action: keep
+    {{- end }}
 
-      {{- if .Values.victoriaMetricsCluster.enabled }}
-      - job_name: 'vmselect'
-        scrape_interval: {{ include "kompass.scrapeInterval" . }}
-        static_configs:
-          - targets: ['http://{{ .Values.victoriaMetricsCluster.vmselect.fullnameOverride }}.{{ .Release.Namespace }}:8481']
-      - job_name: 'vminsert'
-        scrape_interval: {{ include "kompass.scrapeInterval" . }}
-        static_configs:
-          - targets: ['http://{{ .Values.victoriaMetricsCluster.vminsert.fullnameOverride }}.{{ .Release.Namespace }}:8480']
-      - job_name: 'vmstorage'
-        scrape_interval: {{ include "kompass.scrapeInterval" . }}
-        static_configs:
-          - targets: ['http://{{ .Values.victoriaMetricsCluster.vmstorage.fullnameOverride }}.{{ .Release.Namespace }}:8482']
-      {{- end }}
+    # For pod and node metrics
+    - job_name: 'kube-state-metrics'
+      scrape_interval: {{ include "kompass.scrapeIntervalKubeStateMetrics" . }}
+      scrape_timeout: {{ include "kompass.scrapeTimeoutKubeStateMetrics" . }}
+      kubernetes_sd_configs:
+        - role: service
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name]
+          regex: {{ include "kompass.kube-state-metrics.serviceName" . }}
+          action: keep
+        {{- /* For backward compatibility, add namespace config, only if the namespace was provided */}}
+        {{- if (include "kompass.kube-state-metrics.serviceNamespace" . ) }}
+        - source_labels: [__meta_kubernetes_namespace]
+          regex: {{ include "kompass.kube-state-metrics.serviceNamespace" . }}
+          action: keep
+        {{- end }}
+      metric_relabel_configs:
+        - source_labels: [__name__]
+          regex: '{{ include "kompass.kube-state-metrics.keepRegex" . }}'
+          action: keep
 
-      {{- if .Values.victoriaMetricsAuth.enabled }}
-      # for collecting VM metrics
-      - job_name: 'vmauth'
-        scrape_interval: {{ include "kompass.scrapeInterval" . }}
-        static_configs:
-          - targets: ['{{ .Values.victoriaMetricsAuth.fullnameOverride }}.{{ .Release.Namespace }}:8427']
-      {{- end }}
+    {{- if index .Values "kompass-pod-placement" "enabled" }}
+    # for collecting pod-placement metrics
+    - job_name: 'pod-placement'
+      scrape_interval: {{ include "kompass.scrapeInterval" . }}
+      kubernetes_sd_configs:
+        - role: pod
+          namespaces:
+            names:
+              - {{ .Release.Namespace }}
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+          regex: {{ include "kompass.pod-placement.name" . }}
+          action: keep
+        - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_instance]
+          regex: {{ .Release.Name }}
+          action: keep
+        - source_labels: [__meta_kubernetes_pod_container_port_name]
+          regex: metrics
+          action: keep
+      metric_relabel_configs:
+        - source_labels: [__name__]
+          regex: '(kompass_pod_placement_pod_info)'
+          action: keep
+    {{- end }}
 
-      {{- $recommendationsConfig := (index $kompassInsights "recommendations" | default dict) }}
-      {{- $recommendationsHTTPConfig := (index $recommendationsConfig "http" | default dict) }}
-      {{- if and $kompassInsightsEnabled (index $recommendationsConfig "enabled") (hasKey $recommendationsHTTPConfig "port") }}
-      # for collecting recommendations
-      - job_name: 'recommendations'
-        scrape_interval: {{ include "kompass.scrapeInterval" . }}
-        static_configs:
-          - targets: ['http://{{ include "zesty-k8s.recommendations.fullname" (dict "Values" $kompassInsights "Release" .Release "Chart" (dict "Name" "kompass-insights")) }}.{{ .Release.Namespace }}:{{ $recommendationsHTTPConfig.port }}']
-        metric_relabel_configs:
-          - source_labels: [__name__]
-            regex: '(workload_headroom_reduction_recommendation_min_replicas)'
-            action: keep
-      {{- end }}
+    # for collecting action-taker metrics
+    - job_name: 'action-taker'
+      scrape_interval: {{ include "kompass.scrapeInterval" . }}
+      scheme: https
+      tls_config:
+        insecure_skip_verify: true
+      authorization:
+        credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+      kubernetes_sd_configs:
+        - role: pod
+          namespaces:
+            names:
+              - {{ .Release.Namespace }}
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_label_control_plane]
+          regex: controller-manager
+          action: keep
+        - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+          regex: pod-rightsizing
+          action: keep
+        - source_labels: [__meta_kubernetes_pod_container_port_name]
+          regex: https
+          action: keep
+      metric_relabel_configs:
+        - source_labels: [__name__]
+          regex: '(actiontaker_.*)'
+          action: keep
 
-      # For pod and node metrics
-      - job_name: 'kube-state-metrics'
-        scrape_interval: {{ include "kompass.scrapeIntervalKubeStateMetrics" . }}
-        scrape_timeout: {{ include "kompass.scrapeTimeoutKubeStateMetrics" . }}
-        kubernetes_sd_configs:
-          - role: service
-        relabel_configs:
-          - source_labels: [__meta_kubernetes_service_name]
-            regex: {{ include "kompass.kube-state-metrics.serviceName" . }}
-            action: keep
-          {{- /* For backward compatibility, add namespace config, only if the namespace was provided */}}
-          {{- if (include "kompass.kube-state-metrics.serviceNamespace" . ) }}
-          - source_labels: [__meta_kubernetes_namespace]
-            regex: {{ include "kompass.kube-state-metrics.serviceNamespace" . }}
-            action: keep
-          {{- end }}
-        metric_relabel_configs:
-          - source_labels: [__name__]
-            regex: '{{ include "kompass.kube-state-metrics.keepRegex" . }}'
-            action: keep
-
-      {{- if index .Values "kompass-pod-placement" "enabled" }}
-      # for collecting pod-placement metrics
-      - job_name: 'pod-placement'
-        scrape_interval: {{ include "kompass.scrapeInterval" . }}
-        kubernetes_sd_configs:
-          - role: pod
-            namespaces:
-              names:
-                - {{ .Release.Namespace }}
-        relabel_configs:
-          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
-            regex: {{ include "kompass.pod-placement.name" . }}
-            action: keep
-          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_instance]
-            regex: {{ .Release.Name }}
-            action: keep
-          - source_labels: [__meta_kubernetes_pod_container_port_name]
-            regex: metrics
-            action: keep
-        metric_relabel_configs:
-          - source_labels: [__name__]
-            regex: '(kompass_pod_placement_pod_info)'
-            action: keep
-      {{- end }}
-
-      # for collecting action-taker metrics
-      - job_name: 'action-taker'
-        scrape_interval: {{ include "kompass.scrapeInterval" . }}
-        scheme: https
-        tls_config:
-          insecure_skip_verify: true
-        authorization:
-          credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-        kubernetes_sd_configs:
-          - role: pod
-            namespaces:
-              names:
-                - {{ .Release.Namespace }}
-        relabel_configs:
-          - source_labels: [__meta_kubernetes_pod_label_control_plane]
-            regex: controller-manager
-            action: keep
-          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
-            regex: pod-rightsizing
-            action: keep
-          - source_labels: [__meta_kubernetes_pod_container_port_name]
-            regex: https
-            action: keep
-        metric_relabel_configs:
-          - source_labels: [__name__]
-            regex: '(actiontaker_.*)'
-            action: keep
-
-
-      #  vmagent's own metrics
-      - job_name: 'vmagent'
-        scrape_interval: {{ include "kompass.scrapeInterval" . }}
-        static_configs:
-          - targets:
-              - 'localhost:8429'
-      
-      # vmalert metrics
-      - job_name: 'vmalert'
-        scrape_interval: {{ include "kompass.scrapeInterval" . }}
-        static_configs:
-          - targets: ['http://{{ printf "%s-server" .Values.victoriaMetricsAlert.fullnameOverride }}.{{ .Release.Namespace }}:{{ .Values.victoriaMetricsAlert.server.service.servicePort | default 8880 }}']
+    #  vmagent's own metrics
+    - job_name: 'vmagent'
+      scrape_interval: {{ include "kompass.scrapeInterval" . }}
+      static_configs:
+        - targets:
+            - 'localhost:8429'
+    
+    # vmalert metrics
+    - job_name: 'vmalert'
+      scrape_interval: {{ include "kompass.scrapeInterval" . }}
+      static_configs:
+        - targets: ['http://{{ printf "%s-server" .Values.victoriaMetricsAlert.fullnameOverride }}.{{ .Release.Namespace }}:{{ .Values.victoriaMetricsAlert.server.service.servicePort | default 8880 }}']
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -264,4 +260,17 @@ metadata:
 data:
   custom-rules.yaml: |
 {{ tpl (.Files.Get "files/custom-vm-recording-rules.yaml") . | indent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kompass-vmagent-main-config
+  namespace: {{ .Release.Namespace }}
+data:
+  scrape.yml: |
+    global:
+      scrape_timeout: 29s
+    scrape_config_files:
+      - /config/scrape-configs/*.yaml
+      - /config/scrape-configs/*.yml
 {{- end -}}
