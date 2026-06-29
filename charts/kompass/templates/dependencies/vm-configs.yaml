@@ -9,10 +9,24 @@ data:
     global:
       scrape_timeout: 29s
     scrape_configs:
-      # For container CPU and memory metrics
+      # For container CPU and memory metrics.
+      # Three node annotations allow overriding the scrape target per node (e.g. KWOK virtual nodes):
+      #   kompass.zesty.co/metrics-scheme: http|https
+      #     Overrides the scheme. Default: https
+      #   kompass.zesty.co/metrics-host: <host:port>
+      #     Overrides the scrape address. Default: kubernetes.default.svc:443
+      #   kompass.zesty.co/metrics-path: <path>
+      #     Overrides the metrics base path (without the job-specific suffix).
+      #     Must be the full path up to (but not including) the trailing /cadvisor, /resource, etc.
+      #     e.g. /api/v1/nodes/<NODE>/proxy/metrics/nodes/<NODE>/metrics
+      #     e.g. /metrics/nodes/<NODE>/metrics
+      #     Each scrape job appends its own suffix (/cadvisor, /resource, or nothing).
+      # KWOK virtual nodes (label kwok.x-k8s.io/node=fake):
+      #   The metrics path is derived automatically from the actual node name, overriding any
+      #   kompass.zesty.co/metrics-path annotation. Only kompass.zesty.co/metrics-host is
+      #   required on KWOK nodes to redirect scraping to the kwok-controller service.
       - job_name: 'kubelet'
         scrape_interval: {{ include "kompass.scrapeInterval" . }}
-        scheme: https
         tls_config:
           insecure_skip_verify: true
           ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
@@ -23,12 +37,31 @@ data:
         relabel_configs:
           - source_labels: [__meta_kubernetes_node_name]
             target_label: node
+          - target_label: __scheme__
+            replacement: https
+          - source_labels: [__meta_kubernetes_node_annotation_kompass_zesty_co_metrics_scheme]
+            action: replace
+            target_label: __scheme__
+            regex: (https?)
           - target_label: __address__
             replacement: kubernetes.default.svc:443
+          - source_labels: [__meta_kubernetes_node_annotation_kompass_zesty_co_metrics_host]
+            action: replace
+            target_label: __address__
+            regex: (.+)
           - source_labels: [__meta_kubernetes_node_name]
             regex: (.+)
             target_label: __metrics_path__
             replacement: /api/v1/nodes/$1/proxy/metrics/cadvisor
+          - source_labels: [__meta_kubernetes_node_annotation_kompass_zesty_co_metrics_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+            replacement: $1/cadvisor
+          - source_labels: [__meta_kubernetes_node_label_kwok_x_k8s_io_node, __meta_kubernetes_node_name]
+            regex: 'fake;(.+)'
+            target_label: __metrics_path__
+            replacement: /metrics/nodes/$1/metrics/cadvisor
         metric_relabel_configs:
           - source_labels: [__name__]
             regex: '(container_memory_usage_bytes|container_memory_working_set_bytes|container_cpu_usage_seconds_total|container_cpu_cfs_throttled_seconds_total)'
@@ -36,7 +69,6 @@ data:
 
       - job_name: 'kubelet-resource'
         scrape_interval: {{ include "kompass.scrapeInterval" . }}
-        scheme: https
         tls_config:
           insecure_skip_verify: true
           ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
@@ -47,12 +79,31 @@ data:
         relabel_configs:
           - source_labels: [__meta_kubernetes_node_name]
             target_label: node
+          - target_label: __scheme__
+            replacement: https
+          - source_labels: [__meta_kubernetes_node_annotation_kompass_zesty_co_metrics_scheme]
+            action: replace
+            target_label: __scheme__
+            regex: (https?)
           - target_label: __address__
             replacement: kubernetes.default.svc:443
+          - source_labels: [__meta_kubernetes_node_annotation_kompass_zesty_co_metrics_host]
+            action: replace
+            target_label: __address__
+            regex: (.+)
           - source_labels: [__meta_kubernetes_node_name]
             regex: (.+)
             target_label: __metrics_path__
             replacement: /api/v1/nodes/$1/proxy/metrics/resource
+          - source_labels: [__meta_kubernetes_node_annotation_kompass_zesty_co_metrics_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+            replacement: $1/resource
+          - source_labels: [__meta_kubernetes_node_label_kwok_x_k8s_io_node, __meta_kubernetes_node_name]
+            regex: 'fake;(.+)'
+            target_label: __metrics_path__
+            replacement: /metrics/nodes/$1/metrics/resource
         metric_relabel_configs:
           - source_labels: [__name__]
             regex: (.+)
@@ -64,7 +115,6 @@ data:
 
       - job_name: 'kubelet-volume'
         scrape_interval: {{ include "kompass.scrapeIntervalVolume" . }}
-        scheme: https
         tls_config:
           insecure_skip_verify: true
           ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
@@ -75,12 +125,31 @@ data:
         relabel_configs:
           - source_labels: [__meta_kubernetes_node_name]
             target_label: node
+          - target_label: __scheme__
+            replacement: https
+          - source_labels: [__meta_kubernetes_node_annotation_kompass_zesty_co_metrics_scheme]
+            action: replace
+            target_label: __scheme__
+            regex: (https?)
           - target_label: __address__
             replacement: kubernetes.default.svc:443
+          - source_labels: [__meta_kubernetes_node_annotation_kompass_zesty_co_metrics_host]
+            action: replace
+            target_label: __address__
+            regex: (.+)
           - source_labels: [__meta_kubernetes_node_name]
             regex: (.+)
             target_label: __metrics_path__
             replacement: /api/v1/nodes/$1/proxy/metrics
+          - source_labels: [__meta_kubernetes_node_annotation_kompass_zesty_co_metrics_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+            replacement: $1
+          - source_labels: [__meta_kubernetes_node_label_kwok_x_k8s_io_node, __meta_kubernetes_node_name]
+            regex: 'fake;(.+)'
+            target_label: __metrics_path__
+            replacement: /metrics/nodes/$1/metrics
         metric_relabel_configs:
           - source_labels: [__name__]
             regex: (kubelet_volume_stats_capacity_bytes|kubelet_volume_stats_used_bytes)
