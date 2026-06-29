@@ -507,7 +507,7 @@ victoriaMetricsAgent:
       subPath: rightsizing-custom-scrape-config.yml
   extraVolumes:
     - configMap:
-        name: kompass-vmagent-kompass-scrape-configs
+        name: kompass-vmagent-scrape-configs
       name: kompass-scrape-configs
     - configMap:
         name: kompass-vmagent-rightsizing-custom-scrape-config

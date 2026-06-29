@@ -18,7 +18,7 @@ tests:
   - it: does not render insights or recommendations scrape jobs when kompass-insights is disabled
     documentSelector:
       path: metadata.name
-      value: kompass-vmagent-kompass-scrape-configs
+      value: kompass-vmagent-scrape-configs
     set:
       kompass-insights:
         enabled: false
@@ -41,7 +41,7 @@ tests:
   - it: renders insights scrape job when kompass-insights is enabled
     documentSelector:
       path: metadata.name
-      value: kompass-vmagent-kompass-scrape-configs
+      value: kompass-vmagent-scrape-configs
     set:
       kompass-insights:
         enabled: true
@@ -57,7 +57,7 @@ tests:
   - it: uses external kube-state-metrics service and namespace when installation is disabled
     documentSelector:
       path: metadata.name
-      value: kompass-vmagent-kompass-scrape-configs
+      value: kompass-vmagent-scrape-configs
     set:
       kubeStateMetrics:
         enabled: false
@@ -77,7 +77,7 @@ tests:
   - it: renders dedicated kube-state-metrics scrape interval and derived timeout
     documentSelector:
       path: metadata.name
-      value: kompass-vmagent-kompass-scrape-configs
+      value: kompass-vmagent-scrape-configs
     set:
       kubeStateMetrics:
         kompassScrapeInterval: 45s
@@ -89,7 +89,7 @@ tests:
   - it: builds kube-state-metrics keep regex from top-level metricsScrapeFilters values
     documentSelector:
       path: metadata.name
-      value: kompass-vmagent-kompass-scrape-configs
+      value: kompass-vmagent-scrape-configs
     set:
       metricsScrapeFilters:
         kubeStateMetrics:

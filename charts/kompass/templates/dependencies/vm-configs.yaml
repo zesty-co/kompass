@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: kompass-vmagent-kompass-scrape-configs
+  name: kompass-vmagent-scrape-configs
   namespace: {{ .Release.Namespace }}
 data:
   kompass-scrape-config.yml: |
