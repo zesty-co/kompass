@@ -184,7 +184,6 @@ data:
           regex: '{{ include "kompass.kube-state-metrics.keepRegex" . }}'
           action: keep
 
-    {{- if index .Values "kompass-pod-placement" "enabled" }}
     # for collecting pod-placement metrics
     - job_name: 'pod-placement'
       scrape_interval: {{ include "kompass.scrapeInterval" . }}
@@ -207,7 +206,6 @@ data:
         - source_labels: [__name__]
           regex: '(kompass_pod_placement_pod_info)'
           action: keep
-    {{- end }}
 
     # for collecting action-taker metrics
     - job_name: 'action-taker'
