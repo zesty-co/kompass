@@ -12,9 +12,13 @@
   "key" "podLabels"
   "fallback" (.Values.insights.podLabels | default dict)
 ) | fromYaml -}}
+{{- $insightsDefaultPodSC := include "zesty-k8s.workload.defaultPodSecurityContext" . | fromYaml -}}
 {{- $insightsResolvedPodSecurityContext := mergeOverwrite
   (mergeOverwrite
-    (deepCopy (.Values.securityContext | default dict))
+    (mergeOverwrite
+      (deepCopy ($insightsDefaultPodSC | default dict))
+      (.Values.securityContext | default dict)
+    )
     ((get $insightsWorkload "podSecurityContext") | default dict)
   )
   ((get $globalWorkload "podSecurityContext") | default dict)
@@ -133,13 +137,11 @@ spec:
               name: {{ .Values.persistence.volumeName }}
             - mountPath: /tmp
               name: migrate-tmp
-            - mountPath: /home/nonroot/.cache
-              name: migrate-cache
           env:
             - name: TMPDIR
               value: /tmp
             - name: XDG_CACHE_HOME
-              value: /home/nonroot/.cache
+              value: /tmp/.cache
           args: ["schema", "apply", "--url", "sqlite://{{ .Values.persistence.mountPath}}/zesty.db", "--dev-url", "sqlite://dev?mode=memory", "--to",  "file:///bin/pkg/db/schema.sql", "--auto-approve", "--format", "json"]
       containers:
         - image: "{{ .Values.image.repository }}:{{ include "zesty-k8s.version" . }}"
@@ -223,6 +225,4 @@ spec:
           persistentVolumeClaim:
             claimName: "{{ include "zesty-k8s.pvcname" . }}"
         - name: migrate-tmp
-          emptyDir: {}
-        - name: migrate-cache
           emptyDir: {}

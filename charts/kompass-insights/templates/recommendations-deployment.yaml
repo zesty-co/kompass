@@ -14,9 +14,13 @@
   "key" "podLabels"
   "fallback" (.Values.recommendations.podLabels | default dict)
 ) | fromYaml -}}
+{{- $recommendationsDefaultPodSC := include "zesty-k8s.workload.defaultPodSecurityContext" . | fromYaml -}}
 {{- $recommendationsResolvedPodSecurityContext := mergeOverwrite
   (mergeOverwrite
-    (deepCopy (.Values.recommendations.podSecurityContext | default dict))
+    (mergeOverwrite
+      (deepCopy ($recommendationsDefaultPodSC | default dict))
+      (.Values.recommendations.podSecurityContext | default dict)
+    )
     ((get $recommendationsWorkload "podSecurityContext") | default dict)
   )
   ((get $globalWorkload "podSecurityContext") | default dict)

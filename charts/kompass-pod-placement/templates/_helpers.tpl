@@ -69,3 +69,42 @@ Create image reference
 {{- define "kompass-pod-placement.webhook.certificateName" -}}
 {{ include "kompass-pod-placement.fullname" . }}-webhook-cert
 {{- end }}
+
+{{- define "kompass-pod-placement.isOpenShift" -}}
+{{- $global := .Values.global | default dict -}}
+{{- $toggle := get $global "openShift" -}}
+{{- if kindIs "bool" $toggle -}}
+  {{- if $toggle -}}true{{- end -}}
+{{- else -}}
+  {{- if or (.Capabilities.APIVersions.Has "security.openshift.io/v1") (.Capabilities.APIVersions.Has "route.openshift.io/v1") -}}true{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "kompass-pod-placement.imagePullSecrets" -}}
+{{- $global := .Values.global | default dict -}}
+{{- $globalList := $global.imagePullSecrets | default list -}}
+{{- $componentList := .Values.imagePullSecrets | default list -}}
+{{- $legacyName := (($global.imagePullSecret) | default dict).name | default "" -}}
+{{- $resolved := list -}}
+{{- if gt (len $globalList) 0 -}}
+{{- $resolved = $globalList -}}
+{{- else if gt (len $componentList) 0 -}}
+{{- $resolved = $componentList -}}
+{{- else if ne $legacyName "" -}}
+{{- $resolved = list (dict "name" $legacyName) -}}
+{{- end -}}
+{{- if gt (len $resolved) 0 -}}
+{{- toYaml $resolved -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "kompass-pod-placement.defaultPodSecurityContext" -}}
+{{- if not (include "kompass-pod-placement.isOpenShift" .) -}}
+fsGroup: 65532
+runAsGroup: 65532
+runAsNonRoot: true
+runAsUser: 65532
+seccompProfile:
+  type: RuntimeDefault
+{{- end -}}
+{{- end -}}
