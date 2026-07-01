@@ -1,4 +1,6 @@
 global:
+  # When null, auto-detect OpenShift via its API groups. Set true/false to force.
+  openShift: ~
   cxLogging:
     enabled: false
     clusterName: ""
@@ -117,13 +119,8 @@ cxLogging:
   ingressUrl: https://ingress.eu2.coralogix.com/
   otelEndpoint: ""
 
-podSecurityContext:
-  runAsUser: 1000
-  runAsGroup: 1000
-  fsGroup: 1000
-  runAsNonRoot: true
-  seccompProfile:
-    type: RuntimeDefault
+# Default pod securityContext (fsGroup/runAsUser/etc.) lives in the template and is skipped on OpenShift.
+podSecurityContext: {}
 
 # cache.securityContext -- Security context for the Cache container.
 # See: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container

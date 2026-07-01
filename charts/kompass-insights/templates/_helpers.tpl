@@ -449,3 +449,24 @@ To remove in the future.
 {{- define "zesty-k8s.monitoring.coralogix.envs" -}}
 {{- include "zesty-k8s.coralogix.envs" (dict "Values" .Values "coralogixApiKey" false "domain" false "logUrl" false "timeDeltaUrl" false "otelEndpoint" false) }}
 {{- end }}
+
+{{- define "zesty-k8s.isOpenShift" -}}
+{{- $global := .Values.global | default dict -}}
+{{- $toggle := get $global "openShift" -}}
+{{- if kindIs "bool" $toggle -}}
+  {{- if $toggle -}}true{{- end -}}
+{{- else -}}
+  {{- if or (.Capabilities.APIVersions.Has "security.openshift.io/v1") (.Capabilities.APIVersions.Has "route.openshift.io/v1") -}}true{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "zesty-k8s.workload.defaultPodSecurityContext" -}}
+{{- if not (include "zesty-k8s.isOpenShift" .) -}}
+fsGroup: 65532
+runAsGroup: 65532
+runAsNonRoot: true
+runAsUser: 65532
+seccompProfile:
+  type: RuntimeDefault
+{{- end -}}
+{{- end -}}
