@@ -480,13 +480,13 @@ Validate that an insights pricing value is numeric. Empty optional values are al
 Validate custom pricing configuration.
 */}}
 {{- define "zesty-k8s.validate.pricing" -}}
-{{- $pricing := .Values.pricing | default dict -}}
+{{- $pricing := .Values.customPricing | default dict -}}
 {{- $enabled := get $pricing "enabled" -}}
 {{- if not (kindIs "bool" $enabled) -}}
-  {{- fail (printf "pricing.enabled must be a boolean, got %q" (printf "%v" $enabled)) -}}
+  {{- fail (printf "customPricing.enabled must be a boolean, got %q" (printf "%v" $enabled)) -}}
 {{- end -}}
-{{- include "zesty-k8s.validate.pricingNumber" (dict "name" "pricing.cpu" "value" (get $pricing "cpu") "positive" $enabled) -}}
-{{- include "zesty-k8s.validate.pricingNumber" (dict "name" "pricing.ram" "value" (get $pricing "ram") "positive" $enabled) -}}
-{{- include "zesty-k8s.validate.pricingNumber" (dict "name" "pricing.spotCpu" "value" (get $pricing "spotCpu") "optional" true "positive" true) -}}
-{{- include "zesty-k8s.validate.pricingNumber" (dict "name" "pricing.spotRam" "value" (get $pricing "spotRam") "optional" true "positive" true) -}}
+{{- include "zesty-k8s.validate.pricingNumber" (dict "name" "customPricing.cpu" "value" (get $pricing "cpu") "positive" $enabled) -}}
+{{- include "zesty-k8s.validate.pricingNumber" (dict "name" "customPricing.ram" "value" (get $pricing "ram") "positive" $enabled) -}}
+{{- include "zesty-k8s.validate.pricingNumber" (dict "name" "customPricing.spotCpu" "value" (get $pricing "spotCpu") "optional" true "positive" true) -}}
+{{- include "zesty-k8s.validate.pricingNumber" (dict "name" "customPricing.spotRam" "value" (get $pricing "spotRam") "optional" true "positive" true) -}}
 {{- end -}}

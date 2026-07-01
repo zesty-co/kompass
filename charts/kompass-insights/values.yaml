@@ -119,7 +119,7 @@ config:
 podMinuteMetrics:
   enabled: true
 
-pricing:
+customPricing:
   enabled: false
   cpu: 0
   ram: 0
