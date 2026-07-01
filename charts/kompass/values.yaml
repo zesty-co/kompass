@@ -745,7 +745,7 @@ kompass-bridge:
     # -- (string) kafka password
     password: ""
     # -- (string) comma-separated list of bootstrap servers
-    bootstrapServers: "kafka.integration.zesty.co:9094"
+    bootstrapServers: "kompass-kafka.zesty.co:9094"
     # -- (string) kafka tls configuration
     tls:
       # -- (string) enables or disables tls functionality
