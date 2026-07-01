@@ -331,6 +331,16 @@ Global value takes precedence when explicitly set.
 {{- end -}}
 {{- end -}}
 
+{{- define "kompass.isOpenShift" -}}
+{{- $global := .Values.global | default dict -}}
+{{- $toggle := get $global "openShift" -}}
+{{- if kindIs "bool" $toggle -}}
+  {{- if $toggle -}}true{{- end -}}
+{{- else -}}
+  {{- if or (.Capabilities.APIVersions.Has "security.openshift.io/v1") (.Capabilities.APIVersions.Has "route.openshift.io/v1") -}}true{{- end -}}
+{{- end -}}
+{{- end -}}
+
 {{/*
 Returns Kompass Pod Placement name
 */}}

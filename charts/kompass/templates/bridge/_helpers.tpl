@@ -59,3 +59,14 @@ Kompass Brigde service
 {{- define "kompass.bridge.service" -}}
 {{- (index .Values.global "kompass-bridge").name -}}
 {{- end -}}
+
+{{- define "kompass.bridge.defaultPodSecurityContext" -}}
+{{- if not (include "kompass.isOpenShift" .) -}}
+fsGroup: 65532
+runAsGroup: 65532
+runAsNonRoot: true
+runAsUser: 65532
+seccompProfile:
+  type: RuntimeDefault
+{{- end -}}
+{{- end -}}
