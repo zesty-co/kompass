@@ -1,3 +1,4 @@
+{{- include "zesty-k8s.validate.pricing" . -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -12,6 +13,11 @@ data:
   PATHS_MOUNTPATH: "{{ .Values.persistence.mountPath }}"
   STORAGE_SIZE: "{{ .Values.persistence.spec.resources.requests.storage }}"
   EXTERNAL_ID: "{{ .Values.externalID }}"
+  PRICING_ENABLED: "{{ .Values.customPricing.enabled }}"
+  PRICING_CPU: "{{ .Values.customPricing.cpu }}"
+  PRICING_RAM: "{{ .Values.customPricing.ram }}"
+  PRICING_SPOTCPU: "{{ .Values.customPricing.spotCpu }}"
+  PRICING_SPOTRAM: "{{ .Values.customPricing.spotRam }}"
   {{- if .Values.prometheus.url }}
   PROMETHEUS_SERVER_ENDPOINT: "{{ .Values.prometheus.url }}"
   {{- end }}
