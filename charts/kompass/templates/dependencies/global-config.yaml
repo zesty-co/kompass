@@ -98,13 +98,11 @@ data:
       statefulsets:
         - app.kubernetes.io/name: {{ .Values.grafana.nameOverride | default "grafana" | quote }}
     pod_placement:
-      enabled: {{ index .Values "kompass-pod-placement" "enabled" }}
-      {{- if index .Values "kompass-pod-placement" "enabled" }}
+      enabled: true
       matchLabels:
         {{- include "kompass.pod-placement.selectorLabels" . | nindent 8 }}
       deployments:
       - {{ include "kompass.pod-placement.selectorLabels" . | trim | replace "\n" "\n        " }}
-      {{- end }}
     cert_manager:
       enabled: {{ index .Values "cert-manager" "enabled" }}
       {{- if index .Values "cert-manager" "enabled" }}

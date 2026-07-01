@@ -159,13 +159,13 @@ spec:
             httpGet:
               path: /ready
               port: {{ .Values.insights.health.port }}
-            initialDelaySeconds: 30
+            initialDelaySeconds: 90
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /health
               port: {{ .Values.insights.health.port }}
-            initialDelaySeconds: 30
+            initialDelaySeconds: 90
             periodSeconds: 10
           {{- with .Values.resources }}
           resources:
