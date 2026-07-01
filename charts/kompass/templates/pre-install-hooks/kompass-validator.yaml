@@ -1,3 +1,4 @@
+{{- if .Values.validator.enabled -}}
 {{- $globalValues := .Values.global | default (dict) -}}
 {{- $validatorValues := .Values.validator | default (dict) -}}
 {{- $validatorPodAnnotations := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $validatorValues "key" "podAnnotations") | fromYaml -}}
@@ -303,3 +304,4 @@ spec:
           echo "🎉 All validations passed! Your cluster is ready for Zesty Kompass installation."
       restartPolicy: Never
   backoffLimit: 0
+{{- end }}

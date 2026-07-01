@@ -48,6 +48,8 @@ global:
   # -- (map) Global container-level security context for root-owned workloads.
   # Use container-only keys here (for example: runAsUser, runAsGroup, capabilities); do not set fsGroup.
   securityContext: {}
+  # -- (bool/null) OpenShift mode. When null, auto-detect via API groups. Set true/false to force.
+  openShift: ~
   # -- (array) Global topology spread constraints for root-owned workloads.
   topologySpreadConstraints: []
   # -- (object) Helm-created image pull secret
@@ -117,6 +119,8 @@ global:
   globalConfigName: global-config
 
 validator:
+  # -- (bool) Enable or disable the pre-install/pre-upgrade validator job.
+  enabled: true
   image:
     registry: 672188301118.dkr.ecr.eu-west-1.amazonaws.com/docker-hub/bitnami
     repository: kubectl
@@ -802,12 +806,9 @@ kompass-bridge:
   podAnnotations: {}
   # -- (map) Extra pod labels for the Bridge deployment.
   podLabels: {}
-  # -- (map) Pod-level security context. Defaults mirror the Bridge container image
-  # which runs as non-root user/group 65532.
-  podSecurityContext:
-    runAsNonRoot: true
-    runAsUser: 65532
-    runAsGroup: 65532
+  # -- (map) Pod-level security context. Default (runAsNonRoot: true) lives in the template
+  # and is skipped on OpenShift so the platform SCC can assign UIDs freely.
+  podSecurityContext: {}
   # -- (map) Container-level security context for the Bridge container.
   securityContext:
     allowPrivilegeEscalation: false

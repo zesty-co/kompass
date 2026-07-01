@@ -44,6 +44,65 @@ victoriaMetricsCluster:
   - `victoriaMetricsCluster.vminsert.fullnameOverride`
 - You can deploy both single-node and cluster VictoriaMetrics at the same time and use `victoriaMetricsAuth.useSingle` to route traffic to the correct one.
 
+## OpenShift / OKD image pull secrets
+
+Do not set `global.imagePullSecrets` on OpenShift or OKD. OpenShift manages
+`ServiceAccount.imagePullSecrets` through its service account controller, so Helm
+server-side apply can fail with a field ownership conflict when subcharts render
+the same field on ServiceAccounts.
+
+Keep the global value empty and configure pull secrets only on Kompass workloads
+that render pod-level `imagePullSecrets`:
+
+```yaml
+zestyImagePullSecrets: &zestyImagePullSecrets
+  - name: zesty-ecr
+  - name: zesty-ecr-stg
+
+global:
+  imagePullSecrets: []
+
+kompass-insights:
+  imagePullSecrets: *zestyImagePullSecrets
+  insights:
+    imagePullSecrets: *zestyImagePullSecrets
+  recommendations:
+    imagePullSecrets: *zestyImagePullSecrets
+  selfMonitoring:
+    imagePullSecrets: *zestyImagePullSecrets
+
+kompass-pod-placement:
+  imagePullSecrets: *zestyImagePullSecrets
+
+kompass-bridge:
+  imagePullSecrets: *zestyImagePullSecrets
+
+validator:
+  imagePullSecrets: *zestyImagePullSecrets
+
+victoriaMetricsMigration:
+  imagePullSecrets: *zestyImagePullSecrets
+```
+
+If you upgrade with reused values, make sure the old global value is removed.
+Either use `--reset-values` or explicitly keep `global.imagePullSecrets: []` in
+the OKD values file:
+
+```bash
+helm upgrade kompass ./charts/kompass -n zesty-system -f charts/kompass/okd.yaml --reset-values
+```
+
+For third-party charts or subcomponents that only support pull secrets through a
+ServiceAccount, let OpenShift manage the ServiceAccount field instead of Helm:
+
+```bash
+oc -n zesty-system secrets link kompass-cert-manager zesty-ecr zesty-ecr-stg --for=pull
+oc -n zesty-system secrets link kompass-cert-manager-cainjector zesty-ecr zesty-ecr-stg --for=pull
+oc -n zesty-system secrets link kompass-cert-manager-webhook zesty-ecr zesty-ecr-stg --for=pull
+oc -n zesty-system secrets link kompass-kube-state-metrics zesty-ecr zesty-ecr-stg --for=pull
+oc -n zesty-system secrets link admission-kompass-admission-controller-sa zesty-ecr zesty-ecr-stg --for=pull
+```
+
 ## Using pre-existing kube-state-metrics
 
 When you already run kube-state-metrics (KSM), point Kompass to that service instead of installing KSM from this chart:

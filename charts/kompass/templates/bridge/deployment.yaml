@@ -10,7 +10,9 @@
 {{- $nodeSelector := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $bridgeValues "key" "nodeSelector") | fromYaml -}}
 {{- $tolerations := include "kompass.workload.resolveList" (dict "global" $globalValues "component" $bridgeValues "key" "tolerations") | fromYamlArray -}}
 {{- $topologySpreadConstraints := include "kompass.workload.resolveList" (dict "global" $globalValues "component" $bridgeValues "key" "topologySpreadConstraints") | fromYamlArray -}}
-{{- $podSecurityContext := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $bridgeValues "key" "podSecurityContext") | fromYaml -}}
+{{- $defaultPodSC := include "kompass.bridge.defaultPodSecurityContext" . | fromYaml | default dict -}}
+{{- $resolvedPodSC := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $bridgeValues "key" "podSecurityContext") | fromYaml | default dict -}}
+{{- $podSecurityContext := mergeOverwrite (deepCopy $defaultPodSC) $resolvedPodSC -}}
 {{- $securityContext := include "kompass.workload.resolveContainerSecurityContext" (dict "global" $globalValues "component" $bridgeValues) | fromYaml -}}
 {{- $imagePullSecrets := include "kompass.workload.resolveImagePullSecrets" (dict "global" $globalValues "component" $bridgeValues "legacySecretName" $legacyPullSecret) | fromYamlArray -}}
 {{- $automountServiceAccountToken := include "kompass.workload.resolveBool" (dict "global" $globalValues "component" $bridgeValues "key" "automountServiceAccountToken") | trim -}}
