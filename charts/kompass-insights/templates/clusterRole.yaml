@@ -194,6 +194,8 @@ rules:
       - autoscaling
     resources:
       - horizontalpodautoscalers
+      - verticalpodautoscalers
+      - verticalpodautoscalercheckpoints
     {{- include "zesty-k8s.verbs" . | nindent 4 }}
   - apiGroups:
       - "apiextensions.k8s.io"
