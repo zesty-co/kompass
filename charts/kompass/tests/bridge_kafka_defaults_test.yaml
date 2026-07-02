@@ -1,0 +1,44 @@
+suite: Bridge Kafka credentials defaults
+templates:
+  - templates/bridge/deployment.yaml
+
+tests:
+  - it: falls back to kompass-insights credentials when bridge kafka credentials are empty
+    set:
+      global:
+        kompass-bridge:
+          enabled: true
+      kompass-insights:
+        orgID: org-123
+        encryptedCredentials: enc-456
+      kompass-bridge:
+        kafka:
+          username: ""
+          password: ""
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[2].value
+          value: bridge-user-org-123
+      - equal:
+          path: spec.template.spec.containers[0].env[3].value
+          value: enc-456
+
+  - it: preserves explicit bridge kafka credentials when they are provided
+    set:
+      global:
+        kompass-bridge:
+          enabled: true
+      kompass-insights:
+        orgID: org-123
+        encryptedCredentials: enc-456
+      kompass-bridge:
+        kafka:
+          username: explicit-user
+          password: explicit-pass
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[2].value
+          value: explicit-user
+      - equal:
+          path: spec.template.spec.containers[0].env[3].value
+          value: explicit-pass

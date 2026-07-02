@@ -745,13 +745,43 @@ kompass-bridge:
     # -- (string) kafka password
     password: ""
     # -- (string) comma-separated list of bootstrap servers
-    bootstrapServers: ""
+    bootstrapServers: "kompass-kafka.zesty.co:9094"
     # -- (string) kafka tls configuration
     tls:
       # -- (string) enables or disables tls functionality
       enabled: "true"
       # -- (string) tls certificate
-      certificate: ""
+      certificate: |-
+        -----BEGIN CERTIFICATE-----
+        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
+        -----END CERTIFICATE-----
   # -- (array) additional Kompass Bridge environment variables
   env: []
 
