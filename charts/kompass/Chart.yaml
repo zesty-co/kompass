@@ -48,7 +48,7 @@ dependencies:
     alias: victoriaMetricsAuth
     condition: victoriaMetricsAuth.enabled
     repository: https://victoriametrics.github.io/helm-charts
-    version: 0.33.0
+    version: 0.34.0
   - name: kube-state-metrics
     alias: kubeStateMetrics
     condition: kubeStateMetrics.enabled
