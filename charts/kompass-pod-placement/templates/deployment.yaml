@@ -25,19 +25,24 @@ spec:
       {{- end }}
     spec:
       serviceAccountName: {{ include "kompass-pod-placement.fullname" . }}
-      {{- $globalPullSecrets := list }}
-      {{- if .Values.global.imagePullSecret.name }}
-      {{- $globalPullSecrets = append $globalPullSecrets (dict "name" .Values.global.imagePullSecret.name) }}
-      {{- end }}
-      {{- range .Values.global.imagePullSecrets }}
-      {{- $globalPullSecrets = append $globalPullSecrets . }}
-      {{- end }}
-      {{- $pullSecrets := .Values.imagePullSecrets | default $globalPullSecrets }}
+      {{- $pullSecrets := include "kompass-pod-placement.imagePullSecrets" . | fromYamlArray }}
       {{- if $pullSecrets }}
       imagePullSecrets:
         {{- toYaml $pullSecrets | nindent 8 }}
       {{- end }}
-      {{- with .Values.podSecurityContext }}
+      {{- $defaultPodSC := include "kompass-pod-placement.defaultPodSecurityContext" . | fromYaml -}}
+      {{- $podSecurityContext := mergeOverwrite
+        (mergeOverwrite
+          (deepCopy ($defaultPodSC | default dict))
+          (.Values.podSecurityContext | default dict)
+        )
+        (.Values.global.podSecurityContext | default dict)
+      -}}
+      {{- $securityContext := mergeOverwrite
+        (deepCopy (.Values.securityContext | default dict))
+        (.Values.global.securityContext | default dict)
+      -}}
+      {{- with $podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -45,7 +50,7 @@ spec:
         {{- include "kompass-pod-placement.affinity" . | nindent 8 }}
       containers:
         - name: pod-placement
-          {{- with .Values.securityContext }}
+          {{- with $securityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
