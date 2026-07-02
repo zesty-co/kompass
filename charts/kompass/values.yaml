@@ -735,7 +735,7 @@ kompass-bridge:
     # -- (string) Image repository.
     repository: zesty-k8s/kompass-bridge
     # -- (string) Image tag. When empty, falls back to .Chart.AppVersion.
-    tag: "v0.0.0"
+    tag: "v0.1.0"
     # -- (string) Image pull policy.
     pullPolicy: Always
   # -- (object) Kompass Bridge kafka configuration
