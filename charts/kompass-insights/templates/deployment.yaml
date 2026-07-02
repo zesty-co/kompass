@@ -181,10 +181,8 @@ spec:
           envFrom:
             - configMapRef:
                 name: "{{ include "zesty-k8s.configmap" . }}"
-          {{- if eq .Values.encryptedCredentials "" }}
             - secretRef:
                 name: {{ .Values.secret.name | quote }}
-          {{- end }}
           env:
             - name: NAMESPACE
               valueFrom:
