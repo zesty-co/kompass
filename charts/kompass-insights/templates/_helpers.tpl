@@ -187,6 +187,33 @@ app.kubernetes.io/instance: {{ .Release.Name }}
   {{- end }}
 {{- end }}
 
+{{- define "zesty-k8s.validate.credentialsSecret" -}}
+{{- $secret := .Values.secret | default dict -}}
+{{- $secretCreateRaw := get $secret "create" -}}
+{{- if and (hasKey $secret "create") (ne $secretCreateRaw nil) (not (kindIs "bool" $secretCreateRaw)) -}}
+{{- fail "Values.secret.create must be a boolean (true or false)" -}}
+{{- end -}}
+{{- $secretCreate := $secretCreateRaw | default false -}}
+{{- $secretName := (get $secret "name") | default "" | trim -}}
+{{- $secretKey := (get $secret "key") | default "" | trim -}}
+{{- $encryptedCredentials := .Values.encryptedCredentials | default "" | trim -}}
+{{- if eq $secretName "" -}}
+{{- fail "Values.secret.name is required and must reference an existing Kubernetes Secret" -}}
+{{- end -}}
+{{- if eq $secretKey "" -}}
+{{- fail "Values.secret.key is required and must reference a key in the existing Kubernetes Secret" -}}
+{{- end -}}
+{{- if $secretCreate -}}
+{{- if eq $encryptedCredentials "" -}}
+{{- fail "Values.encryptedCredentials must be non-empty when Values.secret.create=true" -}}
+{{- end -}}
+{{- else -}}
+{{- if ne $encryptedCredentials "" -}}
+{{- fail "Values.encryptedCredentials must be empty when Values.secret.create=false; provide credentials through the existing secret instead" -}}
+{{- end -}}
+{{- end -}}
+{{- end }}
+
 {{- define "zesty-k8s.workload.mergeMaps" -}}
 {{- $global := default dict .global -}}
 {{- $component := default dict .component -}}

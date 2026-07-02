@@ -132,10 +132,6 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: spec.nodeName
-                {{- if ne .Values.encryptedCredentials ""}}
-                - name: ENCRYPTED_CREDENTIALS
-                  value: {{ .Values.encryptedCredentials | quote }}
-                {{- end }}
                 {{- include "zesty-k8s.monitoring.coralogix.envs" . | nindent 16 }}
               envFrom:
                 - configMapRef:
