@@ -48,5 +48,11 @@ rules:
   - get
   - list
   - watch
+- apiGroups:
+  - config.openshift.io
+  resources:
+  - dnses
+  - clusterversions
+  verbs:
+  - get
 {{- end }}
-  
