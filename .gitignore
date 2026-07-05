@@ -4,3 +4,7 @@ Chart.lock
 charts/kompass/charts
 private
 .idea/*
+install_local.sh
+values7-12.yaml
+zvika_values.yaml
+zvika_values_old.yaml
