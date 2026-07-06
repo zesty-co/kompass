@@ -212,4 +212,23 @@ rules:
       - mutatingwebhookconfigurations
       - validatingwebhookconfigurations
     {{- include "zesty-k8s.verbs" . | nindent 4 }}
+  - apiGroups:
+      - config.openshift.io
+    resources:
+      - dnses
+      - clusterversions
+    verbs:
+    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+  - apiGroups:
+      - machine.openshift.io
+    resources:
+      - machinesets
+      - controlplanemachinesets
+    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+  - apiGroups:
+      - autoscaling.openshift.io
+    resources:
+      - machineautoscalers
+      - clusterautoscalers
+    {{- include "zesty-k8s.verbs" . | nindent 4 }}
   {{- end }}
