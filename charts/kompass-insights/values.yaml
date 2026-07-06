@@ -17,11 +17,19 @@ global:
     dockerconfigjson: ""
 
 orgID: ""
-# if you put the value here, the secret won't be used.
+# Plaintext encrypted credentials value.
+# Use this with `secret.create=true` to let the chart create the credentials Secret.
+# WARNING: values files can be exposed via Git, CI logs, or release metadata.
 encryptedCredentials: ""
+
+# Modes:
+# - `secret.create=false`: Secret already exists.
+# - `secret.create=true`: chart creates Secret from `encryptedCredentials`.
 secret:
-  name: zesty-k8s-agent-creds
-  key: "zesty-k8s/encrypted-creds"
+  create: true
+  name: kompass-credentials
+  # Key in the Kubernetes Secret that stores encrypted credentials.
+  key: ENCRYPTED_CREDENTIALS
 
 log:
   level: 0
@@ -119,11 +127,20 @@ config:
 podMinuteMetrics:
   enabled: true
 
+customPricing:
+  enabled: false
+  cpu: 0
+  ram: 0
+  spotCpu:
+  spotRam:
+
 insights:
   extraEnv: []
 
   affinity: {}
   automountServiceAccountToken: ~
+  clusterRole:
+    fullRO: true
   imagePullSecrets: ~
   podAnnotations: {}
   podLabels: {}

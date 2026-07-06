@@ -187,6 +187,33 @@ app.kubernetes.io/instance: {{ .Release.Name }}
   {{- end }}
 {{- end }}
 
+{{- define "zesty-k8s.validate.credentialsSecret" -}}
+{{- $secret := .Values.secret | default dict -}}
+{{- $secretCreateRaw := get $secret "create" -}}
+{{- if and (hasKey $secret "create") (ne $secretCreateRaw nil) (not (kindIs "bool" $secretCreateRaw)) -}}
+{{- fail "Values.secret.create must be a boolean (true or false)" -}}
+{{- end -}}
+{{- $secretCreate := $secretCreateRaw | default false -}}
+{{- $secretName := (get $secret "name") | default "" | trim -}}
+{{- $secretKey := (get $secret "key") | default "" | trim -}}
+{{- $encryptedCredentials := .Values.encryptedCredentials | default "" | trim -}}
+{{- if eq $secretName "" -}}
+{{- fail "Values.secret.name is required and must reference an existing Kubernetes Secret" -}}
+{{- end -}}
+{{- if eq $secretKey "" -}}
+{{- fail "Values.secret.key is required and must reference a key in the existing Kubernetes Secret" -}}
+{{- end -}}
+{{- if $secretCreate -}}
+{{- if eq $encryptedCredentials "" -}}
+{{- fail "Values.encryptedCredentials must be non-empty when Values.secret.create=true" -}}
+{{- end -}}
+{{- else -}}
+{{- if ne $encryptedCredentials "" -}}
+{{- fail "Values.encryptedCredentials must be empty when Values.secret.create=false; provide credentials through the existing secret instead" -}}
+{{- end -}}
+{{- end -}}
+{{- end }}
+
 {{- define "zesty-k8s.workload.mergeMaps" -}}
 {{- $global := default dict .global -}}
 {{- $component := default dict .component -}}
@@ -449,3 +476,44 @@ To remove in the future.
 {{- define "zesty-k8s.monitoring.coralogix.envs" -}}
 {{- include "zesty-k8s.coralogix.envs" (dict "Values" .Values "coralogixApiKey" false "domain" false "logUrl" false "timeDeltaUrl" false "otelEndpoint" false) }}
 {{- end }}
+
+{{/*
+Validate that an insights pricing value is numeric. Empty optional values are allowed.
+*/}}
+{{- define "zesty-k8s.validate.pricingNumber" -}}
+{{- $name := .name -}}
+{{- $value := .value -}}
+{{- $optional := .optional | default false -}}
+{{- $positive := .positive | default false -}}
+{{- if or (kindIs "invalid" $value) (eq $value nil) -}}
+  {{- if not $optional -}}
+    {{- fail (printf "%s must be a number" $name) -}}
+  {{- end -}}
+{{- else if and (kindIs "string" $value) (eq (trim $value) "") -}}
+  {{- if not $optional -}}
+    {{- fail (printf "%s must be a number" $name) -}}
+  {{- end -}}
+{{- else -}}
+  {{- if not (or (kindIs "int" $value) (kindIs "int64" $value) (kindIs "float64" $value)) -}}
+    {{- fail (printf "%s must be a number, got %q" $name (printf "%v" $value)) -}}
+  {{- end -}}
+  {{- if and $positive (le (float64 $value) 0.0) -}}
+    {{- fail (printf "%s must be greater than 0, got %v" $name $value) -}}
+  {{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Validate custom pricing configuration.
+*/}}
+{{- define "zesty-k8s.validate.pricing" -}}
+{{- $pricing := .Values.customPricing | default dict -}}
+{{- $enabled := get $pricing "enabled" -}}
+{{- if not (kindIs "bool" $enabled) -}}
+  {{- fail (printf "customPricing.enabled must be a boolean, got %q" (printf "%v" $enabled)) -}}
+{{- end -}}
+{{- include "zesty-k8s.validate.pricingNumber" (dict "name" "customPricing.cpu" "value" (get $pricing "cpu") "positive" $enabled) -}}
+{{- include "zesty-k8s.validate.pricingNumber" (dict "name" "customPricing.ram" "value" (get $pricing "ram") "positive" $enabled) -}}
+{{- include "zesty-k8s.validate.pricingNumber" (dict "name" "customPricing.spotCpu" "value" (get $pricing "spotCpu") "optional" true "positive" true) -}}
+{{- include "zesty-k8s.validate.pricingNumber" (dict "name" "customPricing.spotRam" "value" (get $pricing "spotRam") "optional" true "positive" true) -}}
+{{- end -}}

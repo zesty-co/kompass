@@ -159,13 +159,13 @@ spec:
             httpGet:
               path: /ready
               port: {{ .Values.insights.health.port }}
-            initialDelaySeconds: 30
+            initialDelaySeconds: 90
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /health
               port: {{ .Values.insights.health.port }}
-            initialDelaySeconds: 30
+            initialDelaySeconds: 90
             periodSeconds: 10
           {{- with .Values.resources }}
           resources:
@@ -181,10 +181,8 @@ spec:
           envFrom:
             - configMapRef:
                 name: "{{ include "zesty-k8s.configmap" . }}"
-          {{- if eq .Values.encryptedCredentials "" }}
             - secretRef:
                 name: {{ .Values.secret.name | quote }}
-          {{- end }}
           env:
             - name: NAMESPACE
               valueFrom:
@@ -213,10 +211,6 @@ spec:
                   key: kompass_chart_version
             - name: INSIGHTS_CHART_VERSION
               value: {{ .Chart.Version }}
-          {{- if ne .Values.encryptedCredentials ""}}
-            - name: ENCRYPTED_CREDENTIALS
-              value: {{ .Values.encryptedCredentials | quote }}
-          {{- end }}
       priorityClassName: system-cluster-critical
       {{- with $insightsPodSecurityContext }}
       securityContext:

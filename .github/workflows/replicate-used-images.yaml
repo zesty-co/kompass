@@ -70,6 +70,7 @@ jobs:
             --set rightsizing.enabled=true \
             --set disk.enabled=true \
             --set victoriaMetricsCluster.enabled=true \
+            --set kompass-insights.secret.create=false \
             --set grafana.enabled=true \
             | grep -E '(^|\s)-?\s*image:' \
             | sed -E 's/.*image:[[:space:]]*"?([^"]+)"?/\1/' | sort -u)

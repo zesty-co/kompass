@@ -13,6 +13,9 @@ global:
     name: ""
     dockerconfigjson: ""
 
+# Enable "write" mode, where the Pod Placement can make 
+enabled: false
+
 nameOverride: ~
 fullnameOverride: ~
 
@@ -63,6 +66,7 @@ resources:
   requests:
     cpu: 100m
     memory: 128Mi
+  # Suggested 1000m and 5Gi for cluster with 40.000 pods
   limits:
     cpu: 200m
     memory: 256Mi

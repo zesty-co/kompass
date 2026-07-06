@@ -12,13 +12,16 @@ rules:
     resources:
     - pods
     verbs:
-    - delete
     - get
     - list
+    - watch
+    {{- if .Values.enabled }}
+    - delete
     - patch
     - update
-    - watch
+    {{- end }}
 
+  {{- if .Values.enabled }}
   # Pod eviction
   - apiGroups:
     - ""
@@ -26,6 +29,7 @@ rules:
     - pods/eviction
     verbs:
     - create
+  {{- end }}
 
   # Node operations. Patch and Update are required to update the node's labels and annotations.
   - apiGroups:
@@ -36,9 +40,12 @@ rules:
     - get
     - list
     - watch
+    {{- if .Values.enabled }}
     - patch
     - update
+    {{- end }}
 
+  {{- if .Values.enabled }}
   # Events operations to record pod placement events
   - apiGroups:
       - ""
@@ -47,6 +54,7 @@ rules:
     verbs:
       - create
       - patch
+  {{- end }}
 
   # Core operations.
   - apiGroups:

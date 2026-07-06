@@ -2,6 +2,7 @@
 {{- $bridgeValues := index .Values "kompass-bridge" | default (dict) -}}
 {{- if $bridgeEnabled }}
 {{- $globalValues := .Values.global | default (dict) -}}
+{{- $kompassInsights := index .Values "kompass-insights" | default (dict) -}}
 {{- $legacyPullSecret := (default (dict) $globalValues.imagePullSecret).name | default "" -}}
 {{- $podAnnotations := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $bridgeValues "key" "podAnnotations") | fromYaml -}}
 {{- $podLabels := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $bridgeValues "key" "podLabels") | fromYaml -}}
@@ -18,6 +19,9 @@
 {{- $autoscaling := $bridgeValues.autoscaling | default (dict) -}}
 {{- $ports := $bridgeValues.ports | default (dict) -}}
 {{- $probes := $bridgeValues.probes | default (dict) -}}
+{{- $bridgeKafka := $bridgeValues.kafka | default (dict) -}}
+{{- $kafkaUsername := (index $bridgeKafka "username") | default (printf "bridge-user-%s" ((index $kompassInsights "orgID") | default "")) -}}
+{{- $kafkaPassword := (index $bridgeKafka "password") | default ((index $kompassInsights "encryptedCredentials") | default "") -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -143,9 +147,9 @@ spec:
               {{- end }}
             {{- end }}
             - name: KAFKA_USERNAME
-              value: {{ $bridgeValues.kafka.username | quote }}
+              value: {{ $kafkaUsername | quote }}
             - name: KAFKA_PASSWORD
-              value: {{ $bridgeValues.kafka.password | quote }}
+              value: {{ $kafkaPassword | quote }}
             - name: KAFKA_BOOTSTRAP_SERVERS
               value: {{ $bridgeValues.kafka.bootstrapServers | quote }}
             - name: KAFKA_TLS_ENABLED
