@@ -32,6 +32,15 @@ rules:
       - workloadprotections
       - qnodes
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+    verbs:
+      - get
+      - list
+      - patch
+      - update
   {{- if .Values.insights.clusterRole.fullRO }}
   # fullRO=true. Full read-only discovery for building ownerReference maps.
   - apiGroups:
