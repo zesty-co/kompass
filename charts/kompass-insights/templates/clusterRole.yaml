@@ -43,7 +43,6 @@ rules:
       - list
       - watch
   {{- end }}
-  {{- if not .Values.insights.clusterRole.fullRO }}
   # fullRO=false. Explicit resource coverage instead of wildcard read-only discovery.
   - apiGroups:
       - "argoproj.io"
@@ -212,4 +211,3 @@ rules:
       - mutatingwebhookconfigurations
       - validatingwebhookconfigurations
     {{- include "zesty-k8s.verbs" . | nindent 4 }}
-  {{- end }}
