@@ -243,7 +243,7 @@ disk:
     apiKey: ""
 
 kompass-pod-placement:
-  enabled: false
+  enabled: true
 
 victoriaMetrics:
   enabled: true
