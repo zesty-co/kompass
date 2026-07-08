@@ -59,3 +59,26 @@ Kompass Brigde service
 {{- define "kompass.bridge.service" -}}
 {{- (index .Values.global "kompass-bridge").name -}}
 {{- end -}}
+
+{{/*
+Resolve bridge Kafka password env var.
+Requires either an explicit bridge kafka password or a credentials secret name.
+*/}}
+{{- define "kompass.bridge.kafkaPasswordEnv" -}}
+{{- $bridgeKafka := (index .Values "kompass-bridge" "kafka") | default (dict) -}}
+{{- $kompassInsightsSecret := (index .Values "kompass-insights" "secret") | default (dict) -}}
+{{- $kafkaPassword := (index $bridgeKafka "password") | default "" -}}
+{{- $kafkaPasswordSecretName := (index $kompassInsightsSecret "name") | default "" -}}
+- name: KAFKA_PASSWORD
+  {{- if $kafkaPassword }}
+  value: {{ $kafkaPassword | quote }}
+  {{- else if $kafkaPasswordSecretName }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ $kafkaPasswordSecretName | quote }}
+      key: "ENCRYPTED_CREDENTIALS"
+      optional: true
+  {{- else }}
+  {{- fail "kompass-bridge.kafka.password or kompass-insights.secret.name must be set for bridge Kafka authentication" }}
+  {{- end }}
+{{- end -}}

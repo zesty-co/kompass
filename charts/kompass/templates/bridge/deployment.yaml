@@ -21,7 +21,6 @@
 {{- $probes := $bridgeValues.probes | default (dict) -}}
 {{- $bridgeKafka := $bridgeValues.kafka | default (dict) -}}
 {{- $kafkaUsername := (index $bridgeKafka "username") | default (printf "bridge-user-%s" ((index $kompassInsights "orgID") | default "")) -}}
-{{- $kafkaPassword := (index $bridgeKafka "password") | default ((index $kompassInsights "encryptedCredentials") | default "") -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -148,8 +147,7 @@ spec:
             {{- end }}
             - name: KAFKA_USERNAME
               value: {{ $kafkaUsername | quote }}
-            - name: KAFKA_PASSWORD
-              value: {{ $kafkaPassword | quote }}
+            {{- include "kompass.bridge.kafkaPasswordEnv" . | nindent 12 }}
             - name: KAFKA_BOOTSTRAP_SERVERS
               value: {{ $bridgeValues.kafka.bootstrapServers | quote }}
             - name: KAFKA_TLS_ENABLED
