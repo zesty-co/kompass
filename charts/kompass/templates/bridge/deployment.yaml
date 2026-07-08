@@ -20,8 +20,11 @@
 {{- $ports := $bridgeValues.ports | default (dict) -}}
 {{- $probes := $bridgeValues.probes | default (dict) -}}
 {{- $bridgeKafka := $bridgeValues.kafka | default (dict) -}}
+{{- $kompassInsightsSecret := (index $kompassInsights "secret") | default (dict) -}}
 {{- $kafkaUsername := (index $bridgeKafka "username") | default (printf "bridge-user-%s" ((index $kompassInsights "orgID") | default "")) -}}
-{{- $kafkaPassword := (index $bridgeKafka "password") | default ((index $kompassInsights "encryptedCredentials") | default "") -}}
+{{- $kafkaPassword := (index $bridgeKafka "password") | default "" -}}
+{{- $kafkaFallbackPassword := (index $kompassInsights "encryptedCredentials") | default "" -}}
+{{- $kafkaPasswordSecretName := (index $kompassInsightsSecret "name") | default "" -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -149,7 +152,19 @@ spec:
             - name: KAFKA_USERNAME
               value: {{ $kafkaUsername | quote }}
             - name: KAFKA_PASSWORD
+              {{- if $kafkaPassword }}
               value: {{ $kafkaPassword | quote }}
+              {{- else if $kafkaFallbackPassword }}
+              value: {{ $kafkaFallbackPassword | quote }}
+              {{- else if $kafkaPasswordSecretName }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $kafkaPasswordSecretName | quote }}
+                  key: "ENCRYPTED_CREDENTIALS"
+                  optional: true
+              {{- else }}
+              value: ""
+              {{- end }}
             - name: KAFKA_BOOTSTRAP_SERVERS
               value: {{ $bridgeValues.kafka.bootstrapServers | quote }}
             - name: KAFKA_TLS_ENABLED
