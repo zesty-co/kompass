@@ -23,7 +23,6 @@
 {{- $kompassInsightsSecret := (index $kompassInsights "secret") | default (dict) -}}
 {{- $kafkaUsername := (index $bridgeKafka "username") | default (printf "bridge-user-%s" ((index $kompassInsights "orgID") | default "")) -}}
 {{- $kafkaPassword := (index $bridgeKafka "password") | default "" -}}
-{{- $kafkaFallbackPassword := (index $kompassInsights "encryptedCredentials") | default "" -}}
 {{- $kafkaPasswordSecretName := (index $kompassInsightsSecret "name") | default "" -}}
 apiVersion: apps/v1
 kind: Deployment
@@ -154,8 +153,6 @@ spec:
             - name: KAFKA_PASSWORD
               {{- if $kafkaPassword }}
               value: {{ $kafkaPassword | quote }}
-              {{- else if $kafkaFallbackPassword }}
-              value: {{ $kafkaFallbackPassword | quote }}
               {{- else if $kafkaPasswordSecretName }}
               valueFrom:
                 secretKeyRef:

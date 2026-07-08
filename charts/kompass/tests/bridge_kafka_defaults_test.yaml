@@ -3,34 +3,13 @@ templates:
   - templates/bridge/deployment.yaml
 
 tests:
-  - it: falls back to kompass-insights credentials when bridge kafka credentials are empty
+  - it: uses the kompass-insights credentials secret when bridge kafka password is empty
     set:
       global:
         kompass-bridge:
           enabled: true
       kompass-insights:
         orgID: org-123
-        encryptedCredentials: enc-456
-      kompass-bridge:
-        kafka:
-          username: ""
-          password: ""
-    asserts:
-      - equal:
-          path: spec.template.spec.containers[0].env[2].value
-          value: bridge-user-org-123
-      - equal:
-          path: spec.template.spec.containers[0].env[3].value
-          value: enc-456
-
-  - it: uses the kompass-insights credentials secret when plaintext bridge and insight passwords are empty
-    set:
-      global:
-        kompass-bridge:
-          enabled: true
-      kompass-insights:
-        orgID: org-123
-        encryptedCredentials: ""
         secret:
           name: existing-credentials
       kompass-bridge:
@@ -51,14 +30,13 @@ tests:
           path: spec.template.spec.containers[0].env[3].valueFrom.secretKeyRef.optional
           value: true
 
-  - it: uses the configured kompass-insights credentials secret when plaintext values are empty
+  - it: uses the configured kompass-insights credentials secret when bridge kafka password is empty
     set:
       global:
         kompass-bridge:
           enabled: true
       kompass-insights:
         orgID: org-123
-        encryptedCredentials: ""
         secret:
           name: custom-credentials
       kompass-bridge:
@@ -86,7 +64,6 @@ tests:
           enabled: true
       kompass-insights:
         orgID: org-123
-        encryptedCredentials: enc-456
       kompass-bridge:
         kafka:
           username: explicit-user
