@@ -57,7 +57,7 @@ global:
   # -- (object) Kompass Bridge service
   kompass-bridge:
     # -- (bool) Enable or disable the Kompass Bridge component.
-    enabled: false
+    enabled: true
     # -- (string) Kompass Bridge service name
     name: kompass-bridge
     # -- (object) Kompass Bridge service configuration
