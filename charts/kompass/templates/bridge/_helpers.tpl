@@ -54,7 +54,7 @@ Falls back to .Chart.AppVersion when image.tag is empty.
 {{- end -}}
 
 {{/*
-Kompass Brigde service
+Kompass Bridge service
 */}}
 {{- define "kompass.bridge.service" -}}
 {{- (index .Values.global "kompass-bridge").name -}}
