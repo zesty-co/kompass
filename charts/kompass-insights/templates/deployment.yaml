@@ -159,14 +159,22 @@ spec:
             httpGet:
               path: /ready
               port: {{ .Values.insights.health.port }}
-            initialDelaySeconds: 90
-            periodSeconds: 10
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 1
           livenessProbe:
             httpGet:
               path: /health
               port: {{ .Values.insights.health.port }}
             initialDelaySeconds: 90
             periodSeconds: 10
+          startupProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.insights.health.port }}
+            periodSeconds: 5
+            failureThreshold: 18
+            timeoutSeconds: 1
           {{- with .Values.resources }}
           resources:
           {{- toYaml . | nindent 12 }}
