@@ -138,6 +138,7 @@ spec:
       containers:
       - name: {{ $validatorServiceAccountName }}
         image: {{ .Values.validator.image.registry }}/{{ .Values.validator.image.repository }}:{{ .Values.validator.image.tag }}
+        imagePullPolicy: {{ .Values.validator.image.pullPolicy | default "IfNotPresent" }}
         {{- if $validatorSecurityContext }}
         securityContext:
 {{ toYaml $validatorSecurityContext | nindent 10 }}

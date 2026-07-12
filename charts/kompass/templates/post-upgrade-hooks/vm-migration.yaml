@@ -62,6 +62,7 @@ spec:
       containers:
       - name: vm-migration
         image: {{ .Values.victoriaMetricsMigration.image.registry }}/{{ .Values.victoriaMetricsMigration.image.repository }}:{{ .Values.victoriaMetricsMigration.image.tag }}
+        imagePullPolicy: {{ .Values.victoriaMetricsMigration.image.pullPolicy | default "IfNotPresent" }}
         {{- if $migrationSecurityContext }}
         securityContext:
 {{ toYaml $migrationSecurityContext | nindent 10 }}
