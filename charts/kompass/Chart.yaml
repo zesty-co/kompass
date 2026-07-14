@@ -57,7 +57,7 @@ dependencies:
   - name: cert-manager
     repository: https://charts.jetstack.io
     condition: cert-manager.enabled
-    version: 1.19.1
+    version: 1.20.2
   - name: grafana
     condition: grafana.enabled
     repository: https://grafana.github.io/helm-charts
