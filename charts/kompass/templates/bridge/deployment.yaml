@@ -20,6 +20,10 @@
 {{- $ports := $bridgeValues.ports | default (dict) -}}
 {{- $probes := $bridgeValues.probes | default (dict) -}}
 {{- $bridgeKafka := $bridgeValues.kafka | default (dict) -}}
+{{- $actorRegistry := $bridgeValues.actorRegistry | default (dict) -}}
+{{- $actorCleanup := $actorRegistry.cleanup | default (dict) -}}
+{{- $manager := $bridgeValues.manager | default (dict) -}}
+{{- $leaderElection := $manager.leaderElection | default (dict) -}}
 {{- $kafkaUsername := (index $bridgeKafka "username") | default (printf "bridge-user-%s" ((index $kompassInsights "orgID") | default "")) -}}
 apiVersion: apps/v1
 kind: Deployment
@@ -86,6 +90,11 @@ spec:
             - "--grpc-server-port=:{{ $bridgeValues.ports.grpc.containerPort }}"
             - "--metrics-addr=:{{ $bridgeValues.ports.metrics.containerPort }}"
             - "--probe-addr=:{{ $bridgeValues.ports.health.containerPort }}"
+            - "--actor-ttl={{ $actorRegistry.ttl | default "10m" }}"
+            - "--actor-cleanup-interval={{ $actorCleanup.interval | default "1m" }}"
+            - "--actor-cleanup-enabled={{ $actorCleanup.enabled | default false }}"
+            - "--leader-elect={{ $leaderElection.enabled | default false }}"
+            - "--leader-election-id={{ include "kompass.bridge.cleanupLeaderElectionID" . }}"
             {{- range $bridgeValues.extraArgs }}
             - {{ . | quote }}
             {{- end }}

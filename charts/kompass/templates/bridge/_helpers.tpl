@@ -54,6 +54,17 @@ Falls back to .Chart.AppVersion when image.tag is empty.
 {{- end -}}
 
 {{/*
+Release-specific Lease name used for actor cleanup leader election.
+*/}}
+{{- define "kompass.bridge.cleanupLeaderElectionID" -}}
+{{- $bridgeValues := index .Values "kompass-bridge" | default (dict) -}}
+{{- $manager := $bridgeValues.manager | default (dict) -}}
+{{- $leaderElection := $manager.leaderElection | default (dict) -}}
+{{- $suffix := $leaderElection.idSuffix | default "kompass-bridge-actor-cleanup" -}}
+{{- printf "%s-%s" .Release.Name $suffix | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
 Kompass Bridge service
 */}}
 {{- define "kompass.bridge.service" -}}

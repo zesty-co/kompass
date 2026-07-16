@@ -864,7 +864,7 @@ kompass-bridge:
 
   # -- (map) RBAC controls.
   # When create=true, a namespace-scoped Role+RoleBinding is rendered granting
-  # the Bridge read access to ConfigMaps and Secrets in its own namespace
+  # the Bridge ConfigMap, Secret, and Lease access required in its own namespace.
   rbac:
     create: true
 
