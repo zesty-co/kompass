@@ -1,6 +1,10 @@
 # -- Global values that are applied across multiple components of the Kompass chart.
 # These values often use YAML anchors (&anchorName) to define a value once and reuse it (*anchorName) elsewhere.
 global:
+  # -- (object) KWOK test-cluster integration.
+  kwok:
+    # -- (bool) Enable scraping metrics from fake KWOK nodes.
+    enabled: false
   # -- (string) Overrides the name of the VictoriaMetrics VM Auth service.
   # This value is referenced by the YAML anchor '&vmName'.
   # IMPORTANT: If you change this value, you MUST also update 'victoriaMetricsRemoteUrl'

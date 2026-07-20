@@ -18,6 +18,11 @@ data:
       kubernetes_sd_configs:
         - role: node
       relabel_configs:
+        {{- if .Values.global.kwok.enabled }}
+        - source_labels: [__meta_kubernetes_node_label_kwok_x_k8s_io_node]
+          regex: fake
+          action: drop
+        {{- end }}
         - source_labels: [__meta_kubernetes_node_name]
           target_label: node
         - target_label: __address__
@@ -42,6 +47,11 @@ data:
       kubernetes_sd_configs:
         - role: node
       relabel_configs:
+        {{- if .Values.global.kwok.enabled }}
+        - source_labels: [__meta_kubernetes_node_label_kwok_x_k8s_io_node]
+          regex: fake
+          action: drop
+        {{- end }}
         - source_labels: [__meta_kubernetes_node_name]
           target_label: node
         - target_label: __address__
@@ -70,6 +80,11 @@ data:
       kubernetes_sd_configs:
         - role: node
       relabel_configs:
+        {{- if .Values.global.kwok.enabled }}
+        - source_labels: [__meta_kubernetes_node_label_kwok_x_k8s_io_node]
+          regex: fake
+          action: drop
+        {{- end }}
         - source_labels: [__meta_kubernetes_node_name]
           target_label: node
         - target_label: __address__
@@ -86,6 +101,83 @@ data:
           regex: "{{ .Release.Namespace }}"
           action: keep
 
+    {{- if .Values.global.kwok.enabled }}
+    - job_name: 'kwok-cadvisor'
+      scrape_interval: {{ include "kompass.scrapeInterval" . }}
+      scheme: https
+      tls_config:
+        insecure_skip_verify: true
+      kubernetes_sd_configs:
+        - role: node
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_node_label_kwok_x_k8s_io_node]
+          regex: fake
+          action: keep
+        - source_labels: [__meta_kubernetes_node_name]
+          target_label: node
+        - source_labels: [__meta_kubernetes_node_name]
+          target_label: instance
+        - source_labels: [__meta_kubernetes_node_annotation_kompass_zesty_co_metrics_scheme]
+          regex: (https?)
+          target_label: __scheme__
+          action: replace
+        - source_labels: [__meta_kubernetes_node_annotation_kompass_zesty_co_metrics_host]
+          regex: (.+)
+          action: keep
+        - source_labels: [__meta_kubernetes_node_annotation_kompass_zesty_co_metrics_host]
+          regex: (.+)
+          target_label: __address__
+          replacement: $1
+          action: replace
+        - source_labels: [__meta_kubernetes_node_name]
+          regex: (.+)
+          target_label: __metrics_path__
+          replacement: /metrics/nodes/$1/metrics/cadvisor
+      metric_relabel_configs:
+        - source_labels: [__name__]
+          regex: '(container_memory_usage_bytes|container_memory_working_set_bytes|container_cpu_usage_seconds_total|container_cpu_cfs_throttled_seconds_total)'
+          action: keep
+
+    - job_name: 'kwok-resource'
+      scrape_interval: {{ include "kompass.scrapeInterval" . }}
+      scheme: https
+      tls_config:
+        insecure_skip_verify: true
+      kubernetes_sd_configs:
+        - role: node
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_node_label_kwok_x_k8s_io_node]
+          regex: fake
+          action: keep
+        - source_labels: [__meta_kubernetes_node_name]
+          target_label: node
+        - source_labels: [__meta_kubernetes_node_name]
+          target_label: instance
+        - source_labels: [__meta_kubernetes_node_annotation_kompass_zesty_co_metrics_scheme]
+          regex: (https?)
+          target_label: __scheme__
+          action: replace
+        - source_labels: [__meta_kubernetes_node_annotation_kompass_zesty_co_metrics_host]
+          regex: (.+)
+          action: keep
+        - source_labels: [__meta_kubernetes_node_annotation_kompass_zesty_co_metrics_host]
+          regex: (.+)
+          target_label: __address__
+          replacement: $1
+          action: replace
+        - source_labels: [__meta_kubernetes_node_name]
+          regex: (.+)
+          target_label: __metrics_path__
+          replacement: /metrics/nodes/$1/metrics/resource
+      metric_relabel_configs:
+        - source_labels: [__name__]
+          regex: '(container_cpu_usage_seconds_total|container_memory_working_set_bytes|node_cpu_usage_seconds_total|node_memory_working_set_bytes)'
+          target_label: __name__
+          replacement: kubelet_resource_$1
+        - source_labels: [__name__]
+          regex: '(kubelet_resource_container_cpu_usage_seconds_total|kubelet_resource_container_memory_working_set_bytes|kubelet_resource_node_cpu_usage_seconds_total|kubelet_resource_node_memory_working_set_bytes|kube_pod_container_status_terminated_reason)'
+          action: keep
+    {{- end }}
 
     # for collecting Pilot metrics
     - job_name: 'pilot'
