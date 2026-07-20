@@ -15,6 +15,100 @@ tests:
           path: data["scrape.yml"]
           pattern: "- /config/scrape/\\*.yml"
 
+  - it: leaves the existing node scrape jobs unchanged by default
+    documentSelector:
+      path: metadata.name
+      value: kompass-vmagent-scrape-configs
+    asserts:
+      - notMatchRegex:
+          path: data["kompass-scrape-config.yml"]
+          pattern: "job_name: 'kwok-"
+      - notMatchRegex:
+          path: data["kompass-scrape-config.yml"]
+          pattern: "__meta_kubernetes_node_label_kwok_x_k8s_io_node"
+      - matchRegex:
+          path: data["kompass-scrape-config.yml"]
+          pattern: "job_name: 'kubelet'[\\s\\S]*authorization:[\\s\\S]*replacement: /api/v1/nodes/\\$1/proxy/metrics/cadvisor[\\s\\S]*job_name: 'kubelet-resource'[\\s\\S]*authorization:[\\s\\S]*replacement: /api/v1/nodes/\\$1/proxy/metrics/resource[\\s\\S]*job_name: 'kubelet-volume'[\\s\\S]*authorization:[\\s\\S]*replacement: /api/v1/nodes/\\$1/proxy/metrics"
+
+  - it: renders only the two dedicated KWOK jobs when enabled
+    documentSelector:
+      path: metadata.name
+      value: kompass-vmagent-scrape-configs
+    set:
+      global:
+        kwok:
+          enabled: true
+    asserts:
+      - matchRegex:
+          path: data["kompass-scrape-config.yml"]
+          pattern: "job_name: 'kwok-cadvisor'[\\s\\S]*job_name: 'kwok-resource'"
+      - notMatchRegex:
+          path: data["kompass-scrape-config.yml"]
+          pattern: "job_name: 'kwok-volume'"
+      - notMatchRegex:
+          path: data["kompass-scrape-config.yml"]
+          pattern: "job_name: 'kwok-[^']+'[\\s\\S]*job_name: 'kwok-[^']+'[\\s\\S]*job_name: 'kwok-[^']+'"
+
+  - it: drops fake nodes from all normal node jobs when KWOK is enabled
+    documentSelector:
+      path: metadata.name
+      value: kompass-vmagent-scrape-configs
+    set:
+      global:
+        kwok:
+          enabled: true
+    asserts:
+      - matchRegex:
+          path: data["kompass-scrape-config.yml"]
+          pattern: "job_name: 'kubelet'[\\s\\S]*source_labels: \\[__meta_kubernetes_node_label_kwok_x_k8s_io_node\\][\\s\\S]*action: drop[\\s\\S]*job_name: 'kubelet-resource'[\\s\\S]*source_labels: \\[__meta_kubernetes_node_label_kwok_x_k8s_io_node\\][\\s\\S]*action: drop[\\s\\S]*job_name: 'kubelet-volume'[\\s\\S]*source_labels: \\[__meta_kubernetes_node_label_kwok_x_k8s_io_node\\][\\s\\S]*action: drop[\\s\\S]*job_name: 'kwok-cadvisor'"
+
+  - it: discovers annotated KWOK nodes and derives per-node paths without authorization
+    documentSelector:
+      path: metadata.name
+      value: kompass-vmagent-scrape-configs
+    set:
+      global:
+        kwok:
+          enabled: true
+    asserts:
+      - matchRegex:
+          path: data["kompass-scrape-config.yml"]
+          pattern: "job_name: 'kwok-cadvisor'\\n  scrape_interval: 30s\\n  scheme: https\\n  tls_config:\\n    insecure_skip_verify: true\\n  kubernetes_sd_configs:\\n    - role: node"
+      - matchRegex:
+          path: data["kompass-scrape-config.yml"]
+          pattern: "job_name: 'kwok-resource'\\n  scrape_interval: 30s\\n  scheme: https\\n  tls_config:\\n    insecure_skip_verify: true\\n  kubernetes_sd_configs:\\n    - role: node"
+      - matchRegex:
+          path: data["kompass-scrape-config.yml"]
+          pattern: "source_labels: \\[__meta_kubernetes_node_annotation_kompass_zesty_co_metrics_scheme\\][\\s\\S]*regex: \\(https\\?\\)[\\s\\S]*target_label: __scheme__"
+      - matchRegex:
+          path: data["kompass-scrape-config.yml"]
+          pattern: "source_labels: \\[__meta_kubernetes_node_annotation_kompass_zesty_co_metrics_host\\][\\s\\S]*target_label: __address__[\\s\\S]*replacement: \\$1"
+      - matchRegex:
+          path: data["kompass-scrape-config.yml"]
+          pattern: "target_label: node[\\s\\S]*target_label: instance[\\s\\S]*replacement: /metrics/nodes/\\$1/metrics/cadvisor[\\s\\S]*job_name: 'kwok-resource'[\\s\\S]*target_label: node[\\s\\S]*target_label: instance[\\s\\S]*replacement: /metrics/nodes/\\$1/metrics/resource"
+
+  - it: keeps KWOK throttling and resource metric names needed by rightsizing
+    documentSelector:
+      path: metadata.name
+      value: kompass-vmagent-scrape-configs
+    set:
+      global:
+        kwok:
+          enabled: true
+    asserts:
+      - matchRegex:
+          path: data["kompass-scrape-config.yml"]
+          pattern: "job_name: 'kwok-cadvisor'[\\s\\S]*container_cpu_cfs_throttled_seconds_total[\\s\\S]*job_name: 'kwok-resource'"
+      - matchRegex:
+          path: data["kompass-scrape-config.yml"]
+          pattern: "regex: '\\(container_cpu_usage_seconds_total\\|container_memory_working_set_bytes\\|node_cpu_usage_seconds_total\\|node_memory_working_set_bytes\\)'[\\s\\S]*replacement: kubelet_resource_\\$1"
+      - matchRegex:
+          path: data["kompass-scrape-config.yml"]
+          pattern: "kubelet_resource_node_memory_working_set_bytes\\|kube_pod_container_status_terminated_reason"
+      - notMatchRegex:
+          path: data["kompass-scrape-config.yml"]
+          pattern: "kubelet_resource_kube_pod_container_status_terminated_reason"
+
   - it: does not render insights or recommendations scrape jobs when kompass-insights is disabled
     documentSelector:
       path: metadata.name
