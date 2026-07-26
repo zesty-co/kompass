@@ -150,6 +150,10 @@ kompass-insights:
   # This should be disabled only for distinct scenarios and is not recommended for most use-cases.
   # Advise with Zesty support before disabling it.
   enabled: true
+  # The legacy recommendation-maker workload is no longer installed by Kompass.
+  # Keep this override while the umbrella chart supports older kompass-insights releases.
+  recommendations:
+    enabled: false
   # -- (string) REQUIRED: Your Zesty organization ID.
   # Provided during the onboarding process. This value MUST be set.
   orgID: ""
