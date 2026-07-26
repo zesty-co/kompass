@@ -149,20 +149,6 @@ data:
         - targets: ['{{ .Values.victoriaMetricsAuth.fullnameOverride }}.{{ .Release.Namespace }}:8427']
     {{- end }}
     
-    {{- $recommendationsConfig := (index $kompassInsights "recommendations" | default dict) }}
-    {{- $recommendationsHTTPConfig := (index $recommendationsConfig "http" | default dict) }}
-    {{- if and $kompassInsightsEnabled (index $recommendationsConfig "enabled") (hasKey $recommendationsHTTPConfig "port") }}
-    # for collecting recommendations
-    - job_name: 'recommendations'
-      scrape_interval: {{ include "kompass.scrapeInterval" . }}
-      static_configs:
-        - targets: ['http://{{ include "zesty-k8s.recommendations.fullname" (dict "Values" $kompassInsights "Release" .Release "Chart" (dict "Name" "kompass-insights")) }}.{{ .Release.Namespace }}:{{ $recommendationsHTTPConfig.port }}']
-      metric_relabel_configs:
-        - source_labels: [__name__]
-          regex: '(workload_headroom_reduction_recommendation_min_replicas)'
-          action: keep
-    {{- end }}
-
     # For pod and node metrics
     - job_name: 'kube-state-metrics'
       scrape_interval: {{ include "kompass.scrapeIntervalKubeStateMetrics" . }}

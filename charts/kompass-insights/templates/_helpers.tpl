@@ -167,10 +167,6 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- default "9003" .Values.insights.metrics.port }}
 {{- end }}
 
-{{- define "zesty-k8s.recommendations.fullname" -}}
- {{ printf "%s-recommendations" (include "zesty-k8s.fullname" .) | trunc 63 | trimSuffix "-" }}
-{{- end }}
-
 {{- define "zesty-k8s.self-monitoring.fullname" -}}
  {{ printf "%s-self-monitoring" (include "zesty-k8s.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}
@@ -467,10 +463,6 @@ To remove in the future.
 
 {{- define "zesty-k8s.controller.coralogix.envs" -}}
 {{- include "zesty-k8s.coralogix.envs" (dict "Values" .Values "coralogixApiKey" false "domain" true "ingressLogsUrl" true "logUrl" true "timeDeltaUrl" true "otelEndpoint" true) }}
-{{- end }}
-
-{{- define "zesty-k8s.recommendations.coralogix.envs" -}}
-{{- include "zesty-k8s.coralogix.envs" (dict "Values" .Values "coralogixApiKey" true "domain" false "logUrl" true "timeDeltaUrl" true "otelEndpoint" false) }}
 {{- end }}
 
 {{- define "zesty-k8s.monitoring.coralogix.envs" -}}
