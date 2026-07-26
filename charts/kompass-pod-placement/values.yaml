@@ -65,11 +65,11 @@ ports:
 resources:
   requests:
     cpu: 100m
-    memory: 128Mi
+    memory: 5Gi
   # Suggested 1000m and 5Gi for cluster with 40.000 pods
   limits:
-    cpu: 200m
-    memory: 256Mi
+    cpu: 1000m
+    memory: 5Gi
 
 nodeSelector: {}
 tolerations: []
