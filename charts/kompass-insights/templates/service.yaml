@@ -9,6 +9,7 @@ metadata:
 spec:
   selector:
     app.kubernetes.io/name: "{{ include "zesty-k8s.fullname" . }}"
+  publishNotReadyAddresses: true
   ports:
     - name: grpc
       port: {{ .Values.insights.grpc.server.port }}
