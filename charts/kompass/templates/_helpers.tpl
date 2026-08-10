@@ -357,6 +357,15 @@ Validate that kompass-pod-placement is only enabled when rightsizing is also ena
 {{- end -}}
 
 {{/*
+Validate that at least one VictoriaMetrics deployment variant is enabled.
+*/}}
+{{- define "kompass.validate.victoriaMetricsEnabled" -}}
+{{- if not (or .Values.victoriaMetrics.enabled .Values.victoriaMetricsCluster.enabled) -}}
+{{- fail "at least one VictoriaMetrics variant must be enabled: set victoriaMetrics.enabled=true or victoriaMetricsCluster.enabled=true" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Validate that a value is an integer within the 1..99 range.
 */}}
 {{- define "kompass.validate.intRange1to99" -}}
