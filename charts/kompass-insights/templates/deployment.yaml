@@ -219,6 +219,76 @@ spec:
                   key: kompass_chart_version
             - name: INSIGHTS_CHART_VERSION
               value: {{ .Chart.Version }}
+        {{- if .Values.manager.enabled }}
+        - name: "manager"
+          image: "{{ .Values.manager.repository }}:{{ .Values.manager.tag }}"
+          imagePullPolicy: {{ .Values.manager.pullPolicy }}
+          args:
+            - "--bridge-advertise-host={{ .Values.manager.service }}"
+            - "--grpc-addr=:{{ .Values.manager.ports.grpc.containerPort }}"
+            - "--metrics-addr=:{{ .Values.manager.ports.metrics.containerPort }}"
+            - "--probe-addr=:{{ .Values.manager.ports.health.containerPort }}"
+            {{- range .Values.manager.extraArgs }}
+            - {{ . | quote }}
+            {{- end }}
+          {{- with .Values.manager.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env:
+            - name: BRIDGE_ENABLED
+              value: {{ (index .Values.global "kompass-bridge").enabled | quote }}
+            - name: "BRIDGE_HOST"
+              value: {{ (index .Values.global "kompass-bridge").name | quote }}
+            - name: BRIDGE_PORT
+              value: {{ (index .Values.global "kompass-bridge").service.grpc_port | quote }}
+            - name: ZESTY_SECRET_NAME
+              value: {{ .Values.insights.secret }}
+            - name: KOMPASS_CHART_VERSION
+              value: {{ .Chart.Version }}
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            {{- include "zesty-k8s.manager.coralogix.envs" . | nindent 12 }}
+          {{- with .Values.manager.env }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.manager.envFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            {{- with .Values.manager.ports.grpc }}
+            - name: {{ .name }}
+              containerPort: {{ .containerPort }}
+              protocol: {{ .protocol | default "TCP" }}
+            {{- end }}
+            {{- with .Values.manager.ports.metrics }}
+            - name: {{ .name }}
+              containerPort: {{ .containerPort }}
+              protocol: {{ .protocol | default "TCP" }}
+            {{- end }}
+            {{- with .Values.manager.ports.health }}
+            - name: {{ .name }}
+              containerPort: {{ .containerPort }}
+              protocol: {{ .protocol | default "TCP" }}
+            {{- end }}
+          startupProbe:
+            {{- toYaml .Values.manager.probes.startup | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.manager.probes.readiness | nindent 12 }}
+          livenessProbe:
+            {{- toYaml .Values.manager.probes.liveness | nindent 12 }}
+          resources:
+            {{- toYaml .Values.manager.resources | nindent 12 }}
+          volumeMounts:
+            - mountPath: /data
+              name: {{ .Values.persistence.volumeName }}
+          {{- with .Values.manager.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        {{- end }}
       priorityClassName: system-cluster-critical
       {{- with $insightsPodSecurityContext }}
       securityContext:

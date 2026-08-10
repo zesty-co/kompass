@@ -165,6 +165,83 @@ insights:
   health:
     port: 9000
 
+manager:
+  enabled: false
+  repository: "672188301118.dkr.ecr.eu-west-1.amazonaws.com/zesty-k8s/kompass-manager"
+  pullPolicy: Always
+  tag: ~
+
+  service: "kompass-manager"
+
+  # -- (array) additional command-line arguments for the manager container
+  extraArgs: []
+  # -- (array) additional Kompass manager environment variables
+  env: []
+  # -- (array) list of sources to populate environment variables from (ConfigMaps/Secrets)
+  envFrom: []
+
+  # -- (array) additional volumes to attach to the manager pod
+  extraVolumes: []
+  # -- (array) additional volume mounts for the manager container
+  extraVolumeMounts: []
+
+  # -- (map) Container-level security context for the manager container.
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+
+  # -- (map) Container ports exposed by the manager.
+  ports:
+    # -- (map) gRPC endpoint
+    grpc:
+      name: manager-grpc
+      containerPort: 50061
+      protocol: TCP
+    # -- (map) Prometheus metrics endpoint.
+    metrics:
+      name: manager-metrics
+      containerPort: 8090
+      protocol: TCP
+    # -- (map) Health check endpoint.
+    health:
+      name: manager-health
+      containerPort: 8091
+      protocol: TCP
+
+  # -- (map) Container resource requests/limits.
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+  # -- (map) Liveness and readiness probes.
+  probes:
+    startup:
+      httpGet:
+        path: /healthz
+        port: manager-health
+      initialDelaySeconds: 0
+      periodSeconds: 10
+      failureThreshold: 10
+    liveness:
+      httpGet:
+        path: /healthz
+        port: manager-health
+      initialDelaySeconds: 0
+      periodSeconds: 10
+    readiness:
+      httpGet:
+        path: /readyz
+        port: manager-health
+      initialDelaySeconds: 0
+      periodSeconds: 10
+
 admission:
   enabled: false
   service:

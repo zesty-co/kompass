@@ -469,6 +469,10 @@ To remove in the future.
 {{- include "zesty-k8s.coralogix.envs" (dict "Values" .Values "coralogixApiKey" false "domain" false "logUrl" false "timeDeltaUrl" false "otelEndpoint" false) }}
 {{- end }}
 
+{{- define "zesty-k8s.manager.coralogix.envs" -}}
+{{- include "zesty-k8s.coralogix.envs" (dict "Values" .Values "coralogixApiKey" false "domain" false "logUrl" false "timeDeltaUrl" false "otelEndpoint" false) }}
+{{- end }}
+
 {{/*
 Validate that an insights pricing value is numeric. Empty optional values are allowed.
 */}}
