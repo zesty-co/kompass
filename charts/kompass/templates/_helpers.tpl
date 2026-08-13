@@ -366,6 +366,58 @@ Validate that at least one VictoriaMetrics deployment variant is enabled.
 {{- end -}}
 
 {{/*
+Validate labels that identify Kompass-owned third-party workloads.
+*/}}
+{{- define "kompass.validate.requiredLabels" -}}
+{{- $partOfLabel := "app.kubernetes.io/part-of" -}}
+{{- $partOfValue := "kompass" -}}
+{{- $validations := list -}}
+{{- if .Values.grafana.enabled -}}
+  {{- $validations = append $validations (dict "path" "grafana.extraLabels" "labels" .Values.grafana.extraLabels) -}}
+{{- end -}}
+{{- if and .Values.victoriaMetrics.enabled (ne .Values.victoriaMetrics.server.enabled false) -}}
+  {{- $validations = append $validations (dict "path" "victoriaMetrics.server.extraLabels" "labels" .Values.victoriaMetrics.server.extraLabels) -}}
+  {{- $validations = append $validations (dict "path" "victoriaMetrics.server.podLabels" "labels" .Values.victoriaMetrics.server.podLabels) -}}
+{{- end -}}
+{{- if .Values.victoriaMetricsCluster.enabled -}}
+  {{- range $component := list "vmselect" "vminsert" "vmstorage" -}}
+    {{- $values := index $.Values.victoriaMetricsCluster $component -}}
+    {{- if ne $values.enabled false -}}
+      {{- $validations = append $validations (dict "path" (printf "victoriaMetricsCluster.%s.extraLabels" $component) "labels" $values.extraLabels) -}}
+      {{- $validations = append $validations (dict "path" (printf "victoriaMetricsCluster.%s.podLabels" $component) "labels" $values.podLabels) -}}
+    {{- end -}}
+  {{- end -}}
+  {{- if .Values.victoriaMetricsCluster.vmauth.enabled -}}
+    {{- $validations = append $validations (dict "path" "victoriaMetricsCluster.vmauth.extraLabels" "labels" .Values.victoriaMetricsCluster.vmauth.extraLabels) -}}
+    {{- $validations = append $validations (dict "path" "victoriaMetricsCluster.vmauth.podLabels" "labels" .Values.victoriaMetricsCluster.vmauth.podLabels) -}}
+  {{- end -}}
+{{- end -}}
+{{- if .Values.victoriaMetricsAgent.enabled -}}
+  {{- $validations = append $validations (dict "path" "victoriaMetricsAgent.extraLabels" "labels" .Values.victoriaMetricsAgent.extraLabels) -}}
+  {{- $validations = append $validations (dict "path" "victoriaMetricsAgent.podLabels" "labels" .Values.victoriaMetricsAgent.podLabels) -}}
+{{- end -}}
+{{- if .Values.victoriaMetricsAlert.enabled -}}
+  {{- $validations = append $validations (dict "path" "victoriaMetricsAlert.global.extraLabels" "labels" .Values.victoriaMetricsAlert.global.extraLabels) -}}
+  {{- $validations = append $validations (dict "path" "victoriaMetricsAlert.server.podLabels" "labels" .Values.victoriaMetricsAlert.server.podLabels) -}}
+  {{- if .Values.victoriaMetricsAlert.alertmanager.enabled -}}
+    {{- $validations = append $validations (dict "path" "victoriaMetricsAlert.alertmanager.podLabels" "labels" .Values.victoriaMetricsAlert.alertmanager.podLabels) -}}
+  {{- end -}}
+{{- end -}}
+{{- if .Values.victoriaMetricsAuth.enabled -}}
+  {{- $validations = append $validations (dict "path" "victoriaMetricsAuth.extraLabels" "labels" .Values.victoriaMetricsAuth.extraLabels) -}}
+  {{- $validations = append $validations (dict "path" "victoriaMetricsAuth.podLabels" "labels" .Values.victoriaMetricsAuth.podLabels) -}}
+{{- end -}}
+{{- if .Values.victoriaMetricsMigration.enabled -}}
+  {{- $validations = append $validations (dict "path" "victoriaMetricsMigration.podLabels" "labels" .Values.victoriaMetricsMigration.podLabels) -}}
+{{- end -}}
+{{- range $validation := $validations -}}
+  {{- if ne (get ($validation.labels | default dict) $partOfLabel) $partOfValue -}}
+    {{- fail (printf "%s[%s] must be %s" $validation.path $partOfLabel $partOfValue) -}}
+  {{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Validate that a value is an integer within the 1..99 range.
 */}}
 {{- define "kompass.validate.intRange1to99" -}}

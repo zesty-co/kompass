@@ -251,6 +251,10 @@ victoriaMetrics:
   serviceAccount:
     name: kompass-victoria-metrics
   server:
+    extraLabels:
+      app.kubernetes.io/part-of: kompass
+    podLabels:
+      app.kubernetes.io/part-of: kompass
     fullnameOverride: kompass-victoria-metrics
     persistentVolume:
       mountPath: /victoria-metrics-data
@@ -276,6 +280,10 @@ victoriaMetricsCluster:
   serviceAccount:
     name: kompass-victoria-metrics-cluster
   vmselect:
+    extraLabels:
+      app.kubernetes.io/part-of: kompass
+    podLabels:
+      app.kubernetes.io/part-of: kompass
     fullnameOverride: kompass-victoria-metrics-cluster-vmselect
     extraArgs:
       replicationFactor: 2
@@ -322,6 +330,10 @@ victoriaMetricsCluster:
         memory: "512Mi"
         cpu: "0.5"
   vminsert:
+    extraLabels:
+      app.kubernetes.io/part-of: kompass
+    podLabels:
+      app.kubernetes.io/part-of: kompass
     fullnameOverride: kompass-victoria-metrics-cluster-vminsert
     extraArgs:
       replicationFactor: 2
@@ -363,6 +375,10 @@ victoriaMetricsCluster:
         memory: "512Mi"
         cpu: "0.5"
   vmstorage:
+    extraLabels:
+      app.kubernetes.io/part-of: kompass
+    podLabels:
+      app.kubernetes.io/part-of: kompass
     fullnameOverride: kompass-victoria-metrics-cluster-vmstorage
     extraArgs:
       retentionPeriod: 1w
@@ -407,7 +423,11 @@ victoriaMetricsCluster:
       requests:
         memory: "3Gi"
         cpu: "0.5"
-
+  vmauth:
+    extraLabels:
+      app.kubernetes.io/part-of: kompass
+    podLabels:
+      app.kubernetes.io/part-of: kompass
 victoriaMetricsMigration:
   enabled: false
   image:
@@ -453,7 +473,8 @@ victoriaMetricsMigration:
   # -- (map) Pod annotations for VictoriaMetrics migration job.
   podAnnotations: {}
   # -- (map) Pod labels for VictoriaMetrics migration job.
-  podLabels: {}
+  podLabels:
+    app.kubernetes.io/part-of: kompass
   # -- (map) Pod-level security context for VictoriaMetrics migration job.
   podSecurityContext: {}
   # -- (string) Runtime class name for VictoriaMetrics migration job.
@@ -497,6 +518,10 @@ metricsScrapeFilters:
 victoriaMetricsAgent:
   enabled: true
   fullnameOverride: kompass-victoria-metrics-agent
+  extraLabels:
+    app.kubernetes.io/part-of: kompass
+  podLabels:
+    app.kubernetes.io/part-of: kompass
   scrapeInterval: 30s
   scrapeIntervalLong: 1m
   scrapeIntervalVolume: 600s
@@ -528,8 +553,13 @@ victoriaMetricsAgent:
 
 victoriaMetricsAlert:
   enabled: true
+  global:
+    extraLabels:
+      app.kubernetes.io/part-of: kompass
   fullnameOverride: kompass-victoria-metrics-alert
   server:
+    podLabels:
+      app.kubernetes.io/part-of: kompass
     datasource:
       url: *vmRemoteUrl
     remote:
@@ -546,9 +576,16 @@ victoriaMetricsAlert:
     configMap: kompass-vm-custom-recording-rules
     service:
       clusterIP: ""
+  alertmanager:
+    podLabels:
+      app.kubernetes.io/part-of: kompass
 
 victoriaMetricsAuth:
   enabled: true
+  extraLabels:
+    app.kubernetes.io/part-of: kompass
+  podLabels:
+    app.kubernetes.io/part-of: kompass
   # Set to `true` to use VM Single, set to `false` to use VM Cluster.
   useSingle: true
   fullnameOverride: *vmName
