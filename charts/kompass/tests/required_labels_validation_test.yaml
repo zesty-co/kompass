@@ -67,6 +67,34 @@ tests:
     asserts:
       - notFailedTemplate: {}
 
+  - it: rejects a metrics-server workload label override
+    set:
+      metrics-server.enabled: true
+      metrics-server.commonLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - failedTemplate:
+          errorMessage: metrics-server.commonLabels[app.kubernetes.io/part-of] must be kompass
+
+  - it: rejects a metrics-server pod label override
+    set:
+      metrics-server.enabled: true
+      metrics-server.podLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - failedTemplate:
+          errorMessage: metrics-server.podLabels[app.kubernetes.io/part-of] must be kompass
+
+  - it: ignores metrics-server labels when installation is disabled
+    set:
+      metrics-server.enabled: false
+      metrics-server.commonLabels:
+        app.kubernetes.io/part-of: other
+      metrics-server.podLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - notFailedTemplate: {}
+
   - it: rejects a single-node workload label override
     set:
       victoriaMetrics.server.extraLabels:

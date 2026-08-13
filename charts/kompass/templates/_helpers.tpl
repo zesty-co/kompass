@@ -406,6 +406,10 @@ Validate labels that identify Kompass-owned third-party workloads.
     {{- end -}}
   {{- end -}}
 {{- end -}}
+{{- if (index .Values "metrics-server" "enabled") -}}
+  {{- $validations = append $validations (dict "path" "metrics-server.commonLabels" "labels" (index .Values "metrics-server" "commonLabels")) -}}
+  {{- $validations = append $validations (dict "path" "metrics-server.podLabels" "labels" (index .Values "metrics-server" "podLabels")) -}}
+{{- end -}}
 {{- if and .Values.victoriaMetrics.enabled (ne .Values.victoriaMetrics.server.enabled false) -}}
   {{- $validations = append $validations (dict "path" "victoriaMetrics.server.extraLabels" "labels" .Values.victoriaMetrics.server.extraLabels) -}}
   {{- $validations = append $validations (dict "path" "victoriaMetrics.server.podLabels" "labels" .Values.victoriaMetrics.server.podLabels) -}}

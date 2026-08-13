@@ -924,3 +924,7 @@ kompass-bridge:
 
 metrics-server:
   enabled: false # enable it to install metrics-server
+  commonLabels:
+    app.kubernetes.io/part-of: kompass
+  podLabels:
+    app.kubernetes.io/part-of: kompass
