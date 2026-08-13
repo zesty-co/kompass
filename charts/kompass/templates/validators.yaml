@@ -1,0 +1,6 @@
+{{- if .Values.grafana.enabled }}
+{{- $labels := .Values.grafana.extraLabels | default dict }}
+{{- if ne (get $labels "app.kubernetes.io/part-of") "kompass" }}
+{{- fail "grafana.extraLabels[app.kubernetes.io/part-of] must be kompass" }}
+{{- end }}
+{{- end }}
