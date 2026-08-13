@@ -15,6 +15,22 @@ tests:
       - failedTemplate:
           errorMessage: grafana.extraLabels[app.kubernetes.io/part-of] must be kompass
 
+  - it: rejects a cert-manager common label override
+    set:
+      cert-manager.global.commonLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - failedTemplate:
+          errorMessage: cert-manager.global.commonLabels[app.kubernetes.io/part-of] must be kompass
+
+  - it: ignores cert-manager labels when installation is disabled
+    set:
+      cert-manager.enabled: false
+      cert-manager.global.commonLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - notFailedTemplate: {}
+
   - it: rejects a duplicate kube-state-metrics common label
     set:
       kubeStateMetrics.customLabels:

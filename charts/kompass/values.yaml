@@ -758,6 +758,9 @@ grafana:
 
 cert-manager:
   enabled: true
+  global:
+    commonLabels:
+      app.kubernetes.io/part-of: kompass
   crds:
     enabled: true
   fullnameOverride: "kompass-cert-manager"

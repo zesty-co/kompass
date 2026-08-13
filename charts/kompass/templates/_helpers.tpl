@@ -396,6 +396,9 @@ Validate labels that identify Kompass-owned third-party workloads.
 {{- if .Values.grafana.enabled -}}
   {{- $validations = append $validations (dict "path" "grafana.extraLabels" "labels" .Values.grafana.extraLabels) -}}
 {{- end -}}
+{{- if (index .Values "cert-manager" "enabled") -}}
+  {{- $validations = append $validations (dict "path" "cert-manager.global.commonLabels" "labels" (index .Values "cert-manager" "global" "commonLabels")) -}}
+{{- end -}}
 {{- if .Values.kubeStateMetrics.enabled -}}
   {{- range $path := list "customLabels" "labels" "podLabels" -}}
     {{- if hasKey (index $.Values.kubeStateMetrics $path | default dict) $partOfLabel -}}
