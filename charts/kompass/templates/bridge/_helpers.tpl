@@ -25,12 +25,20 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 
 {{/*
+Required labels for Bridge resources and pods.
+*/}}
+{{- define "kompass.bridge.requiredLabels" -}}
+app.kubernetes.io/part-of: kompass
+{{- end -}}
+
+{{/*
 Common labels for Bridge resources.
 */}}
 {{- define "kompass.bridge.labels" -}}
 helm.sh/chart: {{ include "kompass.chart" . }}
 {{ include "kompass.bridge.selectorLabels" . }}
 app.kubernetes.io/component: bridge
+{{ include "kompass.bridge.requiredLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
