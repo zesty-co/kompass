@@ -34,6 +34,13 @@ Create chart name and version as used by the chart label.
   {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
+{{/*
+Required labels for Kompass Insights resources and pods.
+*/}}
+{{- define "zesty-k8s.requiredLabels" -}}
+app.kubernetes.io/part-of: kompass
+{{- end -}}
+
 {{- define "zesty-k8s.coralogix.apiKeySecretName" -}}
 {{- $cxLogging := .cxLogging | default dict -}}
 {{- $apiKeySecret := $cxLogging.apiKeySecret | default dict -}}
@@ -145,6 +152,7 @@ helm.sh/chart: {{ include "zesty-k8s.chart" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{ include "zesty-k8s.requiredLabels" . }}
 {{- end }}
 
 {{/*
