@@ -25,12 +25,20 @@ Create chart name and version as used by the chart label.
 {{- end }}
 
 {{/*
+Required labels for pod-placement resources and pods.
+*/}}
+{{- define "kompass-pod-placement.requiredLabels" -}}
+app.kubernetes.io/part-of: kompass
+{{- end -}}
+
+{{/*
 Common labels
 */}}
 {{- define "kompass-pod-placement.labels" -}}
 {{- include "kompass-pod-placement.selectorLabels" . }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 helm.sh/chart: {{ include "kompass-pod-placement.chart" . }}
+{{ include "kompass-pod-placement.requiredLabels" . }}
 {{- end }}
 
 {{/*
