@@ -5,6 +5,7 @@ metadata:
   labels:
     app.kubernetes.io/instance: "{{ include "zesty-k8s.self-monitoring.fullname" . }}"
     app.kubernetes.io/name: "{{ include "zesty-k8s.fullname" . }}"
+    {{- include "zesty-k8s.requiredLabels" . | nindent 4 }}
   name: {{ include "zesty-k8s.self-monitoring.fullname" . }}-clusterRoleBinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io

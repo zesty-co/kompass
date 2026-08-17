@@ -11,6 +11,7 @@
   "component" $selfMonitoringWorkload
   "key" "podLabels"
 ) | fromYaml -}}
+{{- $selfMonitoringPodLabels = mergeOverwrite ($selfMonitoringPodLabels | default dict) (include "zesty-k8s.requiredLabels" . | fromYaml) -}}
 {{- $selfMonitoringResolvedPodSecurityContext := mergeOverwrite
   (mergeOverwrite
     (deepCopy (dict))
@@ -72,6 +73,7 @@ metadata:
   labels:
     app.kubernetes.io/instance: "{{ include "zesty-k8s.self-monitoring.fullname" . }}"
     app.kubernetes.io/name: "{{ include "zesty-k8s.fullname" . }}"
+    {{- include "zesty-k8s.requiredLabels" . | nindent 4 }}
 spec:
   schedule: "{{ .Values.selfMonitoring.schedule }}"
   concurrencyPolicy: Replace
