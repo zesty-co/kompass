@@ -1,3 +1,7 @@
+{{- $commonLabels := include "kompass-pod-placement.labels" . | fromYaml -}}
+{{- $configuredPodLabels := deepCopy (.Values.podLabels | default dict) -}}
+{{- $requiredLabels := include "kompass-pod-placement.requiredLabels" . | fromYaml -}}
+{{- $podLabels := mergeOverwrite $commonLabels $configuredPodLabels $requiredLabels -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -15,10 +19,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "kompass-pod-placement.labels" . | nindent 8 }}
-      {{- with .Values.podLabels }}
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- toYaml $podLabels | nindent 8 }}
       {{- with .Values.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
