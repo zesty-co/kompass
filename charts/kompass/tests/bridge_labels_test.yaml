@@ -1,0 +1,42 @@
+suite: Bridge required workload labels
+templates:
+  - templates/bridge/deployment.yaml
+
+tests:
+  - it: labels the deployment and pod
+    set:
+      global.kompass-bridge.enabled: true
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+
+  - it: keeps the pod label when global pod labels conflict
+    set:
+      global.kompass-bridge.enabled: true
+      global.podLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+
+  - it: keeps the pod label when component pod labels conflict
+    set:
+      global.kompass-bridge.enabled: true
+      kompass-bridge.podLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+
+  - it: does not render the deployment when Bridge is disabled
+    set:
+      global.kompass-bridge.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0

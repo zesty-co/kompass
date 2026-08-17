@@ -6,6 +6,7 @@
 {{- $legacyPullSecret := (default (dict) $globalValues.imagePullSecret).name | default "" -}}
 {{- $podAnnotations := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $bridgeValues "key" "podAnnotations") | fromYaml -}}
 {{- $podLabels := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $bridgeValues "key" "podLabels") | fromYaml -}}
+{{- $podLabels = mergeOverwrite $podLabels (include "kompass.bridge.requiredLabels" . | fromYaml) -}}
 {{- $affinity := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $bridgeValues "key" "affinity") | fromYaml -}}
 {{- $nodeSelector := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $bridgeValues "key" "nodeSelector") | fromYaml -}}
 {{- $tolerations := include "kompass.workload.resolveList" (dict "global" $globalValues "component" $bridgeValues "key" "tolerations") | fromYamlArray -}}
