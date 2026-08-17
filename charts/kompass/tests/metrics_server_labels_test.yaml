@@ -1,0 +1,27 @@
+suite: metrics-server required workload labels
+templates:
+  - charts/metrics-server/templates/deployment.yaml
+
+tests:
+  - it: labels the deployment and pod
+    set:
+      metrics-server.enabled: true
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+
+  - it: labels the deployment and pod when addon-resizer is enabled
+    set:
+      metrics-server.enabled: true
+      metrics-server.addonResizer.enabled: true
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass

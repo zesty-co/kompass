@@ -1,0 +1,26 @@
+suite: kube-state-metrics required workload labels
+templates:
+  - charts/kubeStateMetrics/templates/deployment.yaml
+
+tests:
+  - it: labels the deployment and pod
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+
+  - it: labels the autosharded StatefulSet and pod
+    set:
+      kubeStateMetrics.autosharding.enabled: true
+    asserts:
+      - isKind:
+          of: StatefulSet
+      - equal:
+          path: metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass

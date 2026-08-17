@@ -1,0 +1,16 @@
+suite: cert-manager required workload labels
+templates:
+  - charts/cert-manager/templates/deployment.yaml
+  - charts/cert-manager/templates/cainjector-deployment.yaml
+  - charts/cert-manager/templates/webhook-deployment.yaml
+  - charts/cert-manager/templates/startupapicheck-job.yaml
+
+tests:
+  - it: labels every cert-manager workload and pod
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
