@@ -1,6 +1,6 @@
 apiVersion: v2
 name: kompass-pod-placement
-description: Zesty Kompass Pod Placement for K8s
+description: Zesty Kompass Pod Placement for Kubernetes
 type: application
-version: 0.1.19
+version: 0.1.21
 appVersion: "v0.5.1"
