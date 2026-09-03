@@ -75,6 +75,8 @@ nodeSelector: {}
 tolerations: []
 affinity: {}
 
+# Workload annotations applied to the Pod Placement Deployment metadata.
+annotations: {}
 podAnnotations: {}
 podLabels: {}
 

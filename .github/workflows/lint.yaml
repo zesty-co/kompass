@@ -65,14 +65,35 @@ jobs:
       run: |
         helm plugin install https://github.com/aslafy-z/helm-git --version 0.11.1 --verify=false
         helm plugin install https://github.com/helm-unittest/helm-unittest --version 1.0.3 --verify=false
-      if: env.kompass_changed == 'true'
+      if: env.any_chart_changed == 'true'
+
+    - name: helm unittest kompass-insights
+      run: helm unittest charts/kompass-insights
+      if: env.kompass_insights_changed == 'true'
+
+    - name: helm unittest kompass-pod-placement
+      run: helm unittest charts/kompass-pod-placement
+      if: env.kompass_pod_placement_changed == 'true'
 
     - name: helm dependency update
       run: helm dependency update ./charts/kompass
       if: env.kompass_changed == 'true'
 
     - name: helm unittest kompass secret
-      run: helm unittest charts/kompass
+      run: helm unittest charts/kompass --values charts/kompass/tests/fixtures/valid-guardian-request-ceilings.yaml
+      if: env.kompass_changed == 'true'
+
+    - name: verify Guardian request-ceiling installation validation
+      run: |
+        if helm template kompass ./charts/kompass \
+          --set kompass-insights.secret.create=false \
+          --set-string global.guardian.requestCeilings.insights.kompass-insights.cpuRequest= \
+          >/dev/null 2>&1; then
+          echo "expected installation rendering to fail with an empty Guardian ceiling"
+          exit 1
+        fi
+        helm template kompass ./charts/kompass \
+          --set kompass-insights.secret.create=false >/dev/null
       if: env.kompass_changed == 'true'
 
     - name: validate Chart.yaml version changed in PR
