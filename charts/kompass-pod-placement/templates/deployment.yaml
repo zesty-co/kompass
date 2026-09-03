@@ -2,6 +2,11 @@
 {{- $configuredPodLabels := deepCopy (.Values.podLabels | default dict) -}}
 {{- $requiredLabels := include "kompass-pod-placement.requiredLabels" . | fromYaml -}}
 {{- $podLabels := mergeOverwrite $commonLabels $configuredPodLabels $requiredLabels -}}
+{{- $annotations := deepCopy (.Values.annotations | default dict) -}}
+{{- $podPlacementCeilings := dig "guardian" "requestCeilings" "podPlacement" (dict) .Values.global -}}
+{{- if $podPlacementCeilings -}}
+{{- $annotations = mergeOverwrite $annotations (dict "guardian.kompass.zesty.co/request-ceilings" (printf "{\"version\":1,\"containers\":%s}" ($podPlacementCeilings | toJson))) -}}
+{{- end -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -9,6 +14,10 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "kompass-pod-placement.labels" . | nindent 4 }}
+  {{- with $annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}

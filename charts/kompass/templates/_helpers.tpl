@@ -264,6 +264,108 @@ Global values override component values for matching keys.
 {{- end -}}
 
 {{/*
+Validate that every expected container has non-empty Guardian request ceilings.
+*/}}
+{{- define "kompass.guardian.validateContainers" -}}
+{{- $path := .path -}}
+{{- $containers := required (printf "%s.containers is required" $path) .containers -}}
+{{- if not (kindIs "map" $containers) -}}
+{{- fail (printf "%s.containers must be a map" $path) -}}
+{{- end -}}
+{{- range $containerName := .expectedContainers -}}
+{{- $containerPath := printf "%s.containers.%s" $path $containerName -}}
+{{- $container := required (printf "%s is required" $containerPath) (get $containers $containerName) -}}
+{{- if not (kindIs "map" $container) -}}
+{{- fail (printf "%s must be a map" $containerPath) -}}
+{{- end -}}
+{{- $cpuRequest := required (printf "%s.cpuRequest is required" $containerPath) (get $container "cpuRequest") -}}
+{{- if empty (trim (printf "%v" $cpuRequest)) -}}
+{{- fail (printf "%s.cpuRequest must not be empty" $containerPath) -}}
+{{- end -}}
+{{- $memoryRequest := required (printf "%s.memoryRequest is required" $containerPath) (get $container "memoryRequest") -}}
+{{- if empty (trim (printf "%v" $memoryRequest)) -}}
+{{- fail (printf "%s.memoryRequest must not be empty" $containerPath) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Validate a first-party workload's structured global Guardian request ceilings.
+*/}}
+{{- define "kompass.guardian.validateFirstParty" -}}
+{{- $ceilingsPath := printf "global.guardian.requestCeilings.%s" .workload -}}
+{{- $ceilings := required (printf "%s is required" $ceilingsPath) (get .requestCeilings .workload) -}}
+{{- include "kompass.guardian.validateContainers" (dict "path" $ceilingsPath "containers" $ceilings "expectedContainers" .expectedContainers) -}}
+{{- end -}}
+
+{{/*
+Validate a third-party workload's JSON Guardian request-ceiling annotation.
+*/}}
+{{- define "kompass.guardian.validateAnnotation" -}}
+{{- $annotation := required (printf "%s is required" .path) .annotation -}}
+{{- if not (kindIs "string" $annotation) -}}
+{{- fail (printf "%s must be a JSON string" .path) -}}
+{{- end -}}
+{{- $decoded := fromJson $annotation -}}
+{{- if not (kindIs "map" $decoded) -}}
+{{- fail (printf "%s must be valid JSON" .path) -}}
+{{- end -}}
+{{- include "kompass.guardian.validateContainers" (dict "path" .path "containers" (get $decoded "containers") "expectedContainers" .expectedContainers) -}}
+{{- end -}}
+
+{{/*
+Validate Guardian request ceilings for every workload this release can install.
+*/}}
+{{- define "kompass.validate.guardianRequestCeilings" -}}
+{{- $requestCeilings := dig "guardian" "requestCeilings" (dict) .Values.global -}}
+{{- if dig "kompass-bridge" "enabled" false .Values.global -}}
+{{- include "kompass.guardian.validateFirstParty" (dict "requestCeilings" $requestCeilings "workload" "bridge" "expectedContainers" (list "bridge")) -}}
+{{- end -}}
+{{- if (index .Values "kompass-insights").enabled -}}
+{{- include "kompass.guardian.validateFirstParty" (dict "requestCeilings" $requestCeilings "workload" "insights" "expectedContainers" (list "kompass-insights")) -}}
+{{- end -}}
+{{- if (index .Values "kompass-pod-placement").enabled -}}
+{{- include "kompass.guardian.validateFirstParty" (dict "requestCeilings" $requestCeilings "workload" "podPlacement" "expectedContainers" (list "pod-placement")) -}}
+{{- end -}}
+{{- if .Values.rightsizing.enabled -}}
+{{- include "kompass.guardian.validateFirstParty" (dict "requestCeilings" $requestCeilings "workload" "actionTaker" "expectedContainers" (list "kube-rbac-proxy" "action-taker")) -}}
+{{- include "kompass.guardian.validateFirstParty" (dict "requestCeilings" $requestCeilings "workload" "recommendationsMaker" "expectedContainers" (list "recommendations-maker")) -}}
+{{- include "kompass.guardian.validateFirstParty" (dict "requestCeilings" $requestCeilings "workload" "gpuMetrics" "expectedContainers" (list "exporter")) -}}
+{{- end -}}
+{{- if .Values.victoriaMetrics.enabled -}}
+{{- include "kompass.guardian.validateAnnotation" (dict "path" "victoriaMetrics.server.annotations[guardian.kompass.zesty.co/request-ceilings]" "annotation" (dig "server" "annotations" "guardian.kompass.zesty.co/request-ceilings" nil .Values.victoriaMetrics) "expectedContainers" (list "vmsingle")) -}}
+{{- end -}}
+{{- if .Values.victoriaMetricsCluster.enabled -}}
+{{- include "kompass.guardian.validateAnnotation" (dict "path" "victoriaMetricsCluster.vmselect.annotations[guardian.kompass.zesty.co/request-ceilings]" "annotation" (dig "vmselect" "annotations" "guardian.kompass.zesty.co/request-ceilings" nil .Values.victoriaMetricsCluster) "expectedContainers" (list "vmselect")) -}}
+{{- include "kompass.guardian.validateAnnotation" (dict "path" "victoriaMetricsCluster.vminsert.annotations[guardian.kompass.zesty.co/request-ceilings]" "annotation" (dig "vminsert" "annotations" "guardian.kompass.zesty.co/request-ceilings" nil .Values.victoriaMetricsCluster) "expectedContainers" (list "vminsert")) -}}
+{{- include "kompass.guardian.validateAnnotation" (dict "path" "victoriaMetricsCluster.vmstorage.annotations[guardian.kompass.zesty.co/request-ceilings]" "annotation" (dig "vmstorage" "annotations" "guardian.kompass.zesty.co/request-ceilings" nil .Values.victoriaMetricsCluster) "expectedContainers" (list "vmstorage")) -}}
+{{- end -}}
+{{- if .Values.victoriaMetricsAgent.enabled -}}
+{{- include "kompass.guardian.validateAnnotation" (dict "path" "victoriaMetricsAgent.annotations[guardian.kompass.zesty.co/request-ceilings]" "annotation" (dig "annotations" "guardian.kompass.zesty.co/request-ceilings" nil .Values.victoriaMetricsAgent) "expectedContainers" (list "vmagent")) -}}
+{{- end -}}
+{{- if .Values.victoriaMetricsAlert.enabled -}}
+{{- include "kompass.guardian.validateAnnotation" (dict "path" "victoriaMetricsAlert.server.annotations[guardian.kompass.zesty.co/request-ceilings]" "annotation" (dig "server" "annotations" "guardian.kompass.zesty.co/request-ceilings" nil .Values.victoriaMetricsAlert) "expectedContainers" (list "vmalert")) -}}
+{{- end -}}
+{{- if .Values.victoriaMetricsAuth.enabled -}}
+{{- include "kompass.guardian.validateAnnotation" (dict "path" "victoriaMetricsAuth.annotations[guardian.kompass.zesty.co/request-ceilings]" "annotation" (dig "annotations" "guardian.kompass.zesty.co/request-ceilings" nil .Values.victoriaMetricsAuth) "expectedContainers" (list "vmauth")) -}}
+{{- end -}}
+{{- if .Values.kubeStateMetrics.enabled -}}
+{{- include "kompass.guardian.validateAnnotation" (dict "path" "kubeStateMetrics.annotations[guardian.kompass.zesty.co/request-ceilings]" "annotation" (dig "annotations" "guardian.kompass.zesty.co/request-ceilings" nil .Values.kubeStateMetrics) "expectedContainers" (list "kube-state-metrics")) -}}
+{{- end -}}
+{{- if .Values.grafana.enabled -}}
+{{- include "kompass.guardian.validateAnnotation" (dict "path" "grafana.annotations[guardian.kompass.zesty.co/request-ceilings]" "annotation" (dig "annotations" "guardian.kompass.zesty.co/request-ceilings" nil .Values.grafana) "expectedContainers" (list "grafana" "grafana-sc-dashboard" "grafana-sc-datasources")) -}}
+{{- end -}}
+{{- if (index .Values "cert-manager").enabled -}}
+{{- include "kompass.guardian.validateAnnotation" (dict "path" "cert-manager.deploymentAnnotations[guardian.kompass.zesty.co/request-ceilings]" "annotation" (dig "deploymentAnnotations" "guardian.kompass.zesty.co/request-ceilings" nil (index .Values "cert-manager")) "expectedContainers" (list "cert-manager-controller")) -}}
+{{- include "kompass.guardian.validateAnnotation" (dict "path" "cert-manager.cainjector.deploymentAnnotations[guardian.kompass.zesty.co/request-ceilings]" "annotation" (dig "cainjector" "deploymentAnnotations" "guardian.kompass.zesty.co/request-ceilings" nil (index .Values "cert-manager")) "expectedContainers" (list "cert-manager-cainjector")) -}}
+{{- include "kompass.guardian.validateAnnotation" (dict "path" "cert-manager.webhook.deploymentAnnotations[guardian.kompass.zesty.co/request-ceilings]" "annotation" (dig "webhook" "deploymentAnnotations" "guardian.kompass.zesty.co/request-ceilings" nil (index .Values "cert-manager")) "expectedContainers" (list "cert-manager-webhook")) -}}
+{{- end -}}
+{{- if (index .Values "metrics-server").enabled -}}
+{{- include "kompass.guardian.validateAnnotation" (dict "path" "metrics-server.deploymentAnnotations[guardian.kompass.zesty.co/request-ceilings]" "annotation" (dig "deploymentAnnotations" "guardian.kompass.zesty.co/request-ceilings" nil (index .Values "metrics-server")) "expectedContainers" (list "metrics-server")) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Resolve container securityContext from global/component values.
 Global values override component values for matching keys.
 Pod-only securityContext keys are removed from the resolved map.

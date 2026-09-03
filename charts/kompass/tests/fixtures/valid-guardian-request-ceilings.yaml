@@ -1,0 +1,17 @@
+kubeStateMetrics:
+  annotations:
+    guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"kube-state-metrics":{"cpuRequest":"1m","memoryRequest":"1Mi"}}}'
+
+grafana:
+  annotations:
+    guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"grafana":{"cpuRequest":"1m","memoryRequest":"1Mi"},"grafana-sc-dashboard":{"cpuRequest":"1m","memoryRequest":"1Mi"},"grafana-sc-datasources":{"cpuRequest":"1m","memoryRequest":"1Mi"}}}'
+
+cert-manager:
+  deploymentAnnotations:
+    guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"cert-manager-controller":{"cpuRequest":"1m","memoryRequest":"1Mi"}}}'
+  cainjector:
+    deploymentAnnotations:
+      guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"cert-manager-cainjector":{"cpuRequest":"1m","memoryRequest":"1Mi"}}}'
+  webhook:
+    deploymentAnnotations:
+      guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"cert-manager-webhook":{"cpuRequest":"1m","memoryRequest":"1Mi"}}}'

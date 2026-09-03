@@ -1,0 +1,23 @@
+suite: Pod Placement workload annotations
+templates:
+  - templates/deployment.yaml
+tests:
+  - it: applies workload annotations to the Deployment
+    set:
+      annotations:
+        example.com/component: pod-placement
+    asserts:
+      - equal:
+          path: metadata.annotations["example.com/component"]
+          value: pod-placement
+      - notExists:
+          path: spec.template.metadata.annotations["example.com/component"]
+
+  - it: serializes Guardian ceilings from global configuration
+    set:
+      global.guardian.requestCeilings.podPlacement.pod-placement.cpuRequest: 750m
+      global.guardian.requestCeilings.podPlacement.pod-placement.memoryRequest: 7680Mi
+    asserts:
+      - equal:
+          path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]
+          value: '{"version":1,"containers":{"pod-placement":{"cpuRequest":"750m","memoryRequest":"7680Mi"}}}'

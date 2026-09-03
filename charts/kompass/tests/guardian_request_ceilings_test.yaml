@@ -1,0 +1,143 @@
+suite: Guardian request ceilings
+templates:
+  - templates/bridge/deployment.yaml
+  - charts/victoriaMetricsCluster/templates/vmselect-server.yaml
+  - charts/victoriaMetricsCluster/templates/vminsert-server.yaml
+  - charts/victoriaMetricsCluster/templates/vmstorage-server.yaml
+  - charts/victoriaMetricsAgent/templates/server.yaml
+  - charts/victoriaMetricsAgent/templates/configmap.yaml
+  - charts/victoriaMetricsAlert/templates/alert-server.yaml
+  - charts/victoriaMetricsAlert/templates/alert-configmap.yaml
+  - charts/victoriaMetricsAuth/templates/server.yaml
+  - charts/victoriaMetricsAuth/templates/secret.yaml
+  - charts/grafana/templates/statefulset.yaml
+  - charts/grafana/templates/configmap.yaml
+  - charts/grafana/templates/dashboards-json-configmap.yaml
+  - charts/grafana/templates/configmap-dashboard-provider.yaml
+  - charts/grafana/templates/secret.yaml
+  - charts/kompass-insights/templates/deployment.yaml
+  - charts/kompass-insights/templates/configMap.yaml
+  - charts/kompass-pod-placement/templates/deployment.yaml
+  - charts/victoriaMetrics/templates/server.yaml
+  - charts/kubeStateMetrics/templates/deployment.yaml
+  - charts/cert-manager/templates/deployment.yaml
+  - charts/cert-manager/templates/cainjector-deployment.yaml
+  - charts/cert-manager/templates/webhook-deployment.yaml
+  - charts/metrics-server/templates/deployment.yaml
+tests:
+  - it: annotates Bridge with its live-derived request ceiling
+    templates:
+      - templates/bridge/deployment.yaml
+    asserts:
+      - equal:
+          path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]
+          value: '{"version":1,"containers":{"bridge":{"cpuRequest":"150m","memoryRequest":"192Mi"}}}'
+
+  - it: annotates every VictoriaMetrics cluster workload
+    templates:
+      - charts/victoriaMetricsCluster/templates/vmselect-server.yaml
+      - charts/victoriaMetricsCluster/templates/vminsert-server.yaml
+      - charts/victoriaMetricsCluster/templates/vmstorage-server.yaml
+    set:
+      victoriaMetrics.enabled: false
+      victoriaMetricsCluster.enabled: true
+    asserts:
+      - equal:
+          path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]
+          value: '{"version":1,"containers":{"vmselect":{"cpuRequest":"4500m","memoryRequest":"12Gi"}}}'
+        template: charts/victoriaMetricsCluster/templates/vmselect-server.yaml
+      - equal:
+          path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]
+          value: '{"version":1,"containers":{"vminsert":{"cpuRequest":"450m","memoryRequest":"1536Mi"}}}'
+        template: charts/victoriaMetricsCluster/templates/vminsert-server.yaml
+      - equal:
+          path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]
+          value: '{"version":1,"containers":{"vmstorage":{"cpuRequest":"3750m","memoryRequest":"36Gi"}}}'
+        template: charts/victoriaMetricsCluster/templates/vmstorage-server.yaml
+
+  - it: annotates the standalone VictoriaMetrics workloads
+    templates:
+      - charts/victoriaMetricsAgent/templates/server.yaml
+      - charts/victoriaMetricsAlert/templates/alert-server.yaml
+      - charts/victoriaMetricsAuth/templates/server.yaml
+    asserts:
+      - equal:
+          path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]
+          value: '{"version":1,"containers":{"vmagent":{"cpuRequest":"5250m","memoryRequest":"12Gi"}}}'
+        template: charts/victoriaMetricsAgent/templates/server.yaml
+      - equal:
+          path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]
+          value: '{"version":1,"containers":{"vmalert":{"cpuRequest":"1125m","memoryRequest":"3Gi"}}}'
+        template: charts/victoriaMetricsAlert/templates/alert-server.yaml
+      - equal:
+          path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]
+          value: '{"version":1,"containers":{"vmauth":{"cpuRequest":"150m","memoryRequest":"150Mi"}}}'
+        template: charts/victoriaMetricsAuth/templates/server.yaml
+
+  - it: annotates Grafana with valid request ceilings
+    templates:
+      - charts/grafana/templates/statefulset.yaml
+    asserts:
+      - equal:
+          path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]
+          value: '{"version":1,"containers":{"grafana":{"cpuRequest":"1m","memoryRequest":"1Mi"},"grafana-sc-dashboard":{"cpuRequest":"1m","memoryRequest":"1Mi"},"grafana-sc-datasources":{"cpuRequest":"1m","memoryRequest":"1Mi"}}}'
+
+  - it: annotates Insights and Pod Placement
+    templates:
+      - charts/kompass-insights/templates/deployment.yaml
+      - charts/kompass-pod-placement/templates/deployment.yaml
+    set:
+      kompass-insights.secret.create: false
+    asserts:
+      - equal:
+          path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]
+          value: '{"version":1,"containers":{"kompass-insights":{"cpuRequest":"2250m","memoryRequest":"45Gi"}}}'
+        template: charts/kompass-insights/templates/deployment.yaml
+      - equal:
+          path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]
+          value: '{"version":1,"containers":{"pod-placement":{"cpuRequest":"750m","memoryRequest":"7680Mi"}}}'
+        template: charts/kompass-pod-placement/templates/deployment.yaml
+
+  - it: annotates every cert-manager workload with valid request ceilings
+    templates:
+      - charts/cert-manager/templates/deployment.yaml
+      - charts/cert-manager/templates/cainjector-deployment.yaml
+      - charts/cert-manager/templates/webhook-deployment.yaml
+    asserts:
+      - equal:
+          path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]
+          value: '{"version":1,"containers":{"cert-manager-controller":{"cpuRequest":"1m","memoryRequest":"1Mi"}}}'
+        template: charts/cert-manager/templates/deployment.yaml
+      - equal:
+          path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]
+          value: '{"version":1,"containers":{"cert-manager-cainjector":{"cpuRequest":"1m","memoryRequest":"1Mi"}}}'
+        template: charts/cert-manager/templates/cainjector-deployment.yaml
+      - equal:
+          path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]
+          value: '{"version":1,"containers":{"cert-manager-webhook":{"cpuRequest":"1m","memoryRequest":"1Mi"}}}'
+        template: charts/cert-manager/templates/webhook-deployment.yaml
+
+  - it: annotates VM Single and kube-state-metrics with valid request ceilings
+    templates:
+      - charts/victoriaMetrics/templates/server.yaml
+      - charts/kubeStateMetrics/templates/deployment.yaml
+    asserts:
+      - equal:
+          path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]
+          value: '{"version":1,"containers":{"vmsingle":{"cpuRequest":"300m","memoryRequest":"1536Mi"}}}'
+        template: charts/victoriaMetrics/templates/server.yaml
+      - equal:
+          path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]
+          value: '{"version":1,"containers":{"kube-state-metrics":{"cpuRequest":"1m","memoryRequest":"1Mi"}}}'
+        template: charts/kubeStateMetrics/templates/deployment.yaml
+
+  - it: annotates metrics-server when enabled
+    templates:
+      - charts/metrics-server/templates/deployment.yaml
+    set:
+      metrics-server.enabled: true
+    asserts:
+      - equal:
+          path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]
+          value: '{"version":1,"containers":{"metrics-server":{"cpuRequest":"150m","memoryRequest":"300Mi"}}}'
+        template: charts/metrics-server/templates/deployment.yaml

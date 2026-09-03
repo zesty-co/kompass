@@ -1,0 +1,39 @@
+suite: Insights workload annotations
+templates:
+  - templates/deployment.yaml
+  - templates/configMap.yaml
+tests:
+  - it: applies component workload annotations to the Deployment
+    set:
+      secret.create: false
+      insights.annotations:
+        example.com/component: component
+    asserts:
+      - equal:
+          path: metadata.annotations["example.com/component"]
+          value: component
+        template: templates/deployment.yaml
+
+  - it: gives component workload annotations precedence over global annotations
+    set:
+      secret.create: false
+      global.annotations:
+        example.com/owner: global
+      insights.annotations:
+        example.com/owner: component
+    asserts:
+      - equal:
+          path: metadata.annotations["example.com/owner"]
+          value: component
+        template: templates/deployment.yaml
+
+  - it: serializes Guardian ceilings from global configuration
+    set:
+      secret.create: false
+      global.guardian.requestCeilings.insights.kompass-insights.cpuRequest: 2250m
+      global.guardian.requestCeilings.insights.kompass-insights.memoryRequest: 45Gi
+    asserts:
+      - equal:
+          path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]
+          value: '{"version":1,"containers":{"kompass-insights":{"cpuRequest":"2250m","memoryRequest":"45Gi"}}}'
+        template: templates/deployment.yaml

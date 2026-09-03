@@ -22,6 +22,11 @@
 {{- $probes := $bridgeValues.probes | default (dict) -}}
 {{- $bridgeKafka := $bridgeValues.kafka | default (dict) -}}
 {{- $kafkaUsername := (index $bridgeKafka "username") | default (printf "bridge-user-%s" ((index $kompassInsights "orgID") | default "")) -}}
+{{- $bridgeAnnotations := deepCopy ($bridgeValues.annotations | default dict) -}}
+{{- $bridgeCeilings := dig "guardian" "requestCeilings" "bridge" (dict) $globalValues -}}
+{{- if $bridgeCeilings -}}
+{{- $bridgeAnnotations = mergeOverwrite $bridgeAnnotations (dict "guardian.kompass.zesty.co/request-ceilings" (printf "{\"version\":1,\"containers\":%s}" ($bridgeCeilings | toJson))) -}}
+{{- end -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -29,6 +34,10 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "kompass.bridge.labels" . | nindent 4 }}
+  {{- with $bridgeAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   {{- if not $autoscaling.enabled }}
   replicas: {{ $bridgeValues.replicaCount }}

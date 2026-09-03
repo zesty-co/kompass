@@ -1,5 +1,15 @@
 {{- $globalWorkload := .Values.global | default dict -}}
 {{- $insightsWorkload := .Values.insights | default dict -}}
+{{- $insightsAnnotations := include "zesty-k8s.workload.mergeMaps" (dict
+  "global" $globalWorkload
+  "component" $insightsWorkload
+  "key" "annotations"
+  "fallback" (.Values.insights.annotations | default dict)
+) | fromYaml -}}
+{{- $insightsCeilings := dig "guardian" "requestCeilings" "insights" (dict) .Values.global -}}
+{{- if $insightsCeilings -}}
+{{- $insightsAnnotations = mergeOverwrite $insightsAnnotations (dict "guardian.kompass.zesty.co/request-ceilings" (printf "{\"version\":1,\"containers\":%s}" ($insightsCeilings | toJson))) -}}
+{{- end -}}
 {{- $insightsPodAnnotations := include "zesty-k8s.workload.mergeMaps" (dict
   "global" $globalWorkload
   "component" $insightsWorkload
@@ -76,6 +86,10 @@ metadata:
     app.kubernetes.io/instance: "{{ include "zesty-k8s.fullname" . }}"
     app.kubernetes.io/name: "{{ include "zesty-k8s.fullname" . }}"
     {{- include "zesty-k8s.requiredLabels" . | nindent 4 }}
+  {{- with $insightsAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   replicas: 1
   strategy:
