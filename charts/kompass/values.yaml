@@ -282,7 +282,7 @@ victoriaMetrics:
     name: kompass-victoria-metrics
   server:
     annotations:
-      guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"vmsingle":{"cpuRequest":"300m","memoryRequest":"1536Mi"}}}'
+      guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"vmsingle":{"cpuRequest":"3","memoryRequest":"5Gi"}}}'
     extraLabels:
       app.kubernetes.io/part-of: kompass
     podLabels:
@@ -294,8 +294,11 @@ victoriaMetrics:
       storageClassName: *storageClassName
     resources:
       requests:
-        memory: "3Gi"
-        cpu: "0.5"
+        memory: "688Mi"
+        cpu: "200m"
+      limits:
+        memory: "864Mi"
+        cpu: "300m"
     extraArgs:
       retentionPeriod: 1w
       storageDataPath: /victoria-metrics-data
@@ -315,7 +318,7 @@ victoriaMetricsCluster:
     extraLabels:
       app.kubernetes.io/part-of: kompass
     annotations:
-      guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"vmselect":{"cpuRequest":"4500m","memoryRequest":"12Gi"}}}'
+      guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"vmselect":{"cpuRequest":"6","memoryRequest":"9Gi"}}}'
     podLabels:
       app.kubernetes.io/part-of: kompass
     fullnameOverride: kompass-victoria-metrics-cluster-vmselect
@@ -367,7 +370,7 @@ victoriaMetricsCluster:
     extraLabels:
       app.kubernetes.io/part-of: kompass
     annotations:
-      guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"vminsert":{"cpuRequest":"450m","memoryRequest":"1536Mi"}}}'
+      guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"vminsert":{"cpuRequest":"1","memoryRequest":"1.5Gi"}}}'
     podLabels:
       app.kubernetes.io/part-of: kompass
     fullnameOverride: kompass-victoria-metrics-cluster-vminsert
@@ -414,7 +417,7 @@ victoriaMetricsCluster:
     extraLabels:
       app.kubernetes.io/part-of: kompass
     annotations:
-      guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"vmstorage":{"cpuRequest":"3750m","memoryRequest":"36Gi"}}}'
+      guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"vmstorage":{"cpuRequest":"6","memoryRequest":"25Gi"}}}'
     podLabels:
       app.kubernetes.io/part-of: kompass
     fullnameOverride: kompass-victoria-metrics-cluster-vmstorage
@@ -462,6 +465,13 @@ victoriaMetricsCluster:
         memory: "3Gi"
         cpu: "0.5"
   vmauth:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 16Mi
+      limits:
+        cpu: 200m
+        memory: 32Mi
     extraLabels:
       app.kubernetes.io/part-of: kompass
     podLabels:
@@ -556,8 +566,15 @@ metricsScrapeFilters:
 victoriaMetricsAgent:
   enabled: true
   fullnameOverride: kompass-victoria-metrics-agent
+  resources:
+    requests:
+      cpu: 100m
+      memory: 160Mi
+    limits:
+      cpu: 200m
+      memory: 208Mi
   annotations:
-    guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"vmagent":{"cpuRequest":"5250m","memoryRequest":"12Gi"}}}'
+    guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"vmagent":{"cpuRequest":"7","memoryRequest":"12Gi"}}}'
   extraLabels:
     app.kubernetes.io/part-of: kompass
   podLabels:
@@ -598,8 +615,15 @@ victoriaMetricsAlert:
       app.kubernetes.io/part-of: kompass
   fullnameOverride: kompass-victoria-metrics-alert
   server:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 96Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
     annotations:
-      guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"vmalert":{"cpuRequest":"1125m","memoryRequest":"3Gi"}}}'
+      guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"vmalert":{"cpuRequest":"2","memoryRequest":"3Gi"}}}'
     podLabels:
       app.kubernetes.io/part-of: kompass
     datasource:
@@ -624,8 +648,15 @@ victoriaMetricsAlert:
 
 victoriaMetricsAuth:
   enabled: true
+  resources:
+    requests:
+      cpu: 100m
+      memory: 16Mi
+    limits:
+      cpu: 200m
+      memory: 32Mi
   annotations:
-    guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"vmauth":{"cpuRequest":"150m","memoryRequest":"150Mi"}}}'
+    guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"vmauth":{"cpuRequest":"0.75","memoryRequest":"256Mi"}}}'
   extraLabels:
     app.kubernetes.io/part-of: kompass
   podLabels:
@@ -679,17 +710,13 @@ victoriaMetricsAuth:
     spec:
       strategy:
         type: RollingUpdate
-  resources:
-    requests:
-      memory: "128Mi"
-      cpu: "0.1"
 
 kubeStateMetrics:
   # Set to true to install and manage kube-state-metrics from this chart.
   # Set to false to use a pre-existing external kube-state-metrics service.
   enabled: true
   annotations:
-    guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"kube-state-metrics":{"cpuRequest":"99","memoryRequest":"99Gi"}}}'
+    guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"kube-state-metrics":{"cpuRequest":"4","memoryRequest":"10384Mi"}}}'
   kompassScrapeInterval: 30s
   force: false
   # Required when enabled=false: service name of the external kube-state-metrics.
@@ -698,6 +725,13 @@ kubeStateMetrics:
   serviceNamespace: ""
   nameOverride: kube-state-metrics
   fullnameOverride: kompass-kube-state-metrics
+  resources:
+    requests:
+      cpu: 200m
+      memory: 560Mi
+    limits:
+      cpu: 300m
+      memory: 704Mi
   extraArgs:
   - --metric-annotations-allowlist=pods=[*]
   actionCustomResourceVersion: &actionCustomResourceVersion v1alpha1
@@ -761,10 +795,17 @@ kubeStateMetrics:
 grafana:
   enabled: true
   annotations:
-    guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"grafana":{"cpuRequest":"99","memoryRequest":"99Gi"},"grafana-sc-dashboard":{"cpuRequest":"99","memoryRequest":"99Gi"},"grafana-sc-datasources":{"cpuRequest":"99","memoryRequest":"99Gi"}}}'
+    guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"grafana":{"cpuRequest":"0.5","memoryRequest":"512Mii"},"grafana-sc-dashboard":{"cpuRequest":"0.5","memoryRequest":"256Mi"},"grafana-sc-datasources":{"cpuRequest":"0.5","memoryRequest":"256Mi"}}}'
   extraLabels:
     app.kubernetes.io/part-of: kompass
   fullnameOverride: "kompass-grafana"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 112Mi
+    limits:
+      cpu: 200m
+      memory: 144Mi
   # Pod-level security context applied to the Grafana pod.
   # Ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
   securityContext: {}
@@ -795,6 +836,13 @@ grafana:
     storageClassName: *storageClassName
   # Use ConfigMaps for datasources and dashboards
   sidecar:
+    resources:
+      requests:
+        cpu: 200m
+        memory: 144Mi
+      limits:
+        cpu: 300m
+        memory: 192Mi
     datasources:
       enabled: true
       label: grafana_datasource
@@ -807,13 +855,20 @@ grafana:
 cert-manager:
   enabled: true
   deploymentAnnotations:
-    guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"cert-manager-controller":{"cpuRequest":"99","memoryRequest":"99Gi"}}}'
+    guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"cert-manager-controller":{"cpuRequest":"0.5","memoryRequest":"256Mi"}}}'
+  resources:
+    requests:
+      cpu: 100m
+      memory: 48Mi
+    limits:
+      cpu: 200m
+      memory: 64Mi
   cainjector:
     deploymentAnnotations:
-      guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"cert-manager-cainjector":{"cpuRequest":"99","memoryRequest":"99Gi"}}}'
+      guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"cert-manager-cainjector":{"cpuRequest":"0.5","memoryRequest":"750Mi"}}}'
   webhook:
     deploymentAnnotations:
-      guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"cert-manager-webhook":{"cpuRequest":"99","memoryRequest":"99Gi"}}}'
+      guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"cert-manager-webhook":{"cpuRequest":"0.5","memoryRequest":"256Mi"}}}'
   global:
     commonLabels:
       app.kubernetes.io/part-of: kompass
@@ -904,10 +959,10 @@ kompass-bridge:
   resources:
     requests:
       cpu: 100m
-      memory: 128Mi
+      memory: 48Mi
     limits:
-      cpu: 500m
-      memory: 512Mi
+      cpu: 200m
+      memory: 64Mi
 
   # -- (map) Container ports exposed by the Bridge.
   ports:
@@ -984,6 +1039,13 @@ metrics-server:
   enabled: false # enable it to install metrics-server
   deploymentAnnotations:
     guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"metrics-server":{"cpuRequest":"150m","memoryRequest":"300Mi"}}}'
+  resources:
+    requests:
+      cpu: 100m
+      memory: 160Mi
+    limits:
+      cpu: 200m
+      memory: 208Mi
   commonLabels:
     app.kubernetes.io/part-of: kompass
   podLabels:
