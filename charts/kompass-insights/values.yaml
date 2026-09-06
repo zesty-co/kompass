@@ -80,11 +80,12 @@ securityContext:
     type: RuntimeDefault
 
 resources:
-  limits:
-    memory: 2Gi
   requests:
-    cpu: 250m
-    memory: 2Gi
+    cpu: 0.4
+    memory: 512Mi
+  limits:
+    cpu: 0.5
+    memory: 640Mi
 
 prometheus:
   url: ~
