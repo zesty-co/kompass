@@ -3,7 +3,7 @@ name: kompass
 description: Zesty Kompass Helm Charts
 icon: https://zesty.co/wp-content/uploads/2024/05/favicon-150x150.png
 type: application
-version: 0.3.13
+version: 0.3.14
 appVersion: "1.16.0"
 dependencies:
   # zesty products
@@ -28,7 +28,7 @@ dependencies:
     alias: victoriaMetrics
     condition: victoriaMetrics.enabled
     repository: https://victoriametrics.github.io/helm-charts
-    version: 0.39.0
+    version: 0.41.0
   - name: victoria-metrics-cluster
     alias: victoriaMetricsCluster
     condition: victoriaMetricsCluster.enabled
@@ -48,7 +48,7 @@ dependencies:
     alias: victoriaMetricsAuth
     condition: victoriaMetricsAuth.enabled
     repository: https://victoriametrics.github.io/helm-charts
-    version: 0.33.0
+    version: 0.34.0
   - name: kube-state-metrics
     alias: kubeStateMetrics
     condition: kubeStateMetrics.enabled
@@ -57,12 +57,12 @@ dependencies:
   - name: cert-manager
     repository: https://charts.jetstack.io
     condition: cert-manager.enabled
-    version: 1.19.1
+    version: 1.20.2
   - name: grafana
     condition: grafana.enabled
     repository: https://grafana.github.io/helm-charts
-    version: 8.10.4
+    version: 10.5.15
   - name: metrics-server
     condition: metrics-server.enabled
     repository: https://kubernetes-sigs.github.io/metrics-server/
-    version: 3.12.1
+    version: 3.13.0

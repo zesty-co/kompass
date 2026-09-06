@@ -550,6 +550,12 @@ victoriaMetricsAgent:
               optional: true
   remoteWrite:
   - url: *vmRemoteWritePrometheusUrl
+  rbac:
+    extraRules:
+    - apiGroups: [""]
+      resources:
+      - nodes/proxy
+      verbs: ["get"]
 
 victoriaMetricsAlert:
   enabled: true
