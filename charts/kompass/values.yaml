@@ -251,6 +251,8 @@ victoriaMetrics:
   serviceAccount:
     name: kompass-victoria-metrics
   server:
+    image:
+      variant: scratch
     extraLabels:
       app.kubernetes.io/part-of: kompass
     podLabels:
@@ -280,6 +282,8 @@ victoriaMetricsCluster:
   serviceAccount:
     name: kompass-victoria-metrics-cluster
   vmselect:
+    image:
+      variant: cluster-scratch
     extraLabels:
       app.kubernetes.io/part-of: kompass
     podLabels:
@@ -330,6 +334,8 @@ victoriaMetricsCluster:
         memory: "512Mi"
         cpu: "0.5"
   vminsert:
+    image:
+      variant: cluster-scratch
     extraLabels:
       app.kubernetes.io/part-of: kompass
     podLabels:
@@ -375,6 +381,8 @@ victoriaMetricsCluster:
         memory: "512Mi"
         cpu: "0.5"
   vmstorage:
+    image:
+      variant: cluster-scratch
     extraLabels:
       app.kubernetes.io/part-of: kompass
     podLabels:
@@ -424,6 +432,8 @@ victoriaMetricsCluster:
         memory: "3Gi"
         cpu: "0.5"
   vmauth:
+    image:
+      variant: scratch
     extraLabels:
       app.kubernetes.io/part-of: kompass
     podLabels:
@@ -517,6 +527,8 @@ metricsScrapeFilters:
 
 victoriaMetricsAgent:
   enabled: true
+  image:
+    variant: scratch
   fullnameOverride: kompass-victoria-metrics-agent
   extraLabels:
     app.kubernetes.io/part-of: kompass
@@ -564,6 +576,8 @@ victoriaMetricsAlert:
       app.kubernetes.io/part-of: kompass
   fullnameOverride: kompass-victoria-metrics-alert
   server:
+    image:
+      variant: scratch
     podLabels:
       app.kubernetes.io/part-of: kompass
     datasource:
@@ -588,6 +602,8 @@ victoriaMetricsAlert:
 
 victoriaMetricsAuth:
   enabled: true
+  image:
+    variant: scratch
   extraLabels:
     app.kubernetes.io/part-of: kompass
   podLabels:
