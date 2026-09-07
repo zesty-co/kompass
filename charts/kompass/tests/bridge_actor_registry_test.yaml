@@ -1,0 +1,92 @@
+suite: Bridge actor registry lifecycle
+release:
+  name: ci
+  namespace: zesty-system
+templates:
+  - templates/bridge/deployment.yaml
+  - templates/bridge/role.yaml
+  - templates/bridge/service.yaml
+
+tests:
+  - it: configures renewable actor leases while keeping both Bridge replicas serviceable
+    set:
+      global:
+        kompass-bridge:
+          enabled: true
+    template: templates/bridge/deployment.yaml
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 2
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --actor-ttl=10m
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --actor-cleanup-interval=1m
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --actor-cleanup-enabled=true
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --leader-elect=true
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --leader-election-id=ci-kompass-bridge-actor-cleanup
+
+  - it: allows cleanup to remain disabled while lease recording is observed
+    set:
+      global:
+        kompass-bridge:
+          enabled: true
+      kompass-bridge:
+        actorRegistry:
+          cleanup:
+            enabled: false
+    template: templates/bridge/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --actor-cleanup-enabled=false
+
+  - it: grants namespace-scoped Lease access for cleanup leader election
+    set:
+      global:
+        kompass-bridge:
+          enabled: true
+    template: templates/bridge/role.yaml
+    asserts:
+      - equal:
+          path: metadata.namespace
+          value: zesty-system
+      - contains:
+          path: rules
+          content:
+            apiGroups:
+              - coordination.k8s.io
+            resources:
+              - leases
+            verbs:
+              - get
+              - list
+              - watch
+              - create
+              - update
+              - patch
+              - delete
+
+  - it: keeps one Service routing to every Bridge replica
+    set:
+      global:
+        kompass-bridge:
+          enabled: true
+    template: templates/bridge/service.yaml
+    asserts:
+      - isKind:
+          of: Service
+      - equal:
+          path: spec.selector["app.kubernetes.io/name"]
+          value: kompass-bridge
+      - equal:
+          path: spec.selector["app.kubernetes.io/instance"]
+          value: ci
