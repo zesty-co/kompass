@@ -795,7 +795,7 @@ kubeStateMetrics:
 grafana:
   enabled: true
   annotations:
-    guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"grafana":{"cpuRequest":"0.5","memoryRequest":"512Mii"},"grafana-sc-dashboard":{"cpuRequest":"0.5","memoryRequest":"256Mi"},"grafana-sc-datasources":{"cpuRequest":"0.5","memoryRequest":"256Mi"}}}'
+    guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"grafana":{"cpuRequest":"0.5","memoryRequest":"512Mi"},"grafana-sc-dashboard":{"cpuRequest":"0.5","memoryRequest":"256Mi"},"grafana-sc-datasources":{"cpuRequest":"0.5","memoryRequest":"256Mi"}}}'
   extraLabels:
     app.kubernetes.io/part-of: kompass
   fullnameOverride: "kompass-grafana"
@@ -1052,7 +1052,7 @@ kompass-bridge:
 metrics-server:
   enabled: false # enable it to install metrics-server
   deploymentAnnotations:
-    guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"metrics-server":{"cpuRequest":"1.5 ","memoryRequest":"512Mi"}}}'
+    guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"metrics-server":{"cpuRequest":"1.5","memoryRequest":"512Mi"}}}'
   resources:
     requests:
       cpu: 100m
