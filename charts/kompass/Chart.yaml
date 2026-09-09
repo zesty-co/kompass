@@ -9,19 +9,19 @@ dependencies:
   # zesty products
   - name: kompass-insights
     condition: kompass-insights.enabled
-    repository: "file://../kompass-insights"
+    repository: "https://zesty-co.github.io/kompass"
     version: 2.3.12
   - name: pod-rightsizing
     alias: rightsizing
-    repository: "file://../../../pod-rightsizing-3/helm/pod-rightsizing"
-    version: 0.1.0
+    repository: "https://zesty-co.github.io/kompass-pod-rightsizing"
+    version: v0.8.1
   - name: kompass-storage
     alias: disk
     condition: disk.enabled
     repository: "https://zesty-co.github.io/zesty-helm"
     version: 1.7.4
   - name: kompass-pod-placement
-    repository: "file://../kompass-pod-placement"
+    repository: "https://zesty-co.github.io/kompass"
     version: 0.1.19
   # mutual dependencies
   - name: victoria-metrics-single
