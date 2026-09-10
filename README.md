@@ -45,3 +45,47 @@ helm install kompass kompass/kompass --namespace zesty-system --create-namespace
 helm delete kompass
 ```
 
+
+## Storage configuration
+
+Kompass does not require a StorageClass named `ebs-sc`. With no per-component
+overrides, PVCs use the cluster default; a suitable provisioner must exist.
+The validator checks actual enabled components, including Grafana, instead of
+assuming that `global.storageClassName` has propagated through YAML anchors.
+
+YAML anchors are expanded before Helm merges values files. A later override of
+only `global.storageClassName` does not update third-party chart settings. Use
+an overlay that sets the component values explicitly:
+
+```yaml
+global:
+  storageClassName: &storageClass gp3
+kompass-insights:
+  persistence:
+    spec:
+      storageClassName: *storageClass
+victoriaMetrics:
+  server:
+    persistentVolume:
+      storageClassName: *storageClass
+victoriaMetricsCluster:
+  vmstorage:
+    persistentVolume:
+      storageClassName: *storageClass
+  vmselect:
+    persistentVolume:
+      storageClassName: *storageClass
+grafana:
+  persistence:
+    storageClassName: *storageClass
+```
+
+Set the anchor to `null` to clear old generated storage choices on a new install.
+Existing bound PVCs generally cannot change StorageClass in place; preserve their
+class during upgrades and migrate data separately if necessary. Component
+settings are authoritative. The chart does not implement dynamic global storage
+inheritance across upstream dependencies.
+
+The Insights PVC template omits a null StorageClass on fresh installs and keeps
+the API-assigned class during upgrades when no explicit class is configured.
+This avoids attempting to clear an immutable field on existing bound volumes.

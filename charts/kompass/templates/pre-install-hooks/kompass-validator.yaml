@@ -147,77 +147,31 @@ spec:
         - /bin/bash
         - -c
         - |
-          # Check if global.storageClassName is set (not null and not empty string)
-          if [ "{{ .Values.global.storageClassName }}" != "~" ] && [ "{{ .Values.global.storageClassName }}" != "" ]; then
-            ##############################################################
-            # Validate StorageClass and AWS EBS CSI Driver installation  #
-            ##############################################################
-            echo "Validating StorageClass and AWS EBS CSI Driver installation..."
-            
-            # Check for expected storage class
-            STORAGE_CLASS_NAME="{{ .Values.victoriaMetrics.server.persistentVolume.storageClassName | default "ebs-sc" }}"
-            if kubectl get storageclass $STORAGE_CLASS_NAME &> /dev/null; then
-              echo "✅ StorageClass '$STORAGE_CLASS_NAME' exists"
-              
-              # Verify that the storage class uses the AWS EBS CSI provisioner
-              PROVISIONER=$(kubectl get storageclass $STORAGE_CLASS_NAME -o jsonpath='{.provisioner}')
-              if [ "$PROVISIONER" = "ebs.csi.aws.com" ]; then
-                echo "✅ StorageClass uses AWS EBS CSI provisioner"
-                
-                # Check if the CSI driver is installed by looking for the CSIDriver object
-                if kubectl get csidriver ebs.csi.aws.com &> /dev/null; then
-                  echo "✅ AWS EBS CSI Driver is installed"
-                else
-                  echo "❌ AWS EBS CSI Driver is not installed"
-                  echo "Please install the AWS EBS CSI Driver before proceeding."
-                  echo "You can install it using the AWS EBS CSI Driver Helm chart or as an EKS add-on."
-                  exit 1
-                fi
-                
-                # Check for the controller deployment
-                if kubectl get deployment -n kube-system ebs-csi-controller &> /dev/null; then
-                  echo "✅ AWS EBS CSI Controller deployment found"
-                else
-                  echo "❌ AWS EBS CSI Controller deployment not found"
-                  echo "The AWS EBS CSI Driver may not be properly installed."
-                  exit 1
-                fi
-                
-                # Check for the daemonset
-                if kubectl get daemonset -n kube-system ebs-csi-node &> /dev/null; then
-                  echo "✅ AWS EBS CSI Node DaemonSet found"
-                else
-                  echo "❌ AWS EBS CSI Node DaemonSet not found"
-                  echo "The AWS EBS CSI Driver may not be properly installed."
-                  exit 1
-                fi
-
-              else
-                echo "⚠️ StorageClass '$STORAGE_CLASS_NAME' uses provisioner '$PROVISIONER', instead of 'ebs.csi.aws.com'"
-                echo "Going to use existing non-EBS storage class"
-                # Continue without validation of the AWS EBS CSI driver components
+          # Validate the classes used by enabled PVCs, not a global YAML anchor.
+          # Dependencies consume their own component values after Helm merges overlays.
+          set -euo pipefail
+          STORAGE_CLASSES=( {{ range (include "kompass.requiredStorageClasses" . | fromYaml).classes }}{{ . | quote }} {{ end }} )
+          for STORAGE_CLASS_NAME in "${STORAGE_CLASSES[@]}"; do
+            if [ "$STORAGE_CLASS_NAME" = "__default__" ]; then
+              STORAGE_CLASS_NAME=$(kubectl get storageclass -o=jsonpath='{.items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")].metadata.name}')
+              if [ -z "$STORAGE_CLASS_NAME" ]; then
+                echo "No default StorageClass exists. Configure a cluster default or set the enabled components' storageClassName values."
+                exit 1
               fi
-            else
-              echo "❌ StorageClass '$STORAGE_CLASS_NAME' does not exist"
-              echo "Please create the required StorageClass with provisioner 'ebs.csi.aws.com'."
+              # Multiple defaults are legal; Kubernetes selects the newest. Check
+              # that defaulting is available without picking a different class here.
+              echo "Default StorageClass available: $STORAGE_CLASS_NAME"
+              continue
+            fi
+            if ! PROVISIONER=$(kubectl get storageclass "$STORAGE_CLASS_NAME" -o jsonpath='{.provisioner}'); then
+              echo "Required StorageClass '$STORAGE_CLASS_NAME' does not exist."
               exit 1
             fi
-          else
-            echo "⏩ Skipping AWS EBS CSI Driver validation - global.storageClassName is not set"
-
-            # Check for default storage class when global.storageClassName is not set
-            echo "Checking for default storage class in the cluster..."
-            DEFAULT_STORAGE_CLASS=$(kubectl get storageclass -o=jsonpath='{.items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")].metadata.name}')
-            
-            if [ -n "$DEFAULT_STORAGE_CLASS" ]; then
-              echo "✅ Found default StorageClass: $DEFAULT_STORAGE_CLASS"
-            else
-              echo "❌ No default StorageClass found in the cluster"
-              echo "⚠️ Without a default StorageClass or specified global.storageClassName, PVC creation may fail"
-              echo "Please create a default StorageClass or specify global.storageClassName in the values file"
-              exit 1
+            if [ "$PROVISIONER" = "ebs.csi.aws.com" ]; then
+              kubectl get csidriver "$PROVISIONER" >/dev/null
             fi
-          fi
+            echo "StorageClass '$STORAGE_CLASS_NAME' is available ($PROVISIONER)"
+          done
 
           # Print empty line for better readability
           echo ""
@@ -231,13 +185,14 @@ spec:
           if [ "$KSM_ENABLED" = "true" ]; then
             echo "Validating kube-state-metrics installation..."
             KSM_FORCE="{{ index .Values "kubeStateMetrics" "force" }}"
+            KSM_EXISTS=""
       
             if [ "$KSM_FORCE" = "true" ]; then
               echo "⚠️ kubeStateMetrics.force is set to true — kubeStateMetrics will be installed even if it already exists"
               echo "✅ Skipping kubeStateMetrics validation"
             else
               # Find the namespace where kubeStateMetrics is installed
-              KSM_NAMESPACE=$(kubectl get deployment --all-namespaces -l app.kubernetes.io/name=kube-state-metrics -o jsonpath='{.items[0].metadata.namespace}')
+              KSM_NAMESPACE=$(kubectl get deployment --all-namespaces -l app.kubernetes.io/name=kube-state-metrics -o jsonpath='{range .items[*]}{.metadata.namespace}{"\n"}{end}' | head -n 1)
               if [ -z "$KSM_NAMESPACE" ]; then
                 echo "✅ kube-state-metrics deployment not found in any namespace - it will be installed as part of Zesty Kompass Pod-RightSizing"
               else
@@ -251,7 +206,7 @@ spec:
                 if [ -n "$KSM_SVC" ]; then
                     echo "✅ kubeStateMetrics service found: $KSM_SVC in namespace: $KSM_NAMESPACE"
                     echo ""
-                    echo "⚠️ Please add to the values file kubeStateMetrics.enabled: false AND kubeStateMetrics.serviceName: $KSM_SVC AND kubeStateMetrics.serviceNamespaec: $KSM_KSM_NAMESPACE OR use kubeStateMetrics.force: true"
+                    echo "⚠️ Please add to the values file kubeStateMetrics.enabled: false AND kubeStateMetrics.serviceName: $KSM_SVC AND kubeStateMetrics.serviceNamespaec: $KSM_NAMESPACE OR use kubeStateMetrics.force: true"
                     exit 1
                 else
                     echo "⚠️ kubeStateMetrics service not found in namespace: $KSM_NAMESPACE"

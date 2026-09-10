@@ -65,11 +65,31 @@ jobs:
       run: |
         helm plugin install https://github.com/aslafy-z/helm-git --version 0.11.1 --verify=false
         helm plugin install https://github.com/helm-unittest/helm-unittest --version 1.0.3 --verify=false
-      if: env.kompass_changed == 'true'
+      if: env.any_chart_changed == 'true'
 
     - name: helm dependency update
-      run: helm dependency update ./charts/kompass
+      run: |
+        set -e
+        # Test the Insights chart in this PR before its new version is published.
+        helm dependency update ./charts/kompass-insights
+        cp charts/kompass/Chart.yaml "$RUNNER_TEMP/kompass-Chart.yaml"
+        trap 'cp "$RUNNER_TEMP/kompass-Chart.yaml" charts/kompass/Chart.yaml' EXIT
+        python3 - <<'PYTHON'
+        from pathlib import Path
+        import re
+        p = Path("charts/kompass/Chart.yaml")
+        text = p.read_text()
+        pattern = r"(  - name: kompass-insights\n.*?    repository: )[^\n]+"
+        text, count = re.subn(pattern, r"\1file://../kompass-insights", text, count=1, flags=re.S)
+        assert count == 1, "Insights dependency was not found"
+        p.write_text(text)
+        PYTHON
+        helm dependency update ./charts/kompass
       if: env.kompass_changed == 'true'
+
+    - name: helm unittest insights
+      run: helm unittest charts/kompass-insights
+      if: env.kompass_insights_changed == 'true'
 
     - name: helm unittest kompass secret
       run: helm unittest charts/kompass
