@@ -4,6 +4,8 @@ global:
   affinity: {}
   automountServiceAccountToken: ~
   imagePullSecrets: ~
+  # Workload annotations applied to the Insights Deployment metadata.
+  annotations: {}
   podAnnotations: {}
   podLabels: {}
   # Pod-level settings. These take precedence over legacy pod keys under `securityContext`.
@@ -78,11 +80,12 @@ securityContext:
     type: RuntimeDefault
 
 resources:
-  limits:
-    memory: 2Gi
   requests:
-    cpu: 250m
-    memory: 2Gi
+    cpu: 0.4
+    memory: 512Mi
+  limits:
+    cpu: 0.5
+    memory: 640Mi
 
 prometheus:
   url: ~
@@ -137,6 +140,8 @@ customPricing:
 insights:
   extraEnv: []
 
+  # Workload annotations applied to the Insights Deployment metadata.
+  annotations: {}
   affinity: {}
   automountServiceAccountToken: ~
   clusterRole:
@@ -165,46 +170,82 @@ insights:
   health:
     port: 9000
 
-recommendations:
-  enabled: true
-  image: 
-    repository: "672188301118.dkr.ecr.eu-west-1.amazonaws.com/zesty-k8s/recommendation-maker"
-    pullPolicy: Always
-    tag: v1.9.0
+manager:
+  enabled: false
+  repository: "672188301118.dkr.ecr.eu-west-1.amazonaws.com/zesty-k8s/kompass-manager"
+  pullPolicy: Always
+  tag: ~
 
-  extraEnv: []
+  service: "kompass-manager"
 
-  affinity: {}
-  automountServiceAccountToken: ~
-  imagePullSecrets: ~
-  podAnnotations: {}
-  podLabels: {}
-  # Pod-level settings. These take precedence over legacy pod keys under `securityContext`.
-  podSecurityContext:
-    fsGroup: 65532
-    runAsGroup: 65532
-    runAsNonRoot: true
-    runAsUser: 65532
-    seccompProfile:
-      type: RuntimeDefault
-  runtimeClassName: ~
-  # Container-level settings. Legacy pod-level keys mixed here are tolerated and moved to pod securityContext.
+  # -- (array) additional command-line arguments for the manager container
+  extraArgs: []
+  # -- (array) additional Kompass manager environment variables
+  env: []
+  # -- (array) list of sources to populate environment variables from (ConfigMaps/Secrets)
+  envFrom: []
+
+  # -- (array) additional volumes to attach to the manager pod
+  extraVolumes: []
+  # -- (array) additional volume mounts for the manager container
+  extraVolumeMounts: []
+
+  # -- (map) Container-level security context for the manager container.
   securityContext:
     allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
     capabilities:
       drop:
         - ALL
-    readOnlyRootFilesystem: true
-  topologySpreadConstraints: ~
 
-  http:
-    port: 8000
+  # -- (map) Container ports exposed by the manager.
+  ports:
+    # -- (map) gRPC endpoint
+    grpc:
+      name: manager-grpc
+      containerPort: 50061
+      protocol: TCP
+    # -- (map) Prometheus metrics endpoint.
+    metrics:
+      name: manager-metrics
+      containerPort: 8090
+      protocol: TCP
+    # -- (map) Health check endpoint.
+    health:
+      name: manager-health
+      containerPort: 8091
+      protocol: TCP
+
+  # -- (map) Container resource requests/limits.
   resources:
-    limits:
-      memory: 1Gi
     requests:
-      cpu: 250m
-      memory: 512Mi
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+  # -- (map) Liveness and readiness probes.
+  probes:
+    startup:
+      httpGet:
+        path: /healthz
+        port: manager-health
+      initialDelaySeconds: 0
+      periodSeconds: 10
+      failureThreshold: 10
+    liveness:
+      httpGet:
+        path: /healthz
+        port: manager-health
+      initialDelaySeconds: 0
+      periodSeconds: 10
+    readiness:
+      httpGet:
+        path: /readyz
+        port: manager-health
+      initialDelaySeconds: 0
+      periodSeconds: 10
 
 admission:
   enabled: false

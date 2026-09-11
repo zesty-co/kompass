@@ -1,0 +1,145 @@
+suite: VictoriaMetrics required workload labels
+templates:
+  - charts/victoriaMetrics/templates/server.yaml
+  - charts/victoriaMetricsCluster/templates/vmselect-server.yaml
+  - charts/victoriaMetricsCluster/templates/vminsert-server.yaml
+  - charts/victoriaMetricsCluster/templates/vmstorage-server.yaml
+  - charts/victoriaMetricsCluster/templates/vmauth-server.yaml
+  - charts/victoriaMetricsAgent/templates/configmap.yaml
+  - charts/victoriaMetricsAgent/templates/server.yaml
+  - charts/victoriaMetricsAlert/templates/alert-configmap.yaml
+  - charts/victoriaMetricsAlert/templates/alertmanager-configmap.yaml
+  - charts/victoriaMetricsAlert/templates/alert-server.yaml
+  - charts/victoriaMetricsAlert/templates/alertmanager-server.yaml
+  - charts/victoriaMetricsAuth/templates/secret.yaml
+  - charts/victoriaMetricsAuth/templates/server.yaml
+  - templates/post-upgrade-hooks/vm-migration.yaml
+
+tests:
+  - it: labels the single-node workload and pod
+    templates:
+      - charts/victoriaMetrics/templates/server.yaml
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+
+  - it: labels every cluster workload and pod
+    templates:
+      - charts/victoriaMetricsCluster/templates/vmselect-server.yaml
+      - charts/victoriaMetricsCluster/templates/vminsert-server.yaml
+      - charts/victoriaMetricsCluster/templates/vmstorage-server.yaml
+    set:
+      victoriaMetrics.enabled: false
+      victoriaMetricsCluster.enabled: true
+      victoriaMetricsAuth.useSingle: false
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+
+  - it: labels the VMAgent workload and pod
+    templates:
+      - charts/victoriaMetricsAgent/templates/configmap.yaml
+      - charts/victoriaMetricsAgent/templates/server.yaml
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+        template: charts/victoriaMetricsAgent/templates/server.yaml
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+        template: charts/victoriaMetricsAgent/templates/server.yaml
+
+  - it: labels the embedded cluster VMAuth workload and pod when standalone VMAuth is disabled
+    templates:
+      - charts/victoriaMetricsCluster/templates/vmauth-server.yaml
+    set:
+      victoriaMetrics.enabled: false
+      victoriaMetricsCluster.enabled: true
+      victoriaMetricsCluster.vmauth.enabled: true
+      victoriaMetricsAuth.enabled: false
+      victoriaMetricsAuth.useSingle: false
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+
+  - it: labels the VMAlert workload and pod
+    templates:
+      - charts/victoriaMetricsAlert/templates/alert-configmap.yaml
+      - charts/victoriaMetricsAlert/templates/alert-server.yaml
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+        template: charts/victoriaMetricsAlert/templates/alert-server.yaml
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+        template: charts/victoriaMetricsAlert/templates/alert-server.yaml
+
+  - it: labels the optional Alertmanager workload and pod
+    templates:
+      - charts/victoriaMetricsAlert/templates/alertmanager-configmap.yaml
+      - charts/victoriaMetricsAlert/templates/alertmanager-server.yaml
+    set:
+      victoriaMetricsAlert.alertmanager.enabled: true
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+        template: charts/victoriaMetricsAlert/templates/alertmanager-server.yaml
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+        template: charts/victoriaMetricsAlert/templates/alertmanager-server.yaml
+
+  - it: labels the standalone VMAuth workload and pod
+    templates:
+      - charts/victoriaMetricsAuth/templates/secret.yaml
+      - charts/victoriaMetricsAuth/templates/server.yaml
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+        template: charts/victoriaMetricsAuth/templates/server.yaml
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+        template: charts/victoriaMetricsAuth/templates/server.yaml
+
+  - it: labels the migration job and pod
+    templates:
+      - templates/post-upgrade-hooks/vm-migration.yaml
+    set:
+      victoriaMetricsMigration.enabled: true
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+
+  - it: keeps the migration pod label when global pod labels conflict
+    templates:
+      - templates/post-upgrade-hooks/vm-migration.yaml
+    set:
+      victoriaMetricsMigration.enabled: true
+      global.podLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass

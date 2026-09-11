@@ -6,9 +6,11 @@ metadata:
   labels:
     app.kubernetes.io/instance: "{{ include "zesty-k8s.fullname" . }}"
     app.kubernetes.io/name: "{{ include "zesty-k8s.fullname" . }}"
+    {{- include "zesty-k8s.requiredLabels" . | nindent 4 }}
 spec:
   selector:
     app.kubernetes.io/name: "{{ include "zesty-k8s.fullname" . }}"
+  publishNotReadyAddresses: true
   ports:
     - name: grpc
       port: {{ .Values.insights.grpc.server.port }}

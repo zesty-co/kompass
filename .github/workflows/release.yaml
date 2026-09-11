@@ -11,6 +11,9 @@ jobs:
     permissions:
       contents: write
     runs-on: ubuntu-latest
+    env:
+      CR_GIT_REPO: ${{ github.event.repository.name }}
+      CR_OWNER: ${{ github.repository_owner }}
 
     steps:
       - name: checkout
@@ -26,7 +29,63 @@ jobs:
       - name: setup helm
         uses: azure/setup-helm@v4
 
-      - name: release chart
+      - name: find changed charts
+        id: changed-charts
+        run: |
+          git fetch --tags
+          latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || git rev-list --max-parents=0 --first-parent HEAD)
+
+          subcharts_changed=false
+          kompass_changed=false
+          : > "$RUNNER_TEMP/changed-subcharts"
+
+          while IFS= read -r chart; do
+            if [[ ! -f "$chart/Chart.yaml" ]]; then
+              continue
+            fi
+
+            if [[ "$chart" == "charts/kompass" ]]; then
+              kompass_changed=true
+            else
+              printf '%s\n' "$chart" >> "$RUNNER_TEMP/changed-subcharts"
+              subcharts_changed=true
+            fi
+          done < <(git diff --find-renames --name-only "$latest_tag" -- charts | cut -d/ -f1-2 | sort -u)
+
+          echo "subcharts=$subcharts_changed" >> "$GITHUB_OUTPUT"
+          echo "kompass=$kompass_changed" >> "$GITHUB_OUTPUT"
+
+      - name: install chart releaser
+        if: steps.changed-charts.outputs.subcharts == 'true' || steps.changed-charts.outputs.kompass == 'true'
         uses: helm/chart-releaser-action@v1.5.0
+        with:
+          install_only: true
         env:
-          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: release subcharts
+        if: steps.changed-charts.outputs.subcharts == 'true'
+        run: |
+          rm -rf .cr-index .cr-release-packages
+          mkdir -p .cr-index .cr-release-packages
+
+          while IFS= read -r chart; do
+            cr package "$chart"
+          done < "$RUNNER_TEMP/changed-subcharts"
+
+          cr upload --commit "$GITHUB_SHA"
+          cr index --push
+        env:
+          CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: release kompass
+        if: steps.changed-charts.outputs.kompass == 'true'
+        run: |
+          rm -rf .cr-index .cr-release-packages
+          mkdir -p .cr-index .cr-release-packages
+
+          cr package charts/kompass
+          cr upload --commit "$GITHUB_SHA"
+          cr index --push
+        env:
+          CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}

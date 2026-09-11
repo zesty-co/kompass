@@ -1,0 +1,83 @@
+suite: Required resource and pod labels
+templates:
+  - templates/secret.yaml
+  - templates/service-manager.yaml
+  - templates/roleBinding.yaml
+  - templates/clusterRoleBinding.yaml
+  - templates/monitoring/cluster_role_binding.yaml
+  - templates/monitoring/service_account.yaml
+  - templates/monitoring/cronjob.yaml
+  - templates/monitoring/cluster_role.yaml
+  - templates/configMap.yaml
+  - templates/serviceAccount.yaml
+  - templates/pvc.yaml
+  - templates/credentials-secret.yaml
+  - templates/clusterRole.yaml
+  - templates/service.yaml
+  - templates/role.yaml
+  - templates/deployment.yaml
+
+tests:
+  - it: labels every rendered native resource
+    set:
+      encryptedCredentials: enc-123
+      secret.create: true
+      manager.enabled: true
+      global.cxLogging.enabled: true
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+
+  - it: labels the deployment and pod without changing its selector
+    templates:
+      - templates/deployment.yaml
+      - templates/configMap.yaml
+    set:
+      secret.create: false
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+        template: templates/deployment.yaml
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+        template: templates/deployment.yaml
+      - notExists:
+          path: spec.selector.matchLabels["app.kubernetes.io/part-of"]
+        template: templates/deployment.yaml
+
+  - it: keeps the deployment pod label when configured labels conflict
+    templates:
+      - templates/deployment.yaml
+      - templates/configMap.yaml
+    set:
+      secret.create: false
+      global.podLabels:
+        app.kubernetes.io/part-of: global-other
+      insights.podLabels:
+        app.kubernetes.io/part-of: component-other
+    asserts:
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+        template: templates/deployment.yaml
+
+  - it: labels the self-monitoring CronJob and pod when configured labels conflict
+    templates:
+      - templates/monitoring/cronjob.yaml
+    set:
+      secret.create: false
+      global.cxLogging.enabled: true
+      global.podLabels:
+        app.kubernetes.io/part-of: global-other
+      selfMonitoring.podLabels:
+        app.kubernetes.io/part-of: component-other
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+      - equal:
+          path: spec.jobTemplate.spec.template.metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass

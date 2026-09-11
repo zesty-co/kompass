@@ -1,0 +1,70 @@
+suite: Guardian request-ceiling validation
+templates:
+  - templates/validations.yaml
+tests:
+  - it: accepts complete enabled workload ceilings
+    values:
+      - fixtures/valid-guardian-request-ceilings.yaml
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: rejects an empty first-party CPU request
+    values:
+      - fixtures/valid-guardian-request-ceilings.yaml
+    set:
+      global.guardian.requestCeilings.insights.kompass-insights.cpuRequest: ""
+    asserts:
+      - failedTemplate:
+          errorMessage: global.guardian.requestCeilings.insights.containers.kompass-insights.cpuRequest is required
+
+  - it: rejects an empty first-party memory request
+    values:
+      - fixtures/valid-guardian-request-ceilings.yaml
+    set:
+      global.guardian.requestCeilings.insights.kompass-insights.memoryRequest: ""
+    asserts:
+      - failedTemplate:
+          errorMessage: global.guardian.requestCeilings.insights.containers.kompass-insights.memoryRequest is required
+
+  - it: rejects an empty third-party memory request
+    values:
+      - fixtures/valid-guardian-request-ceilings.yaml
+    set:
+      kubeStateMetrics:
+        annotations:
+          guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"kube-state-metrics":{"cpuRequest":"1m","memoryRequest":""}}}'
+    asserts:
+      - failedTemplate:
+          errorMessage: kubeStateMetrics.annotations[guardian.kompass.zesty.co/request-ceilings].containers.kube-state-metrics.memoryRequest is required
+
+  - it: rejects a missing third-party CPU request
+    values:
+      - fixtures/valid-guardian-request-ceilings.yaml
+    set:
+      kubeStateMetrics:
+        annotations:
+          guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"kube-state-metrics":{"memoryRequest":"1Mi"}}}'
+    asserts:
+      - failedTemplate:
+          errorMessage: kubeStateMetrics.annotations[guardian.kompass.zesty.co/request-ceilings].containers.kube-state-metrics.cpuRequest is required
+
+  - it: rejects a missing third-party container
+    values:
+      - fixtures/valid-guardian-request-ceilings.yaml
+    set:
+      kubeStateMetrics:
+        annotations:
+          guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{}}'
+    asserts:
+      - failedTemplate:
+          errorMessage: kubeStateMetrics.annotations[guardian.kompass.zesty.co/request-ceilings].containers.kube-state-metrics is required
+
+  - it: rejects a missing third-party workload annotation
+    values:
+      - fixtures/valid-guardian-request-ceilings.yaml
+    set:
+      kubeStateMetrics:
+        annotations: null
+    asserts:
+      - failedTemplate:
+          errorMessage: kubeStateMetrics.annotations[guardian.kompass.zesty.co/request-ceilings] is required

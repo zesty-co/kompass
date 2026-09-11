@@ -15,7 +15,7 @@ tests:
           path: data["scrape.yml"]
           pattern: "- /config/scrape/\\*.yml"
 
-  - it: does not render insights or recommendations scrape jobs when kompass-insights is disabled
+  - it: does not render the insights scrape job when kompass-insights is disabled
     documentSelector:
       path: metadata.name
       value: kompass-vmagent-scrape-configs
@@ -26,18 +26,10 @@ tests:
           service: kompass-insights
           metrics:
             port: 8080
-        recommendations:
-          enabled: true
-          http:
-            port: 9090
     asserts:
       - notMatchRegex:
           path: data["kompass-scrape-config.yml"]
           pattern: "job_name: 'kompass-insights'"
-      - notMatchRegex:
-          path: data["kompass-scrape-config.yml"]
-          pattern: "job_name: 'recommendations'"
-
   - it: renders insights scrape job when kompass-insights is enabled
     documentSelector:
       path: metadata.name
@@ -53,6 +45,9 @@ tests:
       - matchRegex:
           path: data["kompass-scrape-config.yml"]
           pattern: "job_name: 'kompass-insights'"
+      - notMatchRegex:
+          path: data["kompass-scrape-config.yml"]
+          pattern: "job_name: 'recommendations'"
 
   - it: uses external kube-state-metrics service and namespace when installation is disabled
     documentSelector:

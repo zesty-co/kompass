@@ -1,0 +1,237 @@
+suite: Required third-party workload label validation
+templates:
+  - templates/validations.yaml
+
+tests:
+  - it: accepts the required label defaults
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: rejects a Grafana workload label override
+    set:
+      grafana.extraLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - failedTemplate:
+          errorMessage: grafana.extraLabels[app.kubernetes.io/part-of] must be kompass
+
+  - it: rejects a cert-manager common label override
+    set:
+      cert-manager.global.commonLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - failedTemplate:
+          errorMessage: cert-manager.global.commonLabels[app.kubernetes.io/part-of] must be kompass
+
+  - it: ignores cert-manager labels when installation is disabled
+    set:
+      cert-manager.enabled: false
+      cert-manager.global.commonLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: rejects a duplicate kube-state-metrics common label
+    set:
+      kubeStateMetrics.customLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - failedTemplate:
+          errorMessage: kubeStateMetrics.customLabels[app.kubernetes.io/part-of] must not be set
+
+  - it: rejects a duplicate kube-state-metrics workload label
+    set:
+      kubeStateMetrics.labels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - failedTemplate:
+          errorMessage: kubeStateMetrics.labels[app.kubernetes.io/part-of] must not be set
+
+  - it: rejects a duplicate kube-state-metrics pod label
+    set:
+      kubeStateMetrics.podLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - failedTemplate:
+          errorMessage: kubeStateMetrics.podLabels[app.kubernetes.io/part-of] must not be set
+
+  - it: ignores kube-state-metrics labels when installation is disabled
+    set:
+      kubeStateMetrics.enabled: false
+      kubeStateMetrics.customLabels:
+        app.kubernetes.io/part-of: other
+      kubeStateMetrics.labels:
+        app.kubernetes.io/part-of: other
+      kubeStateMetrics.podLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: rejects a metrics-server workload label override
+    set:
+      metrics-server.enabled: true
+      metrics-server.commonLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - failedTemplate:
+          errorMessage: metrics-server.commonLabels[app.kubernetes.io/part-of] must be kompass
+
+  - it: rejects a metrics-server pod label override
+    set:
+      metrics-server.enabled: true
+      metrics-server.podLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - failedTemplate:
+          errorMessage: metrics-server.podLabels[app.kubernetes.io/part-of] must be kompass
+
+  - it: ignores metrics-server labels when installation is disabled
+    set:
+      metrics-server.enabled: false
+      metrics-server.commonLabels:
+        app.kubernetes.io/part-of: other
+      metrics-server.podLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: rejects a single-node workload label override
+    set:
+      victoriaMetrics.server.extraLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - failedTemplate:
+          errorMessage: victoriaMetrics.server.extraLabels[app.kubernetes.io/part-of] must be kompass
+
+  - it: rejects a single-node pod label override
+    set:
+      victoriaMetrics.server.podLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - failedTemplate:
+          errorMessage: victoriaMetrics.server.podLabels[app.kubernetes.io/part-of] must be kompass
+
+  - it: rejects a cluster component workload label override
+    set:
+      victoriaMetrics.enabled: false
+      victoriaMetricsCluster.enabled: true
+      victoriaMetricsAuth.useSingle: false
+      victoriaMetricsCluster.vmstorage.extraLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - failedTemplate:
+          errorMessage: victoriaMetricsCluster.vmstorage.extraLabels[app.kubernetes.io/part-of] must be kompass
+
+  - it: rejects a cluster component pod label override
+    set:
+      victoriaMetrics.enabled: false
+      victoriaMetricsCluster.enabled: true
+      victoriaMetricsAuth.useSingle: false
+      victoriaMetricsCluster.vminsert.podLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - failedTemplate:
+          errorMessage: victoriaMetricsCluster.vminsert.podLabels[app.kubernetes.io/part-of] must be kompass
+
+  - it: rejects a VMAgent workload label override
+    set:
+      victoriaMetricsAgent.extraLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - failedTemplate:
+          errorMessage: victoriaMetricsAgent.extraLabels[app.kubernetes.io/part-of] must be kompass
+
+  - it: rejects an embedded cluster VMAuth label override when enabled
+    set:
+      victoriaMetrics.enabled: false
+      victoriaMetricsCluster.enabled: true
+      victoriaMetricsCluster.vmauth.enabled: true
+      victoriaMetricsAuth.enabled: false
+      victoriaMetricsAuth.useSingle: false
+      victoriaMetricsCluster.vmauth.extraLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - failedTemplate:
+          errorMessage: victoriaMetricsCluster.vmauth.extraLabels[app.kubernetes.io/part-of] must be kompass
+
+  - it: ignores embedded cluster VMAuth labels when it is disabled
+    set:
+      victoriaMetricsCluster.vmauth.enabled: false
+      victoriaMetricsCluster.vmauth.extraLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: rejects a VMAgent pod label override
+    set:
+      victoriaMetricsAgent.podLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - failedTemplate:
+          errorMessage: victoriaMetricsAgent.podLabels[app.kubernetes.io/part-of] must be kompass
+
+  - it: rejects the VMAlert common workload label override
+    set:
+      victoriaMetricsAlert.global.extraLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - failedTemplate:
+          errorMessage: victoriaMetricsAlert.global.extraLabels[app.kubernetes.io/part-of] must be kompass
+
+  - it: rejects the VMAlert pod label override
+    set:
+      victoriaMetricsAlert.server.podLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - failedTemplate:
+          errorMessage: victoriaMetricsAlert.server.podLabels[app.kubernetes.io/part-of] must be kompass
+
+  - it: rejects the optional Alertmanager pod label override when enabled
+    set:
+      victoriaMetricsAlert.alertmanager.enabled: true
+      victoriaMetricsAlert.alertmanager.podLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - failedTemplate:
+          errorMessage: victoriaMetricsAlert.alertmanager.podLabels[app.kubernetes.io/part-of] must be kompass
+
+  - it: ignores Alertmanager pod labels when it is disabled
+    set:
+      victoriaMetricsAlert.alertmanager.enabled: false
+      victoriaMetricsAlert.alertmanager.podLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: rejects a standalone VMAuth workload label override
+    set:
+      victoriaMetricsAuth.extraLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - failedTemplate:
+          errorMessage: victoriaMetricsAuth.extraLabels[app.kubernetes.io/part-of] must be kompass
+
+  - it: rejects a standalone VMAuth pod label override
+    set:
+      victoriaMetricsAuth.podLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - failedTemplate:
+          errorMessage: victoriaMetricsAuth.podLabels[app.kubernetes.io/part-of] must be kompass
+
+  - it: rejects the migration pod label override when enabled
+    set:
+      victoriaMetricsMigration.enabled: true
+      victoriaMetricsMigration.podLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - failedTemplate:
+          errorMessage: victoriaMetricsMigration.podLabels[app.kubernetes.io/part-of] must be kompass
+
+  - it: ignores migration pod labels when migration is disabled
+    set:
+      victoriaMetricsMigration.enabled: false
+      victoriaMetricsMigration.podLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - notFailedTemplate: {}

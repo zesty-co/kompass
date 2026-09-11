@@ -34,6 +34,13 @@ Create chart name and version as used by the chart label.
   {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
+{{/*
+Required labels for Kompass Insights resources and pods.
+*/}}
+{{- define "zesty-k8s.requiredLabels" -}}
+app.kubernetes.io/part-of: kompass
+{{- end -}}
+
 {{- define "zesty-k8s.coralogix.apiKeySecretName" -}}
 {{- $cxLogging := .cxLogging | default dict -}}
 {{- $apiKeySecret := $cxLogging.apiKeySecret | default dict -}}
@@ -145,6 +152,7 @@ helm.sh/chart: {{ include "zesty-k8s.chart" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{ include "zesty-k8s.requiredLabels" . }}
 {{- end }}
 
 {{/*
@@ -165,10 +173,6 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 
 {{- define "zesty-k8s.exposedMetrics.port" -}}
 {{- default "9003" .Values.insights.metrics.port }}
-{{- end }}
-
-{{- define "zesty-k8s.recommendations.fullname" -}}
- {{ printf "%s-recommendations" (include "zesty-k8s.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{- define "zesty-k8s.self-monitoring.fullname" -}}
@@ -469,11 +473,11 @@ To remove in the future.
 {{- include "zesty-k8s.coralogix.envs" (dict "Values" .Values "coralogixApiKey" false "domain" true "ingressLogsUrl" true "logUrl" true "timeDeltaUrl" true "otelEndpoint" true) }}
 {{- end }}
 
-{{- define "zesty-k8s.recommendations.coralogix.envs" -}}
-{{- include "zesty-k8s.coralogix.envs" (dict "Values" .Values "coralogixApiKey" true "domain" false "logUrl" true "timeDeltaUrl" true "otelEndpoint" false) }}
+{{- define "zesty-k8s.monitoring.coralogix.envs" -}}
+{{- include "zesty-k8s.coralogix.envs" (dict "Values" .Values "coralogixApiKey" false "domain" false "logUrl" false "timeDeltaUrl" false "otelEndpoint" false) }}
 {{- end }}
 
-{{- define "zesty-k8s.monitoring.coralogix.envs" -}}
+{{- define "zesty-k8s.manager.coralogix.envs" -}}
 {{- include "zesty-k8s.coralogix.envs" (dict "Values" .Values "coralogixApiKey" false "domain" false "logUrl" false "timeDeltaUrl" false "otelEndpoint" false) }}
 {{- end }}
 

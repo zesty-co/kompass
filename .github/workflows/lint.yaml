@@ -72,7 +72,18 @@ jobs:
       if: env.kompass_changed == 'true'
 
     - name: helm unittest kompass secret
-      run: helm unittest charts/kompass
+      run: helm unittest charts/kompass --values charts/kompass/tests/fixtures/valid-guardian-request-ceilings.yaml
+      if: env.kompass_changed == 'true'
+
+    - name: verify Guardian request-ceiling installation validation
+      run: |
+        if helm template kompass ./charts/kompass --set kompass-insights.secret.create=false >/dev/null 2>&1; then
+          echo "expected installation rendering to fail with blank Guardian request ceilings"
+          exit 1
+        fi
+        helm template kompass ./charts/kompass \
+          --set kompass-insights.secret.create=false \
+          -f ./charts/kompass/tests/fixtures/valid-guardian-request-ceilings.yaml >/dev/null
       if: env.kompass_changed == 'true'
 
     - name: validate Chart.yaml version changed in PR

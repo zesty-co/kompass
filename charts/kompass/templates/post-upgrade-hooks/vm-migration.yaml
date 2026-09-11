@@ -17,6 +17,8 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: {{ include "kompass.name" . }}-vm-migration
+  labels:
+    app.kubernetes.io/part-of: kompass
   annotations:
     "helm.sh/hook": post-upgrade
     "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
@@ -31,6 +33,7 @@ spec:
       {{- end }}
       {{- $migrationDefaultPodLabels := dict "app.kubernetes.io/name" (printf "%s-vm-migration" (include "kompass.name" .)) "app.kubernetes.io/instance" .Release.Name }}
       {{- $migrationResolvedPodLabels := mergeOverwrite (deepCopy $migrationDefaultPodLabels) $migrationPodLabels }}
+      {{- $_ := set $migrationResolvedPodLabels "app.kubernetes.io/part-of" "kompass" }}
       labels:
 {{ toYaml $migrationResolvedPodLabels | nindent 8 }}
     spec:
@@ -62,6 +65,7 @@ spec:
       containers:
       - name: vm-migration
         image: {{ .Values.victoriaMetricsMigration.image.registry }}/{{ .Values.victoriaMetricsMigration.image.repository }}:{{ .Values.victoriaMetricsMigration.image.tag }}
+        imagePullPolicy: {{ .Values.victoriaMetricsMigration.image.pullPolicy | default "IfNotPresent" }}
         {{- if $migrationSecurityContext }}
         securityContext:
 {{ toYaml $migrationSecurityContext | nindent 10 }}

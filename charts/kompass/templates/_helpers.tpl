@@ -71,6 +71,27 @@ Create chart name and version as used by the chart label.
 {{- end -}}
 
 {{/*
+Override the dependency helper so its built-in part-of label identifies Kompass
+without changing kube-state-metrics names or selectors.
+*/}}
+{{- define "kube-state-metrics.labels" }}
+helm.sh/chart: {{ template "kube-state-metrics.chart" . }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+app.kubernetes.io/component: metrics
+app.kubernetes.io/part-of: kompass
+{{- include "kube-state-metrics.selectorLabels" . }}
+{{- if .Chart.AppVersion }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- end }}
+{{- if .Values.customLabels }}
+{{ tpl (toYaml .Values.customLabels) . }}
+{{- end }}
+{{- if .Values.releaseLabel }}
+release: {{ .Release.Name }}
+{{- end }}
+{{- end }}
+
+{{/*
 Generate service name for Kube State Metrics (KSM)
 - Use name from the KSM Helm Chart, only if the KSM is installed as part of this chart, otherwise use service name provided in `.Values.kubeStateMetrics.serviceName`
 */}}
@@ -243,6 +264,108 @@ Global values override component values for matching keys.
 {{- end -}}
 
 {{/*
+Validate that every expected container has non-empty Guardian request ceilings.
+*/}}
+{{- define "kompass.guardian.validateContainers" -}}
+{{- $path := .path -}}
+{{- $containers := required (printf "%s.containers is required" $path) .containers -}}
+{{- if not (kindIs "map" $containers) -}}
+{{- fail (printf "%s.containers must be a map" $path) -}}
+{{- end -}}
+{{- range $containerName := .expectedContainers -}}
+{{- $containerPath := printf "%s.containers.%s" $path $containerName -}}
+{{- $container := required (printf "%s is required" $containerPath) (get $containers $containerName) -}}
+{{- if not (kindIs "map" $container) -}}
+{{- fail (printf "%s must be a map" $containerPath) -}}
+{{- end -}}
+{{- $cpuRequest := required (printf "%s.cpuRequest is required" $containerPath) (get $container "cpuRequest") -}}
+{{- if empty (trim (printf "%v" $cpuRequest)) -}}
+{{- fail (printf "%s.cpuRequest must not be empty" $containerPath) -}}
+{{- end -}}
+{{- $memoryRequest := required (printf "%s.memoryRequest is required" $containerPath) (get $container "memoryRequest") -}}
+{{- if empty (trim (printf "%v" $memoryRequest)) -}}
+{{- fail (printf "%s.memoryRequest must not be empty" $containerPath) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Validate a first-party workload's structured global Guardian request ceilings.
+*/}}
+{{- define "kompass.guardian.validateFirstParty" -}}
+{{- $ceilingsPath := printf "global.guardian.requestCeilings.%s" .workload -}}
+{{- $ceilings := required (printf "%s is required" $ceilingsPath) (get .requestCeilings .workload) -}}
+{{- include "kompass.guardian.validateContainers" (dict "path" $ceilingsPath "containers" $ceilings "expectedContainers" .expectedContainers) -}}
+{{- end -}}
+
+{{/*
+Validate a third-party workload's JSON Guardian request-ceiling annotation.
+*/}}
+{{- define "kompass.guardian.validateAnnotation" -}}
+{{- $annotation := required (printf "%s is required" .path) .annotation -}}
+{{- if not (kindIs "string" $annotation) -}}
+{{- fail (printf "%s must be a JSON string" .path) -}}
+{{- end -}}
+{{- $decoded := fromJson $annotation -}}
+{{- if not (kindIs "map" $decoded) -}}
+{{- fail (printf "%s must be valid JSON" .path) -}}
+{{- end -}}
+{{- include "kompass.guardian.validateContainers" (dict "path" .path "containers" (get $decoded "containers") "expectedContainers" .expectedContainers) -}}
+{{- end -}}
+
+{{/*
+Validate Guardian request ceilings for every workload this release can install.
+*/}}
+{{- define "kompass.validate.guardianRequestCeilings" -}}
+{{- $requestCeilings := dig "guardian" "requestCeilings" (dict) .Values.global -}}
+{{- if dig "kompass-bridge" "enabled" false .Values.global -}}
+{{- include "kompass.guardian.validateFirstParty" (dict "requestCeilings" $requestCeilings "workload" "bridge" "expectedContainers" (list "bridge")) -}}
+{{- end -}}
+{{- if (index .Values "kompass-insights").enabled -}}
+{{- include "kompass.guardian.validateFirstParty" (dict "requestCeilings" $requestCeilings "workload" "insights" "expectedContainers" (list "kompass-insights")) -}}
+{{- end -}}
+{{- if (index .Values "kompass-pod-placement").enabled -}}
+{{- include "kompass.guardian.validateFirstParty" (dict "requestCeilings" $requestCeilings "workload" "podPlacement" "expectedContainers" (list "pod-placement")) -}}
+{{- end -}}
+{{- if .Values.rightsizing.enabled -}}
+{{- include "kompass.guardian.validateFirstParty" (dict "requestCeilings" $requestCeilings "workload" "actionTaker" "expectedContainers" (list "kube-rbac-proxy" "action-taker")) -}}
+{{- include "kompass.guardian.validateFirstParty" (dict "requestCeilings" $requestCeilings "workload" "recommendationsMaker" "expectedContainers" (list "recommendations-maker")) -}}
+{{- include "kompass.guardian.validateFirstParty" (dict "requestCeilings" $requestCeilings "workload" "gpuMetrics" "expectedContainers" (list "exporter")) -}}
+{{- end -}}
+{{- if .Values.victoriaMetrics.enabled -}}
+{{- include "kompass.guardian.validateAnnotation" (dict "path" "victoriaMetrics.server.annotations[guardian.kompass.zesty.co/request-ceilings]" "annotation" (dig "server" "annotations" "guardian.kompass.zesty.co/request-ceilings" nil .Values.victoriaMetrics) "expectedContainers" (list "vmsingle")) -}}
+{{- end -}}
+{{- if .Values.victoriaMetricsCluster.enabled -}}
+{{- include "kompass.guardian.validateAnnotation" (dict "path" "victoriaMetricsCluster.vmselect.annotations[guardian.kompass.zesty.co/request-ceilings]" "annotation" (dig "vmselect" "annotations" "guardian.kompass.zesty.co/request-ceilings" nil .Values.victoriaMetricsCluster) "expectedContainers" (list "vmselect")) -}}
+{{- include "kompass.guardian.validateAnnotation" (dict "path" "victoriaMetricsCluster.vminsert.annotations[guardian.kompass.zesty.co/request-ceilings]" "annotation" (dig "vminsert" "annotations" "guardian.kompass.zesty.co/request-ceilings" nil .Values.victoriaMetricsCluster) "expectedContainers" (list "vminsert")) -}}
+{{- include "kompass.guardian.validateAnnotation" (dict "path" "victoriaMetricsCluster.vmstorage.annotations[guardian.kompass.zesty.co/request-ceilings]" "annotation" (dig "vmstorage" "annotations" "guardian.kompass.zesty.co/request-ceilings" nil .Values.victoriaMetricsCluster) "expectedContainers" (list "vmstorage")) -}}
+{{- end -}}
+{{- if .Values.victoriaMetricsAgent.enabled -}}
+{{- include "kompass.guardian.validateAnnotation" (dict "path" "victoriaMetricsAgent.annotations[guardian.kompass.zesty.co/request-ceilings]" "annotation" (dig "annotations" "guardian.kompass.zesty.co/request-ceilings" nil .Values.victoriaMetricsAgent) "expectedContainers" (list "vmagent")) -}}
+{{- end -}}
+{{- if .Values.victoriaMetricsAlert.enabled -}}
+{{- include "kompass.guardian.validateAnnotation" (dict "path" "victoriaMetricsAlert.server.annotations[guardian.kompass.zesty.co/request-ceilings]" "annotation" (dig "server" "annotations" "guardian.kompass.zesty.co/request-ceilings" nil .Values.victoriaMetricsAlert) "expectedContainers" (list "vmalert")) -}}
+{{- end -}}
+{{- if .Values.victoriaMetricsAuth.enabled -}}
+{{- include "kompass.guardian.validateAnnotation" (dict "path" "victoriaMetricsAuth.annotations[guardian.kompass.zesty.co/request-ceilings]" "annotation" (dig "annotations" "guardian.kompass.zesty.co/request-ceilings" nil .Values.victoriaMetricsAuth) "expectedContainers" (list "vmauth")) -}}
+{{- end -}}
+{{- if .Values.kubeStateMetrics.enabled -}}
+{{- include "kompass.guardian.validateAnnotation" (dict "path" "kubeStateMetrics.annotations[guardian.kompass.zesty.co/request-ceilings]" "annotation" (dig "annotations" "guardian.kompass.zesty.co/request-ceilings" nil .Values.kubeStateMetrics) "expectedContainers" (list "kube-state-metrics")) -}}
+{{- end -}}
+{{- if .Values.grafana.enabled -}}
+{{- include "kompass.guardian.validateAnnotation" (dict "path" "grafana.annotations[guardian.kompass.zesty.co/request-ceilings]" "annotation" (dig "annotations" "guardian.kompass.zesty.co/request-ceilings" nil .Values.grafana) "expectedContainers" (list "grafana" "grafana-sc-dashboard" "grafana-sc-datasources")) -}}
+{{- end -}}
+{{- if (index .Values "cert-manager").enabled -}}
+{{- include "kompass.guardian.validateAnnotation" (dict "path" "cert-manager.deploymentAnnotations[guardian.kompass.zesty.co/request-ceilings]" "annotation" (dig "deploymentAnnotations" "guardian.kompass.zesty.co/request-ceilings" nil (index .Values "cert-manager")) "expectedContainers" (list "cert-manager-controller")) -}}
+{{- include "kompass.guardian.validateAnnotation" (dict "path" "cert-manager.cainjector.deploymentAnnotations[guardian.kompass.zesty.co/request-ceilings]" "annotation" (dig "cainjector" "deploymentAnnotations" "guardian.kompass.zesty.co/request-ceilings" nil (index .Values "cert-manager")) "expectedContainers" (list "cert-manager-cainjector")) -}}
+{{- include "kompass.guardian.validateAnnotation" (dict "path" "cert-manager.webhook.deploymentAnnotations[guardian.kompass.zesty.co/request-ceilings]" "annotation" (dig "webhook" "deploymentAnnotations" "guardian.kompass.zesty.co/request-ceilings" nil (index .Values "cert-manager")) "expectedContainers" (list "cert-manager-webhook")) -}}
+{{- end -}}
+{{- if (index .Values "metrics-server").enabled -}}
+{{- include "kompass.guardian.validateAnnotation" (dict "path" "metrics-server.deploymentAnnotations[guardian.kompass.zesty.co/request-ceilings]" "annotation" (dig "deploymentAnnotations" "guardian.kompass.zesty.co/request-ceilings" nil (index .Values "metrics-server")) "expectedContainers" (list "metrics-server")) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Resolve container securityContext from global/component values.
 Global values override component values for matching keys.
 Pod-only securityContext keys are removed from the resolved map.
@@ -353,6 +476,81 @@ Validate that kompass-pod-placement is only enabled when rightsizing is also ena
 {{- define "kompass.validate.podPlacementRequiresRightsizing" -}}
 {{- if and (index .Values "kompass-pod-placement" "enabled") (not .Values.rightsizing.enabled) -}}
 {{- fail "kompass-pod-placement requires rightsizing to be enabled. Add --set rightsizing.enabled=true" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Validate that at least one VictoriaMetrics deployment variant is enabled.
+*/}}
+{{- define "kompass.validate.victoriaMetricsEnabled" -}}
+{{- if not (or .Values.victoriaMetrics.enabled .Values.victoriaMetricsCluster.enabled) -}}
+{{- fail "at least one VictoriaMetrics variant must be enabled: set victoriaMetrics.enabled=true or victoriaMetricsCluster.enabled=true" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Validate labels that identify Kompass-owned third-party workloads.
+*/}}
+{{- define "kompass.validate.requiredLabels" -}}
+{{- $partOfLabel := "app.kubernetes.io/part-of" -}}
+{{- $partOfValue := "kompass" -}}
+{{- $validations := list -}}
+{{- if .Values.grafana.enabled -}}
+  {{- $validations = append $validations (dict "path" "grafana.extraLabels" "labels" .Values.grafana.extraLabels) -}}
+{{- end -}}
+{{- if (index .Values "cert-manager" "enabled") -}}
+  {{- $validations = append $validations (dict "path" "cert-manager.global.commonLabels" "labels" (index .Values "cert-manager" "global" "commonLabels")) -}}
+{{- end -}}
+{{- if .Values.kubeStateMetrics.enabled -}}
+  {{- range $path := list "customLabels" "labels" "podLabels" -}}
+    {{- if hasKey (index $.Values.kubeStateMetrics $path | default dict) $partOfLabel -}}
+      {{- fail (printf "kubeStateMetrics.%s[%s] must not be set" $path $partOfLabel) -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- if (index .Values "metrics-server" "enabled") -}}
+  {{- $validations = append $validations (dict "path" "metrics-server.commonLabels" "labels" (index .Values "metrics-server" "commonLabels")) -}}
+  {{- $validations = append $validations (dict "path" "metrics-server.podLabels" "labels" (index .Values "metrics-server" "podLabels")) -}}
+{{- end -}}
+{{- if and .Values.victoriaMetrics.enabled (ne .Values.victoriaMetrics.server.enabled false) -}}
+  {{- $validations = append $validations (dict "path" "victoriaMetrics.server.extraLabels" "labels" .Values.victoriaMetrics.server.extraLabels) -}}
+  {{- $validations = append $validations (dict "path" "victoriaMetrics.server.podLabels" "labels" .Values.victoriaMetrics.server.podLabels) -}}
+{{- end -}}
+{{- if .Values.victoriaMetricsCluster.enabled -}}
+  {{- range $component := list "vmselect" "vminsert" "vmstorage" -}}
+    {{- $values := index $.Values.victoriaMetricsCluster $component -}}
+    {{- if ne $values.enabled false -}}
+      {{- $validations = append $validations (dict "path" (printf "victoriaMetricsCluster.%s.extraLabels" $component) "labels" $values.extraLabels) -}}
+      {{- $validations = append $validations (dict "path" (printf "victoriaMetricsCluster.%s.podLabels" $component) "labels" $values.podLabels) -}}
+    {{- end -}}
+  {{- end -}}
+  {{- if .Values.victoriaMetricsCluster.vmauth.enabled -}}
+    {{- $validations = append $validations (dict "path" "victoriaMetricsCluster.vmauth.extraLabels" "labels" .Values.victoriaMetricsCluster.vmauth.extraLabels) -}}
+    {{- $validations = append $validations (dict "path" "victoriaMetricsCluster.vmauth.podLabels" "labels" .Values.victoriaMetricsCluster.vmauth.podLabels) -}}
+  {{- end -}}
+{{- end -}}
+{{- if .Values.victoriaMetricsAgent.enabled -}}
+  {{- $validations = append $validations (dict "path" "victoriaMetricsAgent.extraLabels" "labels" .Values.victoriaMetricsAgent.extraLabels) -}}
+  {{- $validations = append $validations (dict "path" "victoriaMetricsAgent.podLabels" "labels" .Values.victoriaMetricsAgent.podLabels) -}}
+{{- end -}}
+{{- if .Values.victoriaMetricsAlert.enabled -}}
+  {{- $validations = append $validations (dict "path" "victoriaMetricsAlert.global.extraLabels" "labels" .Values.victoriaMetricsAlert.global.extraLabels) -}}
+  {{- $validations = append $validations (dict "path" "victoriaMetricsAlert.server.podLabels" "labels" .Values.victoriaMetricsAlert.server.podLabels) -}}
+  {{- if .Values.victoriaMetricsAlert.alertmanager.enabled -}}
+    {{- $validations = append $validations (dict "path" "victoriaMetricsAlert.alertmanager.podLabels" "labels" .Values.victoriaMetricsAlert.alertmanager.podLabels) -}}
+  {{- end -}}
+{{- end -}}
+{{- if .Values.victoriaMetricsAuth.enabled -}}
+  {{- $validations = append $validations (dict "path" "victoriaMetricsAuth.extraLabels" "labels" .Values.victoriaMetricsAuth.extraLabels) -}}
+  {{- $validations = append $validations (dict "path" "victoriaMetricsAuth.podLabels" "labels" .Values.victoriaMetricsAuth.podLabels) -}}
+{{- end -}}
+{{- if .Values.victoriaMetricsMigration.enabled -}}
+  {{- $validations = append $validations (dict "path" "victoriaMetricsMigration.podLabels" "labels" .Values.victoriaMetricsMigration.podLabels) -}}
+{{- end -}}
+{{- range $validation := $validations -}}
+  {{- if ne (get ($validation.labels | default dict) $partOfLabel) $partOfValue -}}
+    {{- fail (printf "%s[%s] must be %s" $validation.path $partOfLabel $partOfValue) -}}
+  {{- end -}}
 {{- end -}}
 {{- end -}}
 

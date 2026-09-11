@@ -3,14 +3,15 @@ templates:
   - templates/bridge/deployment.yaml
 
 tests:
-  - it: falls back to kompass-insights credentials when bridge kafka credentials are empty
+  - it: uses the kompass-insights credentials secret when bridge kafka password is empty
     set:
       global:
         kompass-bridge:
           enabled: true
       kompass-insights:
         orgID: org-123
-        encryptedCredentials: enc-456
+        secret:
+          name: existing-credentials
       kompass-bridge:
         kafka:
           username: ""
@@ -20,8 +21,41 @@ tests:
           path: spec.template.spec.containers[0].env[2].value
           value: bridge-user-org-123
       - equal:
-          path: spec.template.spec.containers[0].env[3].value
-          value: enc-456
+          path: spec.template.spec.containers[0].env[3].valueFrom.secretKeyRef.name
+          value: existing-credentials
+      - equal:
+          path: spec.template.spec.containers[0].env[3].valueFrom.secretKeyRef.key
+          value: ENCRYPTED_CREDENTIALS
+      - equal:
+          path: spec.template.spec.containers[0].env[3].valueFrom.secretKeyRef.optional
+          value: true
+
+  - it: uses the configured kompass-insights credentials secret when bridge kafka password is empty
+    set:
+      global:
+        kompass-bridge:
+          enabled: true
+      kompass-insights:
+        orgID: org-123
+        secret:
+          name: custom-credentials
+      kompass-bridge:
+        kafka:
+          username: ""
+          password: ""
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[2].value
+          value: bridge-user-org-123
+      - equal:
+          path: spec.template.spec.containers[0].env[3].valueFrom.secretKeyRef.name
+          value: custom-credentials
+      - equal:
+          path: spec.template.spec.containers[0].env[3].valueFrom.secretKeyRef.key
+          value: ENCRYPTED_CREDENTIALS
+      - equal:
+          path: spec.template.spec.containers[0].env[3].valueFrom.secretKeyRef.optional
+          value: true
 
   - it: preserves explicit bridge kafka credentials when they are provided
     set:
@@ -30,7 +64,6 @@ tests:
           enabled: true
       kompass-insights:
         orgID: org-123
-        encryptedCredentials: enc-456
       kompass-bridge:
         kafka:
           username: explicit-user
