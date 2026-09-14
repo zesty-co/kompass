@@ -1,0 +1,22 @@
+suite: Insights PVC StorageClass semantics
+templates:
+  - templates/pvc.yaml
+tests:
+  - it: omits the class on a fresh install using cluster defaults
+    asserts:
+      - notExists:
+          path: spec.storageClassName
+  - it: retains an explicit class
+    set:
+      persistence.spec.storageClassName: gp3
+    asserts:
+      - equal:
+          path: spec.storageClassName
+          value: gp3
+  - it: retains explicit classless storage
+    set:
+      persistence.spec.storageClassName: ""
+    asserts:
+      - equal:
+          path: spec.storageClassName
+          value: ""

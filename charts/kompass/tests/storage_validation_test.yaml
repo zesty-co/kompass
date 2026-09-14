@@ -1,0 +1,44 @@
+suite: Storage validation follows actual PVC values
+templates:
+  - templates/pre-install-hooks/kompass-validator.yaml
+tests:
+  - it: accepts the cluster default without requiring ebs-sc
+    documentSelector:
+      path: kind
+      value: Job
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].command[2]
+          pattern: 'STORAGE_CLASSES=\( "__default__"  \)'
+      - notMatchRegex:
+          path: spec.template.spec.containers[0].command[2]
+          pattern: 'ebs-sc'
+  - it: checks each component override even when global is unset
+    set:
+      kompass-insights.persistence.spec.storageClassName: insights-gp3
+      victoriaMetrics.server.persistentVolume.storageClassName: metrics-gp3
+      grafana.persistence.storageClassName: grafana-gp3
+    documentSelector:
+      path: kind
+      value: Job
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].command[2]
+          pattern: 'STORAGE_CLASSES=\( "insights-gp3" "metrics-gp3" "grafana-gp3"  \)'
+  - it: does not require a class for a disabled component
+    set:
+      grafana.enabled: false
+      grafana.persistence.storageClassName: nonexistent-unused-class
+    documentSelector:
+      path: kind
+      value: Job
+    asserts:
+      - notMatchRegex:
+          path: spec.template.spec.containers[0].command[2]
+          pattern: 'nonexistent-unused-class'
+  - it: rejects invalid names before interpolating a shell command
+    set:
+      grafana.persistence.storageClassName: 'invalid;name'
+    asserts:
+      - failedTemplate:
+          errorMessage: storageClassName must be a Kubernetes StorageClass name

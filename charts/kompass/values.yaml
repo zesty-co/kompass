@@ -16,9 +16,10 @@ global:
   # VMAuth will route to either VM Single or VM Cluster based on victoriaMetricsAuth.useSingle.
   # It typically depends on 'victoriaMetricsNameOverride'.
   victoriaMetricsRemotePrometheusWriteUrl: &vmRemoteWritePrometheusUrl http://kompass-victoria-metrics-auth:8427/api/v1/write
-  # -- (string) The default storage class name for persistent volumes.
+  # -- (string) StorageClass anchor for this complete values file only.
   # Set to a specific storage class name or leave as null (~) to use cluster default.
-  # This value is referenced by the YAML anchor '&storageClassName'.
+  # YAML anchors do not propagate later Helm overrides. In an overlay, set each
+  # component storageClassName explicitly; see README storage configuration.
   storageClassName: &storageClassName ~
   # -- (string) The name for zesty's self-signed certificate issuer
   clusterIssuerName: kompass-selfsigned-issuer

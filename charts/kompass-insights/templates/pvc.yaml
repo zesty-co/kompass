@@ -4,7 +4,15 @@
 {{- if $existingPVC -}}
   {{- $existingStorage = $existingPVC.spec.resources.requests.storage -}}
 {{- end -}}
-{{- $pvcSpec := .Values.persistence.spec -}}
+{{- $pvcSpec := deepCopy .Values.persistence.spec -}}
+{{/* A null class in an upgrade patch clears the API-assigned class, which is immutable. */}}
+{{- if not (kindIs "string" $pvcSpec.storageClassName) -}}
+  {{- if and $existingPVC (hasKey $existingPVC.spec "storageClassName") -}}
+    {{- $_ := set $pvcSpec "storageClassName" $existingPVC.spec.storageClassName -}}
+  {{- else -}}
+    {{- $_ := unset $pvcSpec "storageClassName" -}}
+  {{- end -}}
+{{- end -}}
 {{- $_ := set $pvcSpec.resources.requests "storage" ($existingStorage | default $pvcSpec.resources.requests.storage) -}}
 apiVersion: v1
 kind: PersistentVolumeClaim
