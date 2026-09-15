@@ -68,7 +68,17 @@ jobs:
       if: env.kompass_changed == 'true'
 
     - name: helm dependency update
-      run: helm dependency update ./charts/kompass
+      run: |
+        set -e
+
+        for chart in kompass-insights kompass-pod-placement; do
+          helm dependency update "./charts/$chart"
+          CHART="$chart" yq -i '
+            (.dependencies[] | select(.name == strenv(CHART))).repository = "file://../" + strenv(CHART)
+          ' ./charts/kompass/Chart.yaml
+        done
+
+        helm dependency update ./charts/kompass
       if: env.kompass_changed == 'true'
 
     - name: helm unittest kompass secret

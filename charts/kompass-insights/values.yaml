@@ -4,6 +4,8 @@ global:
   affinity: {}
   automountServiceAccountToken: ~
   imagePullSecrets: ~
+  # Workload annotations applied to the Insights Deployment metadata.
+  annotations: {}
   podAnnotations: {}
   podLabels: {}
   # Pod-level settings. These take precedence over legacy pod keys under `securityContext`.
@@ -137,6 +139,8 @@ customPricing:
 insights:
   extraEnv: []
 
+  # Workload annotations applied to the Insights Deployment metadata.
+  annotations: {}
   affinity: {}
   automountServiceAccountToken: ~
   clusterRole:
