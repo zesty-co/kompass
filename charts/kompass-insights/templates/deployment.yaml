@@ -1,5 +1,21 @@
 {{- $globalWorkload := .Values.global | default dict -}}
 {{- $insightsWorkload := .Values.insights | default dict -}}
+{{- $insightsAnnotations := include "zesty-k8s.workload.mergeMaps" (dict
+  "global" $globalWorkload
+  "component" $insightsWorkload
+  "key" "annotations"
+  "fallback" (.Values.insights.annotations | default dict)
+) | fromYaml -}}
+{{- $insightsCeilings := deepCopy (dig "guardian" "requestCeilings" "insights" (dict) .Values.global) -}}
+{{- $insightsContainerName := include "zesty-k8s.name" . -}}
+{{- if and (hasKey $insightsCeilings "kompass-insights") (ne $insightsContainerName "kompass-insights") -}}
+{{- $insightsPrimaryCeiling := get $insightsCeilings "kompass-insights" -}}
+{{- $_ := unset $insightsCeilings "kompass-insights" -}}
+{{- $_ := set $insightsCeilings $insightsContainerName $insightsPrimaryCeiling -}}
+{{- end -}}
+{{- if $insightsCeilings -}}
+{{- $insightsAnnotations = mergeOverwrite $insightsAnnotations (dict "guardian.kompass.zesty.co/request-ceilings" (printf "{\"version\":1,\"containers\":%s}" ($insightsCeilings | toJson))) -}}
+{{- end -}}
 {{- $insightsPodAnnotations := include "zesty-k8s.workload.mergeMaps" (dict
   "global" $globalWorkload
   "component" $insightsWorkload
@@ -76,6 +92,10 @@ metadata:
     app.kubernetes.io/instance: "{{ include "zesty-k8s.fullname" . }}"
     app.kubernetes.io/name: "{{ include "zesty-k8s.fullname" . }}"
     {{- include "zesty-k8s.requiredLabels" . | nindent 4 }}
+  {{- with $insightsAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   replicas: 1
   strategy:
@@ -252,6 +272,52 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: ORG_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: "{{ include "zesty-k8s.configmap" . }}"
+                  key: ORG_ID
+                  optional: false
+            - name: METADATA_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: "{{ include "zesty-k8s.configmap" . }}"
+                  key: METADATA_ENABLED
+                  optional: true
+            - name: METADATA_PROVIDER
+              valueFrom:
+                configMapKeyRef:
+                  name: "{{ include "zesty-k8s.configmap" . }}"
+                  key: METADATA_PROVIDER
+                  optional: true
+            - name: METADATA_ACCOUNTID
+              valueFrom:
+                configMapKeyRef:
+                  name: "{{ include "zesty-k8s.configmap" . }}"
+                  key: METADATA_ACCOUNTID
+                  optional: true
+            - name: METADATA_REGION
+              valueFrom:
+                configMapKeyRef:
+                  name: "{{ include "zesty-k8s.configmap" . }}"
+                  key: METADATA_REGION
+                  optional: true
+            - name: METADATA_CLUSTERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: "{{ include "zesty-k8s.configmap" . }}"
+                  key: METADATA_CLUSTERNAME
+                  optional: true
+            - name: ZESTY_ROLE_ARN
+              valueFrom:
+                configMapKeyRef:
+                  name: "{{ include "zesty-k8s.configmap" . }}"
+                  key: ZESTY_ROLE_ARN
+                  optional: true
             {{- include "zesty-k8s.manager.coralogix.envs" . | nindent 12 }}
           {{- with .Values.manager.env }}
             {{- toYaml . | nindent 12 }}
