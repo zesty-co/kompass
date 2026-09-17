@@ -1,0 +1,4 @@
+cxLogging:
+  enabled: true
+  apiKey: test-api-key
+  clusterName: test-cluster

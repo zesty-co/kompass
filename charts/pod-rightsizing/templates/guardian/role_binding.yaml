@@ -1,0 +1,18 @@
+{{- if .Values.guardian.enabled }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kompass-guardian-rolebinding
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/component: guardian
+    {{- include "pod-rightsizing.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kompass-guardian-role
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "pod-rightsizing.guardianServiceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}

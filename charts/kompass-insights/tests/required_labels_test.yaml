@@ -10,7 +10,6 @@ templates:
   - templates/monitoring/cluster_role.yaml
   - templates/configMap.yaml
   - templates/serviceAccount.yaml
-  - templates/pvc.yaml
   - templates/credentials-secret.yaml
   - templates/clusterRole.yaml
   - templates/service.yaml

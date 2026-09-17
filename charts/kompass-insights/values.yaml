@@ -41,22 +41,11 @@ imagePullSecrets: []
 
 image:
   repository: "672188301118.dkr.ecr.eu-west-1.amazonaws.com/zesty-k8s/agent"
-  migrationRepository: "672188301118.dkr.ecr.eu-west-1.amazonaws.com/zesty-k8s/agent/migration"
   pullPolicy: Always
   tag: ~
 
 nameOverride: ~
 fullnameOverride: ~
-
-persistence:
-  volumeName: "zesty-pv-storage"
-  mountPath: "/bin/db"
-  spec:
-    accessModes:
-      - ReadWriteOnce
-    resources:
-      requests:
-        storage: 10Gi
 
 serviceAccount:
   annotations: {}
@@ -253,7 +242,7 @@ admission:
 
 pvcExpansion:
   enabled: true
-  # -- (string) A percentage threshold to limit pvb utilization
+  # -- (string) A percentage threshold to limit pvc utilization
   threshold: 80
   # -- (string) The size by which to expand a PVC that exceeded its disk utilization
   # threshold. The size can be either percentage or resource quantity ("20%"/"5Gi")

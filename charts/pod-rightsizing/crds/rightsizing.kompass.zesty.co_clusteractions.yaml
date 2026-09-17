@@ -1,0 +1,251 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.16.4
+  name: clusteractions.rightsizing.kompass.zesty.co
+spec:
+  group: rightsizing.kompass.zesty.co
+  names:
+    kind: ClusterAction
+    listKind: ClusterActionList
+    plural: clusteractions
+    singular: clusteraction
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - description: Action Type
+      jsonPath: .spec.actionType
+      name: Type
+      type: string
+    - description: Execution Method
+      jsonPath: .status.executionMethod
+      name: Execution Method
+      type: string
+    - description: Status
+      jsonPath: .status.phase
+      name: Status
+      type: string
+    - description: Rightsizing Policy
+      jsonPath: .status.activations.rightsizing.policyName
+      name: Rightsizing Policy
+      type: string
+    - description: Horizontal Scaling Policy
+      jsonPath: .status.activations.horizontalScaling.policyName
+      name: Horizontal Policy
+      type: string
+    - description: Updated At
+      jsonPath: .status.updateTimestamp
+      name: Updated At
+      type: date
+    - description: Last Execution At
+      jsonPath: .status.executionTimestamp
+      name: Last Execution
+      type: date
+    - description: Age
+      jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: ClusterAction is the cluster-scoped schema for actions.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: ActionSpec defines the desired state of Action.
+            properties:
+              actionType:
+                description: Type of action being performed.
+                enum:
+                - Orchestration
+                - Rollback
+                type: string
+              priority:
+                description: Priority used to order or resolve action conflicts.
+                format: int64
+                type: integer
+              traceId:
+                type: string
+              virtual:
+                description: Virtual action flag
+                type: boolean
+              workload:
+                description: Workload targeted by the action.
+                properties:
+                  containers:
+                    description: Container-level changes applied by the action.
+                    items:
+                      properties:
+                        desiredCPU:
+                          type: number
+                        desiredMemory:
+                          format: int64
+                          type: integer
+                        limitCPU:
+                          type: number
+                        limitMemory:
+                          format: int64
+                          type: integer
+                        name:
+                          type: string
+                        requestCPU:
+                          type: number
+                        requestMemory:
+                          format: int64
+                          type: integer
+                      type: object
+                    type: array
+                  hpa:
+                    description: Horizontal Pod Autoscaler changes applied.
+                    properties:
+                      currentCpuUtilization:
+                        format: int32
+                        type: integer
+                      currentMaxReplica:
+                        format: int32
+                        type: integer
+                      currentMemoryUtilization:
+                        format: int32
+                        type: integer
+                      currentMinReplica:
+                        format: int32
+                        type: integer
+                      currentReplica:
+                        format: int32
+                        type: integer
+                      desiredCpuUtilization:
+                        format: int32
+                        type: integer
+                      desiredMaxReplica:
+                        format: int32
+                        type: integer
+                      desiredMemoryUtilization:
+                        format: int32
+                        type: integer
+                      desiredMinReplica:
+                        format: int32
+                        type: integer
+                      initialCpuUtilization:
+                        format: int32
+                        type: integer
+                      initialMaxReplica:
+                        format: int32
+                        type: integer
+                      initialMemoryUtilization:
+                        format: int32
+                        type: integer
+                      initialMinReplica:
+                        format: int32
+                        type: integer
+                      name:
+                        type: string
+                      pdbConflict:
+                        type: boolean
+                      type:
+                        description: HpaKind describes the HPA controller type.
+                        enum:
+                        - HPA
+                        - Keda
+                        type: string
+                    type: object
+                  kind:
+                    description: Kubernetes workload kind targeted.
+                    type: string
+                  name:
+                    description: Name of the targeted Kubernetes workload.
+                    type: string
+                type: object
+            type: object
+          status:
+            description: ActionStatus defines the observed state of Action.
+            properties:
+              activations:
+                properties:
+                  horizontalScaling:
+                    properties:
+                      activeSince:
+                        format: date-time
+                        type: string
+                      bindType:
+                        description: BindType describes the method used to bind the
+                          action
+                        enum:
+                        - AppList
+                        - Selector
+                        - Annotation
+                        type: string
+                      policyName:
+                        type: string
+                    type: object
+                  rightsizing:
+                    properties:
+                      activeSince:
+                        format: date-time
+                        type: string
+                      bindType:
+                        description: BindType describes the method used to bind the
+                          action
+                        enum:
+                        - AppList
+                        - Selector
+                        - Annotation
+                        type: string
+                      policyName:
+                        type: string
+                    type: object
+                type: object
+              executionMethod:
+                description: Method used to execute the action (resolved by the action-taker
+                  at apply time).
+                enum:
+                - InPlace
+                - PodMutation
+                - WorkloadPatch
+                type: string
+              executionTimestamp:
+                format: date-time
+                type: string
+              hpaUpdated:
+                type: boolean
+              phase:
+                description: ActionPhase describes the available phases for tracking
+                enum:
+                - Pending
+                - InProgress
+                - Active
+                - Completed
+                - Failed
+                type: string
+              resourcesUpdated:
+                type: boolean
+              traceId:
+                type: string
+              updateTimestamp:
+                format: date-time
+                type: string
+              workloadUID:
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

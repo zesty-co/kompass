@@ -1,0 +1,208 @@
+{{- $hooksPodSecurityContext := include "pod-rightsizing.securityContext.pod" (dict "root" . "componentSecurityContext" dict) | fromYaml }}
+{{- $hooksSecurityContext := include "pod-rightsizing.securityContext.container" (dict "root" . "componentSecurityContext" dict) | fromYaml }}
+{{- $hookImagePullSecrets := include "pod-rightsizing.hookImagePullSecrets" . | fromYamlArray -}}
+{{- $hooksWorkloadLabels := include "pod-rightsizing.workloadLabels" (dict "root" . "componentValues" .Values.hooks) | fromYaml }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: action-migration-pre-upgrade
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": pre-upgrade
+    "helm.sh/hook-weight": "-20"
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: action-migration-pre-upgrade
+  annotations:
+    "helm.sh/hook": pre-upgrade
+    "helm.sh/hook-weight": "-20"
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
+rules:
+- apiGroups: ["kompass.zesty.co"]
+  resources: ["actions"]
+  verbs: ["get", "list"]
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "create", "update", "patch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "statefulsets", "daemonsets", "replicasets"]
+  verbs: ["get"]
+- apiGroups: ["batch"]
+  resources: ["jobs", "cronjobs"]
+  verbs: ["get"]
+- apiGroups: ["argoproj.io"]
+  resources: ["rollouts"]
+  verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: action-migration-pre-upgrade
+  annotations:
+    "helm.sh/hook": pre-upgrade
+    "helm.sh/hook-weight": "-20"
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
+subjects:
+- kind: ServiceAccount
+  name: action-migration-pre-upgrade
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: action-migration-pre-upgrade
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: action-migration-pre-upgrade
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": pre-upgrade
+    "helm.sh/hook-weight": "-10"
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
+  {{- with $hooksWorkloadLabels }}
+  labels:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      name: action-migration-pre-upgrade
+      labels:
+        app.kubernetes.io/name: action-migration-pre-upgrade
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      serviceAccountName: action-migration-pre-upgrade
+      {{- with $hookImagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.global.nodeSelector }}
+      nodeSelector:
+      {{- toYaml .Values.global.nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if .Values.global.tolerations }}
+      tolerations:
+      {{- toYaml .Values.global.tolerations | nindent 8 }}
+      {{- end }}
+      {{- with $hooksPodSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: action-migration-pre-upgrade
+        image: {{ .Values.hooks.image.registry }}/{{ .Values.hooks.image.repository }}:{{ .Values.hooks.image.tag }}
+        {{- with $hooksSecurityContext }}
+        securityContext:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        command:
+        - /bin/bash
+        - -c
+        - |
+          set -euo pipefail
+
+          NAMESPACE="{{ .Release.Namespace }}"
+          MIGRATION_CM_NAME="action-migration-initial-values"
+
+          echo "Migrating Action initial values to temporary migration ConfigMap: $MIGRATION_CM_NAME"
+
+          # Function to hash a string to 32-bit hex using FNV-32a (mimics HashStringTo32Bit in Go)
+          hash_string() {
+            local input="$1"
+            local hash=2166136261  # FNV-32a offset basis
+            local prime=16777619   # FNV-32a prime
+            
+            # Process each byte of the input string
+            for (( i=0; i<${#input}; i++ )); do
+              byte=$(printf '%d' "'${input:$i:1}")
+              hash=$(( (hash ^ byte) * prime ))
+              # Keep only lower 32 bits
+              hash=$(( hash & 0xFFFFFFFF ))
+            done
+            
+            printf "%08x" $hash
+          }
+
+          # Function to extract container initial values from Action spec
+          extract_initial_values() {
+            local action_json="$1"
+            
+            echo "$action_json" | jq -c '.spec.workload.containers // [] | map({
+              name: .name,
+              cpu: .initialCPU,
+              memory: .initialMemory
+            }) | map(select(.cpu != null or .memory != null))'
+          }
+
+          # Create migration ConfigMap if it doesn't exist
+          if ! kubectl get configmap "$MIGRATION_CM_NAME" -n "$NAMESPACE" &>/dev/null; then
+            echo "Creating migration ConfigMap $MIGRATION_CM_NAME..."
+            kubectl create configmap "$MIGRATION_CM_NAME" -n "$NAMESPACE"
+          fi
+
+          # Get all Actions
+          ACTIONS_JSON=$(kubectl get actions.kompass.zesty.co --all-namespaces -o json || echo '{"items": []}')
+          
+          # Process each Action
+          echo "$ACTIONS_JSON" | jq -c '.items[]' | while read -r action; do
+            ACTION_NAME=$(echo "$action" | jq -r '.metadata.name')
+            ACTION_NAMESPACE=$(echo "$action" | jq -r '.metadata.namespace')
+            WORKLOAD_NAME=$(echo "$action" | jq -r '.spec.workload.name')
+            WORKLOAD_KIND=$(echo "$action" | jq -r '.spec.workload.kind')
+            
+            echo "Processing Action: $ACTION_NAMESPACE/$ACTION_NAME (Workload: $WORKLOAD_KIND/$WORKLOAD_NAME)"
+            
+            # Get the workload to extract UID and initial values
+            WORKLOAD_JSON=$(kubectl get "$WORKLOAD_KIND" "$WORKLOAD_NAME" -n "$ACTION_NAMESPACE" -o json 2>/dev/null || echo "")
+            
+            if [[ -z "$WORKLOAD_JSON" || "$WORKLOAD_JSON" == "" ]]; then
+              echo "  Warning: Workload $WORKLOAD_KIND/$WORKLOAD_NAME not found, skipping"
+              continue
+            fi
+            
+            WORKLOAD_UID=$(echo "$WORKLOAD_JSON" | jq -r '.metadata.uid')
+            
+            # Create the key: "namespace;name;kind;uid" (kind in lowercase)
+            WORKLOAD_KIND_LOWER=$(echo "$WORKLOAD_KIND" | tr '[:upper:]' '[:lower:]')
+            RESOURCE_ID="${ACTION_NAMESPACE};${WORKLOAD_NAME};${WORKLOAD_KIND_LOWER}"
+            CM_KEY="${RESOURCE_ID};${WORKLOAD_UID}"
+            
+            # Hash the key to 32-bit hex
+            HASHED_KEY=$(hash_string "$CM_KEY")
+            
+            echo "  Key: $CM_KEY -> Hashed: $HASHED_KEY"
+            
+            # Check if key already exists in migration ConfigMap
+            EXISTING_VALUE=$(kubectl get configmap "$MIGRATION_CM_NAME" -n "$NAMESPACE" -o jsonpath="{.data.$HASHED_KEY}" 2>/dev/null || echo "")
+            
+            if [[ -n "$EXISTING_VALUE" ]]; then
+              echo "  Key already exists in migration ConfigMap, skipping"
+              continue
+            fi
+            
+            # Extract initial values from Action spec
+            INITIAL_VALUES=$(extract_initial_values "$action")
+            
+            if [[ "$INITIAL_VALUES" == "[]" || -z "$INITIAL_VALUES" ]]; then
+              echo "  No initial values to store, skipping"
+              continue
+            fi
+            
+            echo "  Storing initial values: $INITIAL_VALUES"
+            
+            # Use kubectl patch with strategic merge to add the data
+            kubectl get configmap "$MIGRATION_CM_NAME" -n "$NAMESPACE" -o json | \
+              jq --arg key "$HASHED_KEY" --argjson value "$INITIAL_VALUES" '.data[$key] = ($value | tostring)' | \
+              kubectl apply -f -
+          done
+
+          echo "Pre-upgrade Action migration to temporary ConfigMap completed."
+          echo "Post-upgrade hook will copy this data to the managed ConfigMap."
+      restartPolicy: Never
+  backoffLimit: 0

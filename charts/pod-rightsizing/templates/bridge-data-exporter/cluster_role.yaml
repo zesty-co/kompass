@@ -1,0 +1,18 @@
+{{- if and .Values.gpuMetrics .Values.gpuMetrics.enabled }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "bridge-data-exporter.name" . }}-gpu-inventory
+  labels:
+    {{- include "pod-rightsizing.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["nodes", "pods"]
+    verbs: ["list"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get"]
+  - apiGroups: ["apps"]
+    resources: ["daemonsets"]
+    verbs: ["list"]
+{{- end }}

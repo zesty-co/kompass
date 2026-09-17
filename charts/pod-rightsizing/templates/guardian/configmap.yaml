@@ -1,0 +1,21 @@
+{{- if .Values.guardian.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kompass-guardian-config.name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/component: guardian
+    {{- include "pod-rightsizing.labels" . | nindent 4 }}
+data:
+  cadvisorScrapeInterval: "15s"
+  cadvisorMaxConcurrentScrapes: "4"
+  cpuThrottlingRatio: "0.25"
+  cpuThrottlingConsecutiveWindows: "3"
+  cpuRequestGrowthFactor: "1.25"
+  memoryRequestGrowthFactor: "1.25"
+  cpuRequestToLimitFactor: "1.2"
+  memoryRequestToLimitFactor: "1.2"
+  stabilizationWindow: "10m"
+  recoveryApplyTimeout: "5m"
+{{- end }}

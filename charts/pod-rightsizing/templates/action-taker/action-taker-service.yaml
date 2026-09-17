@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kompass-rightsizing-action-taker-svc
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "pod-rightsizing.labels" . | nindent 4 }}
+    app.kubernetes.io/component: action-taker
+spec:
+  selector:
+    app.kubernetes.io/component: action-taker
+  ports:
+    - name: bridge-actor
+      port: {{ .Values.bridgeActor.port | default 50052 }}
+      targetPort: bridge-actor
+      protocol: TCP
+  type: ClusterIP

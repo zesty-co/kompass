@@ -1,0 +1,1482 @@
+{
+    "annotations": {
+        "list": [
+            {
+                "builtIn": 1,
+                "datasource": {
+                    "type": "grafana",
+                    "uid": "-- Grafana --"
+                },
+                "enable": true,
+                "hide": true,
+                "iconColor": "rgba(0, 211, 255, 1)",
+                "name": "Annotations & Alerts",
+                "type": "dashboard"
+            }
+        ]
+    },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "id": 6,
+    "links": [],
+    "panels": [
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "P4169E866C3094E38"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "axisBorderShow": false,
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "barWidthFactor": 0.6,
+                        "drawStyle": "line",
+                        "fillOpacity": 8,
+                        "gradientMode": "none",
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "viz": false
+                        },
+                        "insertNulls": true,
+                        "lineInterpolation": "smooth",
+                        "lineWidth": 1,
+                        "pointSize": 5,
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "showPoints": "never",
+                        "spanNulls": true,
+                        "stacking": {
+                            "group": "A",
+                            "mode": "none"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "red",
+                                "value": 80
+                            }
+                        ]
+                    },
+                    "unit": "cores"
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Current Requests"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "#5794F2",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Optimized Requests"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "#73BF69",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "CPU Usage"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "#FF9830",
+                                    "mode": "fixed"
+                                }
+                            },
+                            {
+                                "id": "custom.fillOpacity",
+                                "value": 0
+                            },
+                            {
+                                "id": "decimals",
+                                "value": 2
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 0
+            },
+            "id": 6,
+            "options": {
+                "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "tooltip": {
+                    "hideZeros": true,
+                    "mode": "multi",
+                    "sort": "desc"
+                }
+            },
+            "pluginVersion": "11.5.2",
+            "targets": [
+                {
+                    "expr": "sum(kube_pod_container_resource_requests{resource=\"cpu\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"} * on (namespace, pod, container) group_left(created_by_name) kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", status=\"running\", created_by_kind=~\"$workload_kind\"})",
+                    "instant": false,
+                    "legendFormat": "Current Requests",
+                    "range": true,
+                    "refId": "A"
+                },
+                {
+                    "expr": "sum(label_replace(last_over_time(kompass_rs_recommendations{mode=\"variants\", resource_source=\"desired\", rightsizing_policy=\"$policy\", resource_type=\"cpu\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d]), \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"))",
+                    "instant": false,
+                    "legendFormat": "Optimized Requests",
+                    "range": true,
+                    "refId": "B"
+                },
+                {
+                    "expr": "sum(kompass_container_cpu_usage_max_rate{namespace=~\"$namespace\", namespace!~\"kube[-_]system\"})",
+                    "instant": false,
+                    "legendFormat": "CPU Usage",
+                    "range": true,
+                    "refId": "C"
+                }
+            ],
+            "title": "CPU Capacity & Usage (History)",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "P4169E866C3094E38"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "axisBorderShow": false,
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "barWidthFactor": 0.6,
+                        "drawStyle": "line",
+                        "fillOpacity": 8,
+                        "gradientMode": "none",
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "viz": false
+                        },
+                        "insertNulls": true,
+                        "lineInterpolation": "smooth",
+                        "lineWidth": 1,
+                        "pointSize": 5,
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "showPoints": "never",
+                        "spanNulls": true,
+                        "stacking": {
+                            "group": "A",
+                            "mode": "none"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "red",
+                                "value": 80
+                            }
+                        ]
+                    },
+                    "unit": "bytes"
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Current Requests"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "#5794F2",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Optimized Requests"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "#73BF69",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Memory Usage"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "#FF9830",
+                                    "mode": "fixed"
+                                }
+                            },
+                            {
+                                "id": "custom.fillOpacity",
+                                "value": 0
+                            },
+                            {
+                                "id": "decimals",
+                                "value": 2
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 0
+            },
+            "id": 7,
+            "options": {
+                "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "tooltip": {
+                    "hideZeros": true,
+                    "mode": "multi",
+                    "sort": "desc"
+                }
+            },
+            "pluginVersion": "11.5.2",
+            "targets": [
+                {
+                    "expr": "sum(kube_pod_container_resource_requests{resource=\"memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"} * on (namespace, pod, container) group_left(created_by_name) kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", status=\"running\", created_by_kind=~\"$workload_kind\"})",
+                    "instant": false,
+                    "legendFormat": "Current Requests",
+                    "range": true,
+                    "refId": "A"
+                },
+                {
+                    "expr": "sum(label_replace(last_over_time(kompass_rs_recommendations{mode=\"variants\", resource_source=\"desired\", rightsizing_policy=\"$policy\", resource_type=\"memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d]), \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"))",
+                    "instant": false,
+                    "legendFormat": "Optimized Requests",
+                    "range": true,
+                    "refId": "B"
+                },
+                {
+                    "expr": "sum(kompass_container_memory_usage_max{namespace=~\"$namespace\", namespace!~\"kube[-_]system\"})",
+                    "instant": false,
+                    "legendFormat": "Memory Usage",
+                    "range": true,
+                    "refId": "C"
+                }
+            ],
+            "title": "Memory Capacity & Usage (History)",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "P4169E866C3094E38"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "decimals": 0,
+                    "mappings": [
+                        {
+                            "options": {
+                                "match": "null",
+                                "result": {
+                                    "text": "-"
+                                }
+                            },
+                            "type": "special"
+                        },
+                        {
+                            "options": {
+                                "match": "nan",
+                                "result": {
+                                    "text": "-"
+                                }
+                            },
+                            "type": "special"
+                        }
+                    ],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "#D8D9DA",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "At Risk"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "#F2495C",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Total"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "#D8D9DA",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 6,
+                "x": 0,
+                "y": 8
+            },
+            "id": 15,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "left",
+                "orientation": "horizontal",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "value_and_name",
+                "wideLayout": true
+            },
+            "pluginVersion": "11.5.2",
+            "targets": [
+                {
+                    "expr": "count(sum by (workload_key) ((\nlabel_join(\n  sum by (namespace, created_by_name, created_by_kind, status) (\n    label_replace(\n      (\n        label_replace(\n          max by (namespace, created_by_name, created_by_kind) (\n            kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n          )\n          and on (namespace, created_by_name)\n          (\n            count by (namespace, created_by_name) (\n              label_replace(\n                last_over_time(kompass_rs_action_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\", action_type=~\".+\"}[7d]),\n                \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n              )\n            ) > bool 0\n          ),\n          \"status\", \"active\", \"created_by_name\", \".*\"\n        )\n        or\n        label_replace(\n          (\n\n          max by (namespace, created_by_name, created_by_kind) (\n            kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n          )\n          and on (namespace, created_by_name)\n(\n            count by (namespace, created_by_name) (\n              label_replace(\n                last_over_time(kompass_rs_action_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\"}[7d]),\n                \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n              )\n            ) > bool 0\n          )\n          )\n          unless on (namespace, created_by_name)\n(\n            count by (namespace, created_by_name) (\n              label_replace(\n                last_over_time(kompass_rs_action_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\", action_type=~\".+\"}[7d]),\n                \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n              )\n            ) > bool 0\n          ),\n          \"status\", \"pending\", \"created_by_name\", \".*\"\n        )\n        or\n        label_replace(\n          max by (namespace, created_by_name, created_by_kind) (\n            kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n          )\n          unless on (namespace, created_by_name)\n          (\n            count by (namespace, created_by_name) (\n              label_replace(\n                last_over_time(kompass_rs_action_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\"}[7d]),\n                \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n              )\n            ) > bool 0\n          ),\n          \"status\", \"inactive\", \"created_by_name\", \".*\"\n        )\n      ),\n      \"gate\", \"1\", \"created_by_name\", \".*\"\n    )\n    and on (status, gate)\n    (\n      label_replace(label_replace(vector(1), \"status\", \"active\", \"__name__\", \".*\"), \"gate\", \"1\", \"status\", \"$status\")\n      or\n      label_replace(label_replace(vector(1), \"status\", \"pending\", \"__name__\", \".*\"), \"gate\", \"1\", \"status\", \"$status\")\n      or\n      label_replace(label_replace(vector(1), \"status\", \"inactive\", \"__name__\", \".*\"), \"gate\", \"1\", \"status\", \"$status\")\n    )\n  ),\n  \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n)\nand on (workload_key)\n(\n  (\n    label_replace(\n      label_join(\n        count by (namespace, created_by_name) (\n          kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n        ),\n        \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n      ),\n      \"in_risk_selector\", \"all\", \"workload_key\", \".*\"\n    )\n    and on (in_risk_selector)\n    label_replace(vector(1), \"in_risk_selector\", \"${in_risk:raw}\", \"__name__\", \".*\")\n  )\n  or\n  (\n    label_replace(\n      label_join(\n        (\n          sum by (namespace, created_by_name) (\n            label_replace(\n              label_replace(\n                abs(last_over_time(kompass_rs_initial_minus_desired{resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d])),\n                \"namespace\", \"$1\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n              ),\n              \"created_by_name\", \"$2\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n            )\n          ) > 0\n        ),\n        \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n      ),\n      \"in_risk_selector\", \"in_risk\", \"workload_key\", \".*\"\n    )\n    and on (in_risk_selector)\n    label_replace(vector(1), \"in_risk_selector\", \"${in_risk:raw}\", \"__name__\", \".*\")\n  )\n  or\n  (\n    label_replace(\n      (\n        label_join(\n          count by (namespace, created_by_name) (\n            kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n          ),\n          \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n        )\n        unless on (workload_key)\n        label_join(\n          (\n            sum by (namespace, created_by_name) (\n              label_replace(\n                label_replace(\n                  abs(last_over_time(kompass_rs_initial_minus_desired{resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d])),\n                  \"namespace\", \"$1\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n                ),\n                \"created_by_name\", \"$2\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n              )\n            ) > 0\n          ),\n          \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n        )\n      ),\n      \"in_risk_selector\", \"not_in_risk\", \"workload_key\", \".*\"\n    )\n    and on (in_risk_selector)\n    label_replace(vector(1), \"in_risk_selector\", \"${in_risk:raw}\", \"__name__\", \".*\")\n  )\n)\n)\nand on (workload_key)\n(\n  label_replace(\n  (\n    label_replace(\n      sum by (workload_key) (\n        label_join(\n          count by (namespace, created_by_name) (\n            kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n          ),\n          \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n        )\n      ),\n      \"has_recommendation_selector\", \"all\", \"workload_key\", \".*\"\n    )\n    or\n    label_replace(\n      (\n        sum by (workload_key) (\n          label_join(\n            count by (namespace, created_by_name) (\n              kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n            ),\n            \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n          )\n        )\n        and on (workload_key)\n        sum by (workload_key) (\n          label_join(\n            (\n              count by (namespace, created_by_name) (\n                label_replace(\n                  last_over_time(kompass_rs_recommendations{mode=\"variants\", resource_source=\"desired\", rightsizing_policy=\"$policy\", resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d]),\n                  \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                )\n              )\n              and on (namespace, created_by_name)\n              count by (namespace, created_by_name) (\n                kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n              )\n            ),\n            \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n          )\n        )\n      ),\n      \"has_recommendation_selector\", \"with_recommendation\", \"workload_key\", \".*\"\n    )\n    or\n    label_replace(\n      (\n        sum by (workload_key) (\n          label_join(\n            count by (namespace, created_by_name) (\n              kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n            ),\n            \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n          )\n        )\n        unless on (workload_key)\n        sum by (workload_key) (\n          label_join(\n            (\n              count by (namespace, created_by_name) (\n                label_replace(\n                  last_over_time(kompass_rs_recommendations{mode=\"variants\", resource_source=\"desired\", rightsizing_policy=\"$policy\", resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d]),\n                  \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                )\n              )\n              and on (namespace, created_by_name)\n              count by (namespace, created_by_name) (\n                kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n              )\n            ),\n            \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n          )\n        )\n      ),\n      \"has_recommendation_selector\", \"without_recommendation\", \"workload_key\", \".*\"\n    )\n  ),\n  \"has_recommendation_selector\", \"$1\", \"has_recommendation_selector\", \"(.*)\"\n)\nand on (has_recommendation_selector)\nlabel_replace(vector(1), \"has_recommendation_selector\", \"${has_recommendation:raw}\", \"__name__\", \".*\")\n)))",
+                    "instant": true,
+                    "legendFormat": "Total",
+                    "range": false,
+                    "refId": "A"
+                },
+                {
+                    "expr": "(count(sum by (namespace, created_by_name) (label_replace(label_replace(abs(last_over_time(kompass_rs_initial_minus_desired{resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d])), \"namespace\", \"$1\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"), \"created_by_name\", \"$2\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\")) > 0)) or vector(0)",
+                    "instant": true,
+                    "legendFormat": "At Risk",
+                    "range": false,
+                    "refId": "B"
+                }
+            ],
+            "title": "Workloads",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "P4169E866C3094E38"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "mappings": [
+                        {
+                            "options": {
+                                "match": "null",
+                                "result": {
+                                    "text": "-"
+                                }
+                            },
+                            "type": "special"
+                        },
+                        {
+                            "options": {
+                                "match": "nan",
+                                "result": {
+                                    "text": "-"
+                                }
+                            },
+                            "type": "special"
+                        }
+                    ],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "#D8D9DA",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Capacity"
+                        },
+                        "properties": [
+                            {
+                                "id": "unit",
+                                "value": "cores"
+                            },
+                            {
+                                "id": "decimals",
+                                "value": 2
+                            },
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "#D8D9DA",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Recommendation"
+                        },
+                        "properties": [
+                            {
+                                "id": "unit",
+                                "value": "cores"
+                            },
+                            {
+                                "id": "decimals",
+                                "value": 2
+                            },
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "#D8D9DA",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Saved"
+                        },
+                        "properties": [
+                            {
+                                "id": "unit",
+                                "value": "percent"
+                            },
+                            {
+                                "id": "decimals",
+                                "value": 1
+                            },
+                            {
+                                "id": "max",
+                                "value": 100
+                            },
+                            {
+                                "id": "min",
+                                "value": 0
+                            },
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "#73BF69",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 9,
+                "x": 6,
+                "y": 8
+            },
+            "id": 16,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "left",
+                "orientation": "horizontal",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "value_and_name",
+                "wideLayout": true
+            },
+            "pluginVersion": "11.5.2",
+            "targets": [
+                {
+                    "expr": "sum(kube_pod_container_resource_requests{resource=\"cpu\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"} * on (namespace, pod, container) group_left(created_by_name) kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", status=\"running\", created_by_kind=~\"$workload_kind\"})",
+                    "instant": true,
+                    "legendFormat": "Capacity",
+                    "range": false,
+                    "refId": "A"
+                },
+                {
+                    "expr": "sum((label_replace(last_over_time(kompass_rs_recommendations{mode=\"variants\", resource_source=\"desired\", rightsizing_policy=\"$policy\", resource_type=\"cpu\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d]), \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\")) and on (namespace, created_by_name) count by (namespace, created_by_name) (kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", status=\"running\", created_by_kind=~\"$workload_kind\"}))",
+                    "instant": true,
+                    "legendFormat": "Recommendation",
+                    "range": false,
+                    "refId": "B"
+                },
+                {
+                    "expr": "(((100 * ((sum((clamp_min(label_replace(label_replace(label_replace(last_over_time(kompass_rs_initial_minus_desired{resource_type=\"cpu\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d]), \"namespace\", \"$1\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"), \"created_by_name\", \"$2\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"), \"created_by_kind\", \"$3\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"), 0)) and on (namespace, created_by_name, created_by_kind) count by (namespace, created_by_name, created_by_kind) (kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", status=\"running\", created_by_kind=~\"$workload_kind\"})) or vector(0))) / (sum(kube_pod_container_resource_requests{resource=\"cpu\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"} * on (namespace, pod, container) group_left(created_by_name) kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", status=\"running\", created_by_kind=~\"$workload_kind\"}) or vector(0)))) and on() ((sum(kube_pod_container_resource_requests{resource=\"cpu\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"} * on (namespace, pod, container) group_left(created_by_name) kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", status=\"running\", created_by_kind=~\"$workload_kind\"}) or vector(0)) > 0)) or vector(0)",
+                    "instant": true,
+                    "legendFormat": "Saved",
+                    "range": false,
+                    "refId": "C"
+                }
+            ],
+            "title": "CPU",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "P4169E866C3094E38"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "mappings": [
+                        {
+                            "options": {
+                                "match": "null",
+                                "result": {
+                                    "text": "-"
+                                }
+                            },
+                            "type": "special"
+                        },
+                        {
+                            "options": {
+                                "match": "nan",
+                                "result": {
+                                    "text": "-"
+                                }
+                            },
+                            "type": "special"
+                        }
+                    ],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "#D8D9DA",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Capacity"
+                        },
+                        "properties": [
+                            {
+                                "id": "unit",
+                                "value": "bytes"
+                            },
+                            {
+                                "id": "decimals",
+                                "value": 1
+                            },
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "#D8D9DA",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Recommendation"
+                        },
+                        "properties": [
+                            {
+                                "id": "unit",
+                                "value": "bytes"
+                            },
+                            {
+                                "id": "decimals",
+                                "value": 1
+                            },
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "#D8D9DA",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Saved"
+                        },
+                        "properties": [
+                            {
+                                "id": "unit",
+                                "value": "percent"
+                            },
+                            {
+                                "id": "decimals",
+                                "value": 1
+                            },
+                            {
+                                "id": "max",
+                                "value": 100
+                            },
+                            {
+                                "id": "min",
+                                "value": 0
+                            },
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "#73BF69",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 9,
+                "x": 15,
+                "y": 8
+            },
+            "id": 17,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "justifyMode": "left",
+                "orientation": "horizontal",
+                "percentChangeColorMode": "standard",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "showPercentChange": false,
+                "textMode": "value_and_name",
+                "wideLayout": true
+            },
+            "pluginVersion": "11.5.2",
+            "targets": [
+                {
+                    "expr": "sum(kube_pod_container_resource_requests{resource=\"memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"} * on (namespace, pod, container) group_left(created_by_name) kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", status=\"running\", created_by_kind=~\"$workload_kind\"})",
+                    "instant": true,
+                    "legendFormat": "Capacity",
+                    "range": false,
+                    "refId": "A"
+                },
+                {
+                    "expr": "sum((label_replace(last_over_time(kompass_rs_recommendations{mode=\"variants\", resource_source=\"desired\", rightsizing_policy=\"$policy\", resource_type=\"memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d]), \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\")) and on (namespace, created_by_name) count by (namespace, created_by_name) (kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", status=\"running\", created_by_kind=~\"$workload_kind\"}))",
+                    "instant": true,
+                    "legendFormat": "Recommendation",
+                    "range": false,
+                    "refId": "B"
+                },
+                {
+                    "expr": "(((100 * ((sum((clamp_min(label_replace(label_replace(label_replace(last_over_time(kompass_rs_initial_minus_desired{resource_type=\"memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d]), \"namespace\", \"$1\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"), \"created_by_name\", \"$2\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"), \"created_by_kind\", \"$3\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"), 0)) and on (namespace, created_by_name, created_by_kind) count by (namespace, created_by_name, created_by_kind) (kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", status=\"running\", created_by_kind=~\"$workload_kind\"})) or vector(0))) / (sum(kube_pod_container_resource_requests{resource=\"memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"} * on (namespace, pod, container) group_left(created_by_name) kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", status=\"running\", created_by_kind=~\"$workload_kind\"}) or vector(0)))) and on() ((sum(kube_pod_container_resource_requests{resource=\"memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"} * on (namespace, pod, container) group_left(created_by_name) kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", status=\"running\", created_by_kind=~\"$workload_kind\"}) or vector(0)) > 0)) or vector(0)",
+                    "instant": true,
+                    "legendFormat": "Saved",
+                    "range": false,
+                    "refId": "C"
+                }
+            ],
+            "title": "Memory",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "P4169E866C3094E38"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "align": "auto",
+                        "cellOptions": {
+                            "type": "auto"
+                        },
+                        "filterable": true,
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "red",
+                                "value": 80
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Current vCPU"
+                        },
+                        "properties": [
+                            {
+                                "id": "decimals",
+                                "value": 3
+                            },
+                            {
+                                "id": "unit",
+                                "value": "cores"
+                            },
+                            {
+                                "id": "custom.align",
+                                "value": "right"
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Rec. vCPU"
+                        },
+                        "properties": [
+                            {
+                                "id": "decimals",
+                                "value": 3
+                            },
+                            {
+                                "id": "unit",
+                                "value": "cores"
+                            },
+                            {
+                                "id": "mappings",
+                                "value": [
+                                    {
+                                        "options": {
+                                            "match": "null",
+                                            "result": {
+                                                "text": "-"
+                                            }
+                                        },
+                                        "type": "special"
+                                    },
+                                    {
+                                        "options": {
+                                            "match": "nan",
+                                            "result": {
+                                                "text": "-"
+                                            }
+                                        },
+                                        "type": "special"
+                                    },
+                                    {
+                                        "options": {
+                                            "-1": {
+                                                "text": "-"
+                                            }
+                                        },
+                                        "type": "value"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "custom.align",
+                                "value": "right"
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Current Memory"
+                        },
+                        "properties": [
+                            {
+                                "id": "unit",
+                                "value": "bytes"
+                            },
+                            {
+                                "id": "decimals",
+                                "value": 0
+                            },
+                            {
+                                "id": "custom.align",
+                                "value": "right"
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Rec. Memory"
+                        },
+                        "properties": [
+                            {
+                                "id": "unit",
+                                "value": "bytes"
+                            },
+                            {
+                                "id": "decimals",
+                                "value": 0
+                            },
+                            {
+                                "id": "mappings",
+                                "value": [
+                                    {
+                                        "options": {
+                                            "match": "null",
+                                            "result": {
+                                                "text": "-"
+                                            }
+                                        },
+                                        "type": "special"
+                                    },
+                                    {
+                                        "options": {
+                                            "match": "nan",
+                                            "result": {
+                                                "text": "-"
+                                            }
+                                        },
+                                        "type": "special"
+                                    },
+                                    {
+                                        "options": {
+                                            "-1": {
+                                                "text": "-"
+                                            }
+                                        },
+                                        "type": "value"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "custom.align",
+                                "value": "right"
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Status"
+                        },
+                        "properties": [
+                            {
+                                "id": "mappings",
+                                "value": [
+                                    {
+                                        "options": {
+                                            "active": {
+                                                "color": "green",
+                                                "text": "Active"
+                                            },
+                                            "inactive": {
+                                                "color": "transparent",
+                                                "text": "Inactive"
+                                            },
+                                            "pending": {
+                                                "color": "yellow",
+                                                "text": "In Progress"
+                                            }
+                                        },
+                                        "type": "value"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "type": "color-background"
+                                }
+                            },
+                            {
+                                "id": "custom.align",
+                                "value": "left"
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Workload"
+                        },
+                        "properties": [
+                            {
+                                "id": "links",
+                                "value": [
+                                    {
+                                        "targetBlank": false,
+                                        "title": "Pod RightSizing",
+                                        "url": "/d/pod-rightsizing/pod-rightsizing-dashboard?var-namespace=${__data.fields.namespace}&var-workload_name=${__value.text}&from=${__from}&to=${__to}"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "custom.align",
+                                "value": "left"
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Namespace"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.align",
+                                "value": "left"
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Kind"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.align",
+                                "value": "left"
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Saved vCPU"
+                        },
+                        "properties": [
+                            {
+                                "id": "decimals",
+                                "value": 1
+                            },
+                            {
+                                "id": "unit",
+                                "value": "percent"
+                            },
+                            {
+                                "id": "mappings",
+                                "value": [
+                                    {
+                                        "options": {
+                                            "match": "null",
+                                            "result": {
+                                                "text": "-"
+                                            }
+                                        },
+                                        "type": "special"
+                                    },
+                                    {
+                                        "options": {
+                                            "match": "nan",
+                                            "result": {
+                                                "text": "-"
+                                            }
+                                        },
+                                        "type": "special"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "custom.align",
+                                "value": "right"
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Saved Memory"
+                        },
+                        "properties": [
+                            {
+                                "id": "unit",
+                                "value": "percent"
+                            },
+                            {
+                                "id": "decimals",
+                                "value": 1
+                            },
+                            {
+                                "id": "mappings",
+                                "value": [
+                                    {
+                                        "options": {
+                                            "match": "null",
+                                            "result": {
+                                                "text": "-"
+                                            }
+                                        },
+                                        "type": "special"
+                                    },
+                                    {
+                                        "options": {
+                                            "match": "nan",
+                                            "result": {
+                                                "text": "-"
+                                            }
+                                        },
+                                        "type": "special"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "custom.align",
+                                "value": "right"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "gridPos": {
+                "h": 22,
+                "w": 24,
+                "x": 0,
+                "y": 12
+            },
+            "id": 5,
+            "options": {
+                "cellHeight": "sm",
+                "columnFilter": true,
+                "footer": {
+                    "countRows": false,
+                    "enablePagination": true,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true,
+                "sortBy": [
+                    {
+                        "desc": false,
+                        "displayName": "namespace"
+                    }
+                ]
+            },
+            "pluginVersion": "11.5.2",
+            "targets": [
+                {
+                    "expr": "(\nlabel_join(\n  sum by (namespace, created_by_name, created_by_kind, status) (\n    label_replace(\n      (\n        label_replace(\n          max by (namespace, created_by_name, created_by_kind) (\n            kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n          )\n          and on (namespace, created_by_name)\n          (\n            count by (namespace, created_by_name) (\n              label_replace(\n                last_over_time(kompass_rs_action_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\", action_type=~\".+\"}[7d]),\n                \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n              )\n            ) > bool 0\n          ),\n          \"status\", \"active\", \"created_by_name\", \".*\"\n        )\n        or\n        label_replace(\n          (\n\n          max by (namespace, created_by_name, created_by_kind) (\n            kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n          )\n          and on (namespace, created_by_name)\n(\n            count by (namespace, created_by_name) (\n              label_replace(\n                last_over_time(kompass_rs_action_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\"}[7d]),\n                \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n              )\n            ) > bool 0\n          )\n          )\n          unless on (namespace, created_by_name)\n(\n            count by (namespace, created_by_name) (\n              label_replace(\n                last_over_time(kompass_rs_action_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\", action_type=~\".+\"}[7d]),\n                \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n              )\n            ) > bool 0\n          ),\n          \"status\", \"pending\", \"created_by_name\", \".*\"\n        )\n        or\n        label_replace(\n          max by (namespace, created_by_name, created_by_kind) (\n            kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n          )\n          unless on (namespace, created_by_name)\n          (\n            count by (namespace, created_by_name) (\n              label_replace(\n                last_over_time(kompass_rs_action_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\"}[7d]),\n                \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n              )\n            ) > bool 0\n          ),\n          \"status\", \"inactive\", \"created_by_name\", \".*\"\n        )\n      ),\n      \"gate\", \"1\", \"created_by_name\", \".*\"\n    )\n    and on (status, gate)\n    (\n      label_replace(label_replace(vector(1), \"status\", \"active\", \"__name__\", \".*\"), \"gate\", \"1\", \"status\", \"$status\")\n      or\n      label_replace(label_replace(vector(1), \"status\", \"pending\", \"__name__\", \".*\"), \"gate\", \"1\", \"status\", \"$status\")\n      or\n      label_replace(label_replace(vector(1), \"status\", \"inactive\", \"__name__\", \".*\"), \"gate\", \"1\", \"status\", \"$status\")\n    )\n  ),\n  \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n)\nand on (workload_key)\n(\n  (\n    label_replace(\n      label_join(\n        count by (namespace, created_by_name) (\n          kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n        ),\n        \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n      ),\n      \"in_risk_selector\", \"all\", \"workload_key\", \".*\"\n    )\n    and on (in_risk_selector)\n    label_replace(vector(1), \"in_risk_selector\", \"${in_risk:raw}\", \"__name__\", \".*\")\n  )\n  or\n  (\n    label_replace(\n      label_join(\n        (\n          sum by (namespace, created_by_name) (\n            label_replace(\n              label_replace(\n                abs(last_over_time(kompass_rs_initial_minus_desired{resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d])),\n                \"namespace\", \"$1\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n              ),\n              \"created_by_name\", \"$2\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n            )\n          ) > 0\n        ),\n        \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n      ),\n      \"in_risk_selector\", \"in_risk\", \"workload_key\", \".*\"\n    )\n    and on (in_risk_selector)\n    label_replace(vector(1), \"in_risk_selector\", \"${in_risk:raw}\", \"__name__\", \".*\")\n  )\n  or\n  (\n    label_replace(\n      (\n        label_join(\n          count by (namespace, created_by_name) (\n            kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n          ),\n          \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n        )\n        unless on (workload_key)\n        label_join(\n          (\n            sum by (namespace, created_by_name) (\n              label_replace(\n                label_replace(\n                  abs(last_over_time(kompass_rs_initial_minus_desired{resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d])),\n                  \"namespace\", \"$1\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n                ),\n                \"created_by_name\", \"$2\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n              )\n            ) > 0\n          ),\n          \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n        )\n      ),\n      \"in_risk_selector\", \"not_in_risk\", \"workload_key\", \".*\"\n    )\n    and on (in_risk_selector)\n    label_replace(vector(1), \"in_risk_selector\", \"${in_risk:raw}\", \"__name__\", \".*\")\n  )\n)\n)\nand on (workload_key)\n(\n  label_replace(\n  (\n    label_replace(\n      sum by (workload_key) (\n        label_join(\n          count by (namespace, created_by_name) (\n            kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n          ),\n          \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n        )\n      ),\n      \"has_recommendation_selector\", \"all\", \"workload_key\", \".*\"\n    )\n    or\n    label_replace(\n      (\n        sum by (workload_key) (\n          label_join(\n            count by (namespace, created_by_name) (\n              kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n            ),\n            \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n          )\n        )\n        and on (workload_key)\n        sum by (workload_key) (\n          label_join(\n            (\n              count by (namespace, created_by_name) (\n                label_replace(\n                  last_over_time(kompass_rs_recommendations{mode=\"variants\", resource_source=\"desired\", rightsizing_policy=\"$policy\", resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d]),\n                  \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                )\n              )\n              and on (namespace, created_by_name)\n              count by (namespace, created_by_name) (\n                kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n              )\n            ),\n            \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n          )\n        )\n      ),\n      \"has_recommendation_selector\", \"with_recommendation\", \"workload_key\", \".*\"\n    )\n    or\n    label_replace(\n      (\n        sum by (workload_key) (\n          label_join(\n            count by (namespace, created_by_name) (\n              kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n            ),\n            \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n          )\n        )\n        unless on (workload_key)\n        sum by (workload_key) (\n          label_join(\n            (\n              count by (namespace, created_by_name) (\n                label_replace(\n                  last_over_time(kompass_rs_recommendations{mode=\"variants\", resource_source=\"desired\", rightsizing_policy=\"$policy\", resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d]),\n                  \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                )\n              )\n              and on (namespace, created_by_name)\n              count by (namespace, created_by_name) (\n                kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n              )\n            ),\n            \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n          )\n        )\n      ),\n      \"has_recommendation_selector\", \"without_recommendation\", \"workload_key\", \".*\"\n    )\n  ),\n  \"has_recommendation_selector\", \"$1\", \"has_recommendation_selector\", \"(.*)\"\n)\nand on (has_recommendation_selector)\nlabel_replace(vector(1), \"has_recommendation_selector\", \"${has_recommendation:raw}\", \"__name__\", \".*\")\n)",
+                    "format": "table",
+                    "instant": true,
+                    "range": false,
+                    "refId": "A"
+                },
+                {
+                    "expr": "(\n(\n  sum by (workload_key) (label_join(kube_pod_container_resource_requests{resource=\"cpu\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"} * on (namespace, pod, container) group_left(created_by_name) kompass_pod_info{status=\"running\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}, \"workload_key\", \"/\", \"namespace\", \"created_by_name\"))\n  or on (workload_key)\n  sum by (workload_key) (label_join(0 * count by (namespace, created_by_name) (kompass_pod_info{status=\"running\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}), \"workload_key\", \"/\", \"namespace\", \"created_by_name\"))\n)\nand on (workload_key)\n(\n  sum by (workload_key) (\n    label_join(\n      sum by (namespace, created_by_name, created_by_kind, status) (\n        label_replace(\n          (\n            label_replace(\n              max by (namespace, created_by_name, created_by_kind) (\n                kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n              )\n              and on (namespace, created_by_name)\n              (\n                count by (namespace, created_by_name) (\n                  label_replace(\n                    last_over_time(kompass_rs_action_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\", action_type=~\".+\"}[7d]),\n                    \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                  )\n                ) > bool 0\n              ),\n              \"status\", \"active\", \"created_by_name\", \".*\"\n            )\n        or\n        label_replace(\n          (\n\n              max by (namespace, created_by_name, created_by_kind) (\n                kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n              )\n          and on (namespace, created_by_name)\n(\n                count by (namespace, created_by_name) (\n                  label_replace(\n                    last_over_time(kompass_rs_action_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\"}[7d]),\n                    \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                  )\n                ) > bool 0\n              )\n          )\n          unless on (namespace, created_by_name)\n(\n                count by (namespace, created_by_name) (\n                  label_replace(\n                    last_over_time(kompass_rs_action_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\", action_type=~\".+\"}[7d]),\n                    \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                  )\n                ) > bool 0\n              ),\n              \"status\", \"pending\", \"created_by_name\", \".*\"\n            )\n        or\n        label_replace(\n              max by (namespace, created_by_name, created_by_kind) (\n                kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n              )\n              unless on (namespace, created_by_name)\n              (\n                count by (namespace, created_by_name) (\n                  label_replace(\n                    last_over_time(kompass_rs_action_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\"}[7d]),\n                    \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                  )\n                ) > bool 0\n              ),\n              \"status\", \"inactive\", \"created_by_name\", \".*\"\n            )\n          ),\n          \"gate\", \"1\", \"created_by_name\", \".*\"\n        )\n        and on (status, gate)\n        (\n          label_replace(label_replace(vector(1), \"status\", \"active\", \"__name__\", \".*\"), \"gate\", \"1\", \"status\", \"$status\")\n          or\n          label_replace(label_replace(vector(1), \"status\", \"pending\", \"__name__\", \".*\"), \"gate\", \"1\", \"status\", \"$status\")\n          or\n          label_replace(label_replace(vector(1), \"status\", \"inactive\", \"__name__\", \".*\"), \"gate\", \"1\", \"status\", \"$status\")\n        )\n      ),\n      \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n    )\n  )\n)\nand on (workload_key)\n(\n  (\n    label_replace(\n      label_join(\n        count by (namespace, created_by_name) (\n          kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n        ),\n        \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n      ),\n      \"in_risk_selector\", \"all\", \"workload_key\", \".*\"\n    )\n    and on (in_risk_selector)\n    label_replace(vector(1), \"in_risk_selector\", \"${in_risk:raw}\", \"__name__\", \".*\")\n  )\n  or\n  (\n    label_replace(\n      label_join(\n        (\n          sum by (namespace, created_by_name) (\n            label_replace(\n              label_replace(\n                abs(last_over_time(kompass_rs_initial_minus_desired{resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d])),\n                \"namespace\", \"$1\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n              ),\n              \"created_by_name\", \"$2\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n            )\n          ) > 0\n        ),\n        \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n      ),\n      \"in_risk_selector\", \"in_risk\", \"workload_key\", \".*\"\n    )\n    and on (in_risk_selector)\n    label_replace(vector(1), \"in_risk_selector\", \"${in_risk:raw}\", \"__name__\", \".*\")\n  )\n  or\n  (\n    label_replace(\n      (\n        label_join(\n          count by (namespace, created_by_name) (\n            kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n          ),\n          \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n        )\n        unless on (workload_key)\n        label_join(\n          (\n            sum by (namespace, created_by_name) (\n              label_replace(\n                label_replace(\n                  abs(last_over_time(kompass_rs_initial_minus_desired{resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d])),\n                  \"namespace\", \"$1\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n                ),\n                \"created_by_name\", \"$2\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n              )\n            ) > 0\n          ),\n          \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n        )\n      ),\n      \"in_risk_selector\", \"not_in_risk\", \"workload_key\", \".*\"\n    )\n    and on (in_risk_selector)\n    label_replace(vector(1), \"in_risk_selector\", \"${in_risk:raw}\", \"__name__\", \".*\")\n  )\n)\n)\nand on (workload_key)\n(\n  label_replace(\n  (\n    label_replace(\n      sum by (workload_key) (\n        label_join(\n          count by (namespace, created_by_name) (\n            kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n          ),\n          \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n        )\n      ),\n      \"has_recommendation_selector\", \"all\", \"workload_key\", \".*\"\n    )\n    or\n    label_replace(\n      (\n        sum by (workload_key) (\n          label_join(\n            count by (namespace, created_by_name) (\n              kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n            ),\n            \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n          )\n        )\n        and on (workload_key)\n        sum by (workload_key) (\n          label_join(\n            (\n              count by (namespace, created_by_name) (\n                label_replace(\n                  last_over_time(kompass_rs_recommendations{mode=\"variants\", resource_source=\"desired\", rightsizing_policy=\"$policy\", resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d]),\n                  \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                )\n              )\n              and on (namespace, created_by_name)\n              count by (namespace, created_by_name) (\n                kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n              )\n            ),\n            \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n          )\n        )\n      ),\n      \"has_recommendation_selector\", \"with_recommendation\", \"workload_key\", \".*\"\n    )\n    or\n    label_replace(\n      (\n        sum by (workload_key) (\n          label_join(\n            count by (namespace, created_by_name) (\n              kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n            ),\n            \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n          )\n        )\n        unless on (workload_key)\n        sum by (workload_key) (\n          label_join(\n            (\n              count by (namespace, created_by_name) (\n                label_replace(\n                  last_over_time(kompass_rs_recommendations{mode=\"variants\", resource_source=\"desired\", rightsizing_policy=\"$policy\", resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d]),\n                  \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                )\n              )\n              and on (namespace, created_by_name)\n              count by (namespace, created_by_name) (\n                kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n              )\n            ),\n            \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n          )\n        )\n      ),\n      \"has_recommendation_selector\", \"without_recommendation\", \"workload_key\", \".*\"\n    )\n  ),\n  \"has_recommendation_selector\", \"$1\", \"has_recommendation_selector\", \"(.*)\"\n)\nand on (has_recommendation_selector)\nlabel_replace(vector(1), \"has_recommendation_selector\", \"${has_recommendation:raw}\", \"__name__\", \".*\")\n)",
+                    "format": "table",
+                    "instant": true,
+                    "range": false,
+                    "refId": "D"
+                },
+                {
+                    "expr": "(\n(\n  sum by (workload_key) (label_join(kube_pod_container_resource_requests{resource=\"memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"} * on (namespace, pod, container) group_left(created_by_name) kompass_pod_info{status=\"running\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}, \"workload_key\", \"/\", \"namespace\", \"created_by_name\"))\n  or on (workload_key)\n  sum by (workload_key) (label_join(0 * count by (namespace, created_by_name) (kompass_pod_info{status=\"running\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}), \"workload_key\", \"/\", \"namespace\", \"created_by_name\"))\n)\nand on (workload_key)\n(\n  sum by (workload_key) (\n    label_join(\n      sum by (namespace, created_by_name, created_by_kind, status) (\n        label_replace(\n          (\n            label_replace(\n              max by (namespace, created_by_name, created_by_kind) (\n                kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n              )\n              and on (namespace, created_by_name)\n              (\n                count by (namespace, created_by_name) (\n                  label_replace(\n                    last_over_time(kompass_rs_action_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\", action_type=~\".+\"}[7d]),\n                    \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                  )\n                ) > bool 0\n              ),\n              \"status\", \"active\", \"created_by_name\", \".*\"\n            )\n        or\n        label_replace(\n          (\n\n              max by (namespace, created_by_name, created_by_kind) (\n                kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n              )\n          and on (namespace, created_by_name)\n(\n                count by (namespace, created_by_name) (\n                  label_replace(\n                    last_over_time(kompass_rs_action_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\"}[7d]),\n                    \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                  )\n                ) > bool 0\n              )\n          )\n          unless on (namespace, created_by_name)\n(\n                count by (namespace, created_by_name) (\n                  label_replace(\n                    last_over_time(kompass_rs_action_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\", action_type=~\".+\"}[7d]),\n                    \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                  )\n                ) > bool 0\n              ),\n              \"status\", \"pending\", \"created_by_name\", \".*\"\n            )\n        or\n        label_replace(\n              max by (namespace, created_by_name, created_by_kind) (\n                kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n              )\n              unless on (namespace, created_by_name)\n              (\n                count by (namespace, created_by_name) (\n                  label_replace(\n                    last_over_time(kompass_rs_action_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\"}[7d]),\n                    \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                  )\n                ) > bool 0\n              ),\n              \"status\", \"inactive\", \"created_by_name\", \".*\"\n            )\n          ),\n          \"gate\", \"1\", \"created_by_name\", \".*\"\n        )\n        and on (status, gate)\n        (\n          label_replace(label_replace(vector(1), \"status\", \"active\", \"__name__\", \".*\"), \"gate\", \"1\", \"status\", \"$status\")\n          or\n          label_replace(label_replace(vector(1), \"status\", \"pending\", \"__name__\", \".*\"), \"gate\", \"1\", \"status\", \"$status\")\n          or\n          label_replace(label_replace(vector(1), \"status\", \"inactive\", \"__name__\", \".*\"), \"gate\", \"1\", \"status\", \"$status\")\n        )\n      ),\n      \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n    )\n  )\n)\nand on (workload_key)\n(\n  (\n    label_replace(\n      label_join(\n        count by (namespace, created_by_name) (\n          kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n        ),\n        \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n      ),\n      \"in_risk_selector\", \"all\", \"workload_key\", \".*\"\n    )\n    and on (in_risk_selector)\n    label_replace(vector(1), \"in_risk_selector\", \"${in_risk:raw}\", \"__name__\", \".*\")\n  )\n  or\n  (\n    label_replace(\n      label_join(\n        (\n          sum by (namespace, created_by_name) (\n            label_replace(\n              label_replace(\n                abs(last_over_time(kompass_rs_initial_minus_desired{resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d])),\n                \"namespace\", \"$1\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n              ),\n              \"created_by_name\", \"$2\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n            )\n          ) > 0\n        ),\n        \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n      ),\n      \"in_risk_selector\", \"in_risk\", \"workload_key\", \".*\"\n    )\n    and on (in_risk_selector)\n    label_replace(vector(1), \"in_risk_selector\", \"${in_risk:raw}\", \"__name__\", \".*\")\n  )\n  or\n  (\n    label_replace(\n      (\n        label_join(\n          count by (namespace, created_by_name) (\n            kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n          ),\n          \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n        )\n        unless on (workload_key)\n        label_join(\n          (\n            sum by (namespace, created_by_name) (\n              label_replace(\n                label_replace(\n                  abs(last_over_time(kompass_rs_initial_minus_desired{resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d])),\n                  \"namespace\", \"$1\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n                ),\n                \"created_by_name\", \"$2\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n              )\n            ) > 0\n          ),\n          \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n        )\n      ),\n      \"in_risk_selector\", \"not_in_risk\", \"workload_key\", \".*\"\n    )\n    and on (in_risk_selector)\n    label_replace(vector(1), \"in_risk_selector\", \"${in_risk:raw}\", \"__name__\", \".*\")\n  )\n)\n)\nand on (workload_key)\n(\n  label_replace(\n  (\n    label_replace(\n      sum by (workload_key) (\n        label_join(\n          count by (namespace, created_by_name) (\n            kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n          ),\n          \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n        )\n      ),\n      \"has_recommendation_selector\", \"all\", \"workload_key\", \".*\"\n    )\n    or\n    label_replace(\n      (\n        sum by (workload_key) (\n          label_join(\n            count by (namespace, created_by_name) (\n              kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n            ),\n            \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n          )\n        )\n        and on (workload_key)\n        sum by (workload_key) (\n          label_join(\n            (\n              count by (namespace, created_by_name) (\n                label_replace(\n                  last_over_time(kompass_rs_recommendations{mode=\"variants\", resource_source=\"desired\", rightsizing_policy=\"$policy\", resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d]),\n                  \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                )\n              )\n              and on (namespace, created_by_name)\n              count by (namespace, created_by_name) (\n                kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n              )\n            ),\n            \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n          )\n        )\n      ),\n      \"has_recommendation_selector\", \"with_recommendation\", \"workload_key\", \".*\"\n    )\n    or\n    label_replace(\n      (\n        sum by (workload_key) (\n          label_join(\n            count by (namespace, created_by_name) (\n              kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n            ),\n            \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n          )\n        )\n        unless on (workload_key)\n        sum by (workload_key) (\n          label_join(\n            (\n              count by (namespace, created_by_name) (\n                label_replace(\n                  last_over_time(kompass_rs_recommendations{mode=\"variants\", resource_source=\"desired\", rightsizing_policy=\"$policy\", resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d]),\n                  \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                )\n              )\n              and on (namespace, created_by_name)\n              count by (namespace, created_by_name) (\n                kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n              )\n            ),\n            \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n          )\n        )\n      ),\n      \"has_recommendation_selector\", \"without_recommendation\", \"workload_key\", \".*\"\n    )\n  ),\n  \"has_recommendation_selector\", \"$1\", \"has_recommendation_selector\", \"(.*)\"\n)\nand on (has_recommendation_selector)\nlabel_replace(vector(1), \"has_recommendation_selector\", \"${has_recommendation:raw}\", \"__name__\", \".*\")\n)",
+                    "format": "table",
+                    "instant": true,
+                    "range": false,
+                    "refId": "E"
+                },
+                {
+                    "expr": "(\n(\n  (\n    sum by (workload_key) (label_join((sum by (namespace, created_by_name) (label_replace(last_over_time(kompass_rs_recommendations{mode=\"variants\",resource_source=\"desired\",rightsizing_policy=\"$policy\",resource_type=\"cpu\",namespace=~\"$namespace\",namespace!~\"kube[-_]system\"}[7d]), \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\")) and on (namespace, created_by_name) count by (namespace, created_by_name) (kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"})), \"workload_key\", \"/\", \"namespace\", \"created_by_name\"))\n  )\n  or on (workload_key)\n  sum by (workload_key) (\n    label_join(\n      count by (namespace, created_by_name) (\n        kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n      ) * 0 - 1,\n      \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n    )\n  )\n)\nand on (workload_key)\n(\n  sum by (workload_key) (\n    label_join(\n      sum by (namespace, created_by_name, created_by_kind, status) (\n        label_replace(\n          (\n            label_replace(\n              max by (namespace, created_by_name, created_by_kind) (\n                kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n              )\n              and on (namespace, created_by_name)\n              (\n                count by (namespace, created_by_name) (\n                  label_replace(\n                    last_over_time(kompass_rs_action_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\", action_type=~\".+\"}[7d]),\n                    \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                  )\n                ) > bool 0\n              ),\n              \"status\", \"active\", \"created_by_name\", \".*\"\n            )\n        or\n        label_replace(\n          (\n\n              max by (namespace, created_by_name, created_by_kind) (\n                kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n              )\n          and on (namespace, created_by_name)\n(\n                count by (namespace, created_by_name) (\n                  label_replace(\n                    last_over_time(kompass_rs_action_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\"}[7d]),\n                    \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                  )\n                ) > bool 0\n              )\n          )\n          unless on (namespace, created_by_name)\n(\n                count by (namespace, created_by_name) (\n                  label_replace(\n                    last_over_time(kompass_rs_action_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\", action_type=~\".+\"}[7d]),\n                    \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                  )\n                ) > bool 0\n              ),\n              \"status\", \"pending\", \"created_by_name\", \".*\"\n            )\n        or\n        label_replace(\n              max by (namespace, created_by_name, created_by_kind) (\n                kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n              )\n              unless on (namespace, created_by_name)\n              (\n                count by (namespace, created_by_name) (\n                  label_replace(\n                    last_over_time(kompass_rs_action_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\"}[7d]),\n                    \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                  )\n                ) > bool 0\n              ),\n              \"status\", \"inactive\", \"created_by_name\", \".*\"\n            )\n          ),\n          \"gate\", \"1\", \"created_by_name\", \".*\"\n        )\n        and on (status, gate)\n        (\n          label_replace(label_replace(vector(1), \"status\", \"active\", \"__name__\", \".*\"), \"gate\", \"1\", \"status\", \"$status\")\n          or\n          label_replace(label_replace(vector(1), \"status\", \"pending\", \"__name__\", \".*\"), \"gate\", \"1\", \"status\", \"$status\")\n          or\n          label_replace(label_replace(vector(1), \"status\", \"inactive\", \"__name__\", \".*\"), \"gate\", \"1\", \"status\", \"$status\")\n        )\n      ),\n      \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n    )\n  )\n)\nand on (workload_key)\n(\n  (\n    label_replace(\n      label_join(\n        count by (namespace, created_by_name) (\n          kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n        ),\n        \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n      ),\n      \"in_risk_selector\", \"all\", \"workload_key\", \".*\"\n    )\n    and on (in_risk_selector)\n    label_replace(vector(1), \"in_risk_selector\", \"${in_risk:raw}\", \"__name__\", \".*\")\n  )\n  or\n  (\n    label_replace(\n      label_join(\n        (\n          sum by (namespace, created_by_name) (\n            label_replace(\n              label_replace(\n                abs(last_over_time(kompass_rs_initial_minus_desired{resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d])),\n                \"namespace\", \"$1\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n              ),\n              \"created_by_name\", \"$2\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n            )\n          ) > 0\n        ),\n        \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n      ),\n      \"in_risk_selector\", \"in_risk\", \"workload_key\", \".*\"\n    )\n    and on (in_risk_selector)\n    label_replace(vector(1), \"in_risk_selector\", \"${in_risk:raw}\", \"__name__\", \".*\")\n  )\n  or\n  (\n    label_replace(\n      (\n        label_join(\n          count by (namespace, created_by_name) (\n            kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n          ),\n          \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n        )\n        unless on (workload_key)\n        label_join(\n          (\n            sum by (namespace, created_by_name) (\n              label_replace(\n                label_replace(\n                  abs(last_over_time(kompass_rs_initial_minus_desired{resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d])),\n                  \"namespace\", \"$1\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n                ),\n                \"created_by_name\", \"$2\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n              )\n            ) > 0\n          ),\n          \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n        )\n      ),\n      \"in_risk_selector\", \"not_in_risk\", \"workload_key\", \".*\"\n    )\n    and on (in_risk_selector)\n    label_replace(vector(1), \"in_risk_selector\", \"${in_risk:raw}\", \"__name__\", \".*\")\n  )\n)\n)\nand on (workload_key)\n(\n  label_replace(\n  (\n    label_replace(\n      sum by (workload_key) (\n        label_join(\n          count by (namespace, created_by_name) (\n            kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n          ),\n          \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n        )\n      ),\n      \"has_recommendation_selector\", \"all\", \"workload_key\", \".*\"\n    )\n    or\n    label_replace(\n      (\n        sum by (workload_key) (\n          label_join(\n            count by (namespace, created_by_name) (\n              kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n            ),\n            \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n          )\n        )\n        and on (workload_key)\n        sum by (workload_key) (\n          label_join(\n            (\n              count by (namespace, created_by_name) (\n                label_replace(\n                  last_over_time(kompass_rs_recommendations{mode=\"variants\", resource_source=\"desired\", rightsizing_policy=\"$policy\", resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d]),\n                  \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                )\n              )\n              and on (namespace, created_by_name)\n              count by (namespace, created_by_name) (\n                kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n              )\n            ),\n            \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n          )\n        )\n      ),\n      \"has_recommendation_selector\", \"with_recommendation\", \"workload_key\", \".*\"\n    )\n    or\n    label_replace(\n      (\n        sum by (workload_key) (\n          label_join(\n            count by (namespace, created_by_name) (\n              kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n            ),\n            \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n          )\n        )\n        unless on (workload_key)\n        sum by (workload_key) (\n          label_join(\n            (\n              count by (namespace, created_by_name) (\n                label_replace(\n                  last_over_time(kompass_rs_recommendations{mode=\"variants\", resource_source=\"desired\", rightsizing_policy=\"$policy\", resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d]),\n                  \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                )\n              )\n              and on (namespace, created_by_name)\n              count by (namespace, created_by_name) (\n                kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n              )\n            ),\n            \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n          )\n        )\n      ),\n      \"has_recommendation_selector\", \"without_recommendation\", \"workload_key\", \".*\"\n    )\n  ),\n  \"has_recommendation_selector\", \"$1\", \"has_recommendation_selector\", \"(.*)\"\n)\nand on (has_recommendation_selector)\nlabel_replace(vector(1), \"has_recommendation_selector\", \"${has_recommendation:raw}\", \"__name__\", \".*\")\n)",
+                    "format": "table",
+                    "instant": true,
+                    "range": false,
+                    "refId": "G"
+                },
+                {
+                    "expr": "(\n(\n  (\n    sum by (workload_key) (label_join((sum by (namespace, created_by_name) (label_replace(last_over_time(kompass_rs_recommendations{mode=\"variants\",resource_source=\"desired\",rightsizing_policy=\"$policy\",resource_type=\"memory\",namespace=~\"$namespace\",namespace!~\"kube[-_]system\"}[7d]), \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\")) and on (namespace, created_by_name) count by (namespace, created_by_name) (kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"})), \"workload_key\", \"/\", \"namespace\", \"created_by_name\"))\n  )\n  or on (workload_key)\n  sum by (workload_key) (\n    label_join(\n      count by (namespace, created_by_name) (\n        kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n      ) * 0 - 1,\n      \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n    )\n  )\n)\nand on (workload_key)\n(\n  sum by (workload_key) (\n    label_join(\n      sum by (namespace, created_by_name, created_by_kind, status) (\n        label_replace(\n          (\n            label_replace(\n              max by (namespace, created_by_name, created_by_kind) (\n                kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n              )\n              and on (namespace, created_by_name)\n              (\n                count by (namespace, created_by_name) (\n                  label_replace(\n                    last_over_time(kompass_rs_action_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\", action_type=~\".+\"}[7d]),\n                    \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                  )\n                ) > bool 0\n              ),\n              \"status\", \"active\", \"created_by_name\", \".*\"\n            )\n        or\n        label_replace(\n          (\n\n              max by (namespace, created_by_name, created_by_kind) (\n                kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n              )\n          and on (namespace, created_by_name)\n(\n                count by (namespace, created_by_name) (\n                  label_replace(\n                    last_over_time(kompass_rs_action_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\"}[7d]),\n                    \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                  )\n                ) > bool 0\n              )\n          )\n          unless on (namespace, created_by_name)\n(\n                count by (namespace, created_by_name) (\n                  label_replace(\n                    last_over_time(kompass_rs_action_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\", action_type=~\".+\"}[7d]),\n                    \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                  )\n                ) > bool 0\n              ),\n              \"status\", \"pending\", \"created_by_name\", \".*\"\n            )\n        or\n        label_replace(\n              max by (namespace, created_by_name, created_by_kind) (\n                kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n              )\n              unless on (namespace, created_by_name)\n              (\n                count by (namespace, created_by_name) (\n                  label_replace(\n                    last_over_time(kompass_rs_action_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\"}[7d]),\n                    \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                  )\n                ) > bool 0\n              ),\n              \"status\", \"inactive\", \"created_by_name\", \".*\"\n            )\n          ),\n          \"gate\", \"1\", \"created_by_name\", \".*\"\n        )\n        and on (status, gate)\n        (\n          label_replace(label_replace(vector(1), \"status\", \"active\", \"__name__\", \".*\"), \"gate\", \"1\", \"status\", \"$status\")\n          or\n          label_replace(label_replace(vector(1), \"status\", \"pending\", \"__name__\", \".*\"), \"gate\", \"1\", \"status\", \"$status\")\n          or\n          label_replace(label_replace(vector(1), \"status\", \"inactive\", \"__name__\", \".*\"), \"gate\", \"1\", \"status\", \"$status\")\n        )\n      ),\n      \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n    )\n  )\n)\nand on (workload_key)\n(\n  (\n    label_replace(\n      label_join(\n        count by (namespace, created_by_name) (\n          kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n        ),\n        \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n      ),\n      \"in_risk_selector\", \"all\", \"workload_key\", \".*\"\n    )\n    and on (in_risk_selector)\n    label_replace(vector(1), \"in_risk_selector\", \"${in_risk:raw}\", \"__name__\", \".*\")\n  )\n  or\n  (\n    label_replace(\n      label_join(\n        (\n          sum by (namespace, created_by_name) (\n            label_replace(\n              label_replace(\n                abs(last_over_time(kompass_rs_initial_minus_desired{resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d])),\n                \"namespace\", \"$1\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n              ),\n              \"created_by_name\", \"$2\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n            )\n          ) > 0\n        ),\n        \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n      ),\n      \"in_risk_selector\", \"in_risk\", \"workload_key\", \".*\"\n    )\n    and on (in_risk_selector)\n    label_replace(vector(1), \"in_risk_selector\", \"${in_risk:raw}\", \"__name__\", \".*\")\n  )\n  or\n  (\n    label_replace(\n      (\n        label_join(\n          count by (namespace, created_by_name) (\n            kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n          ),\n          \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n        )\n        unless on (workload_key)\n        label_join(\n          (\n            sum by (namespace, created_by_name) (\n              label_replace(\n                label_replace(\n                  abs(last_over_time(kompass_rs_initial_minus_desired{resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d])),\n                  \"namespace\", \"$1\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n                ),\n                \"created_by_name\", \"$2\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n              )\n            ) > 0\n          ),\n          \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n        )\n      ),\n      \"in_risk_selector\", \"not_in_risk\", \"workload_key\", \".*\"\n    )\n    and on (in_risk_selector)\n    label_replace(vector(1), \"in_risk_selector\", \"${in_risk:raw}\", \"__name__\", \".*\")\n  )\n)\n)\nand on (workload_key)\n(\n  label_replace(\n  (\n    label_replace(\n      sum by (workload_key) (\n        label_join(\n          count by (namespace, created_by_name) (\n            kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n          ),\n          \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n        )\n      ),\n      \"has_recommendation_selector\", \"all\", \"workload_key\", \".*\"\n    )\n    or\n    label_replace(\n      (\n        sum by (workload_key) (\n          label_join(\n            count by (namespace, created_by_name) (\n              kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n            ),\n            \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n          )\n        )\n        and on (workload_key)\n        sum by (workload_key) (\n          label_join(\n            (\n              count by (namespace, created_by_name) (\n                label_replace(\n                  last_over_time(kompass_rs_recommendations{mode=\"variants\", resource_source=\"desired\", rightsizing_policy=\"$policy\", resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d]),\n                  \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                )\n              )\n              and on (namespace, created_by_name)\n              count by (namespace, created_by_name) (\n                kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n              )\n            ),\n            \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n          )\n        )\n      ),\n      \"has_recommendation_selector\", \"with_recommendation\", \"workload_key\", \".*\"\n    )\n    or\n    label_replace(\n      (\n        sum by (workload_key) (\n          label_join(\n            count by (namespace, created_by_name) (\n              kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n            ),\n            \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n          )\n        )\n        unless on (workload_key)\n        sum by (workload_key) (\n          label_join(\n            (\n              count by (namespace, created_by_name) (\n                label_replace(\n                  last_over_time(kompass_rs_recommendations{mode=\"variants\", resource_source=\"desired\", rightsizing_policy=\"$policy\", resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d]),\n                  \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                )\n              )\n              and on (namespace, created_by_name)\n              count by (namespace, created_by_name) (\n                kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n              )\n            ),\n            \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n          )\n        )\n      ),\n      \"has_recommendation_selector\", \"without_recommendation\", \"workload_key\", \".*\"\n    )\n  ),\n  \"has_recommendation_selector\", \"$1\", \"has_recommendation_selector\", \"(.*)\"\n)\nand on (has_recommendation_selector)\nlabel_replace(vector(1), \"has_recommendation_selector\", \"${has_recommendation:raw}\", \"__name__\", \".*\")\n)",
+                    "format": "table",
+                    "instant": true,
+                    "range": false,
+                    "refId": "H"
+                },
+                {
+                    "expr": "(\n(\n  sum by (workload_key) (\n    label_join(\n      sum by (namespace, created_by_name, created_by_kind) (\n        label_replace(\n          label_replace(\n            label_replace(\n              clamp_min(last_over_time(kompass_rs_initial_minus_desired{resource_type=\"cpu\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d]), 0),\n              \"namespace\", \"$1\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n            ),\n            \"created_by_name\", \"$2\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n          ),\n          \"created_by_kind\", \"$3\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n        )\n      ),\n      \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n    )\n  )\n  or on (workload_key)\n  sum by (workload_key) (label_join(0 * count by (namespace, created_by_name) (kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}), \"workload_key\", \"/\", \"namespace\", \"created_by_name\"))\n)\nand on (workload_key)\n(\n  sum by (workload_key) (\n    label_join(\n      sum by (namespace, created_by_name, created_by_kind, status) (\n        label_replace(\n          (\n            label_replace(\n              max by (namespace, created_by_name, created_by_kind) (\n                kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n              )\n              and on (namespace, created_by_name)\n              (\n                count by (namespace, created_by_name) (\n                  label_replace(\n                    last_over_time(kompass_rs_action_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\", action_type=~\".+\"}[7d]),\n                    \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                  )\n                ) > bool 0\n              ),\n              \"status\", \"active\", \"created_by_name\", \".*\"\n            )\n        or\n        label_replace(\n          (\n\n              max by (namespace, created_by_name, created_by_kind) (\n                kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n              )\n          and on (namespace, created_by_name)\n(\n                count by (namespace, created_by_name) (\n                  label_replace(\n                    last_over_time(kompass_rs_action_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\"}[7d]),\n                    \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                  )\n                ) > bool 0\n              )\n          )\n          unless on (namespace, created_by_name)\n(\n                count by (namespace, created_by_name) (\n                  label_replace(\n                    last_over_time(kompass_rs_action_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\", action_type=~\".+\"}[7d]),\n                    \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                  )\n                ) > bool 0\n              ),\n              \"status\", \"pending\", \"created_by_name\", \".*\"\n            )\n        or\n        label_replace(\n              max by (namespace, created_by_name, created_by_kind) (\n                kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n              )\n              unless on (namespace, created_by_name)\n              (\n                count by (namespace, created_by_name) (\n                  label_replace(\n                    last_over_time(kompass_rs_action_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\"}[7d]),\n                    \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                  )\n                ) > bool 0\n              ),\n              \"status\", \"inactive\", \"created_by_name\", \".*\"\n            )\n          ),\n          \"gate\", \"1\", \"created_by_name\", \".*\"\n        )\n        and on (status, gate)\n        (\n          label_replace(label_replace(vector(1), \"status\", \"active\", \"__name__\", \".*\"), \"gate\", \"1\", \"status\", \"${status:regex}\")\n          or\n          label_replace(label_replace(vector(1), \"status\", \"pending\", \"__name__\", \".*\"), \"gate\", \"1\", \"status\", \"${status:regex}\")\n          or\n          label_replace(label_replace(vector(1), \"status\", \"inactive\", \"__name__\", \".*\"), \"gate\", \"1\", \"status\", \"${status:regex}\")\n        )\n      ),\n      \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n    )\n  )\n)\nand on (workload_key)\n(\n  (\n    label_replace(\n      label_join(\n        count by (namespace, created_by_name) (\n          kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n        ),\n        \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n      ),\n      \"in_risk_selector\", \"all\", \"workload_key\", \".*\"\n    )\n    and on (in_risk_selector)\n    label_replace(vector(1), \"in_risk_selector\", \"${in_risk:raw}\", \"__name__\", \".*\")\n  )\n  or\n  (\n    label_replace(\n      label_join(\n        (\n          sum by (namespace, created_by_name) (\n            label_replace(\n              label_replace(\n                abs(last_over_time(kompass_rs_initial_minus_desired{resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d])),\n                \"namespace\", \"$1\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n              ),\n              \"created_by_name\", \"$2\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n            )\n          ) > 0\n        ),\n        \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n      ),\n      \"in_risk_selector\", \"in_risk\", \"workload_key\", \".*\"\n    )\n    and on (in_risk_selector)\n    label_replace(vector(1), \"in_risk_selector\", \"${in_risk:raw}\", \"__name__\", \".*\")\n  )\n  or\n  (\n    label_replace(\n      (\n        label_join(\n          count by (namespace, created_by_name) (\n            kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n          ),\n          \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n        )\n        unless on (workload_key)\n        label_join(\n          (\n            sum by (namespace, created_by_name) (\n              label_replace(\n                label_replace(\n                  abs(last_over_time(kompass_rs_initial_minus_desired{resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d])),\n                  \"namespace\", \"$1\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n                ),\n                \"created_by_name\", \"$2\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n              )\n            ) > 0\n          ),\n          \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n        )\n      ),\n      \"in_risk_selector\", \"not_in_risk\", \"workload_key\", \".*\"\n    )\n    and on (in_risk_selector)\n    label_replace(vector(1), \"in_risk_selector\", \"${in_risk:raw}\", \"__name__\", \".*\")\n  )\n)\n)\nand on (workload_key)\n(\n  label_replace(\n  (\n    label_replace(\n      sum by (workload_key) (\n        label_join(\n          count by (namespace, created_by_name) (\n            kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n          ),\n          \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n        )\n      ),\n      \"has_recommendation_selector\", \"all\", \"workload_key\", \".*\"\n    )\n    or\n    label_replace(\n      (\n        sum by (workload_key) (\n          label_join(\n            count by (namespace, created_by_name) (\n              kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n            ),\n            \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n          )\n        )\n        and on (workload_key)\n        sum by (workload_key) (\n          label_join(\n            (\n              count by (namespace, created_by_name) (\n                label_replace(\n                  last_over_time(kompass_rs_recommendations{mode=\"variants\", resource_source=\"desired\", rightsizing_policy=\"$policy\", resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d]),\n                  \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                )\n              )\n              and on (namespace, created_by_name)\n              count by (namespace, created_by_name) (\n                kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n              )\n            ),\n            \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n          )\n        )\n      ),\n      \"has_recommendation_selector\", \"with_recommendation\", \"workload_key\", \".*\"\n    )\n    or\n    label_replace(\n      (\n        sum by (workload_key) (\n          label_join(\n            count by (namespace, created_by_name) (\n              kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n            ),\n            \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n          )\n        )\n        unless on (workload_key)\n        sum by (workload_key) (\n          label_join(\n            (\n              count by (namespace, created_by_name) (\n                label_replace(\n                  last_over_time(kompass_rs_recommendations{mode=\"variants\", resource_source=\"desired\", rightsizing_policy=\"$policy\", resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d]),\n                  \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                )\n              )\n              and on (namespace, created_by_name)\n              count by (namespace, created_by_name) (\n                kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n              )\n            ),\n            \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n          )\n        )\n      ),\n      \"has_recommendation_selector\", \"without_recommendation\", \"workload_key\", \".*\"\n    )\n  ),\n  \"has_recommendation_selector\", \"$1\", \"has_recommendation_selector\", \"(.*)\"\n)\nand on (has_recommendation_selector)\nlabel_replace(vector(1), \"has_recommendation_selector\", \"${has_recommendation:raw}\", \"__name__\", \".*\")\n)",
+                    "format": "table",
+                    "instant": true,
+                    "range": false,
+                    "refId": "K"
+                },
+                {
+                    "expr": "(\n(\n  sum by (workload_key) (\n    label_join(\n      sum by (namespace, created_by_name, created_by_kind) (\n        label_replace(\n          label_replace(\n            label_replace(\n              clamp_min(last_over_time(kompass_rs_initial_minus_desired{resource_type=\"memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d]), 0),\n              \"namespace\", \"$1\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n            ),\n            \"created_by_name\", \"$2\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n          ),\n          \"created_by_kind\", \"$3\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n        )\n      ),\n      \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n    )\n  )\n  or on (workload_key)\n  sum by (workload_key) (label_join(0 * count by (namespace, created_by_name) (kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}), \"workload_key\", \"/\", \"namespace\", \"created_by_name\"))\n)\nand on (workload_key)\n(\n  sum by (workload_key) (\n    label_join(\n      sum by (namespace, created_by_name, created_by_kind, status) (\n        label_replace(\n          (\n            label_replace(\n              max by (namespace, created_by_name, created_by_kind) (\n                kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n              )\n              and on (namespace, created_by_name)\n              (\n                count by (namespace, created_by_name) (\n                  label_replace(\n                    last_over_time(kompass_rs_action_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\", action_type=~\".+\"}[7d]),\n                    \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                  )\n                ) > bool 0\n              ),\n              \"status\", \"active\", \"created_by_name\", \".*\"\n            )\n        or\n        label_replace(\n          (\n\n              max by (namespace, created_by_name, created_by_kind) (\n                kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n              )\n          and on (namespace, created_by_name)\n(\n                count by (namespace, created_by_name) (\n                  label_replace(\n                    last_over_time(kompass_rs_action_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\"}[7d]),\n                    \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                  )\n                ) > bool 0\n              )\n          )\n          unless on (namespace, created_by_name)\n(\n                count by (namespace, created_by_name) (\n                  label_replace(\n                    last_over_time(kompass_rs_action_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\", action_type=~\".+\"}[7d]),\n                    \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                  )\n                ) > bool 0\n              ),\n              \"status\", \"pending\", \"created_by_name\", \".*\"\n            )\n        or\n        label_replace(\n              max by (namespace, created_by_name, created_by_kind) (\n                kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n              )\n              unless on (namespace, created_by_name)\n              (\n                count by (namespace, created_by_name) (\n                  label_replace(\n                    last_over_time(kompass_rs_action_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\"}[7d]),\n                    \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                  )\n                ) > bool 0\n              ),\n              \"status\", \"inactive\", \"created_by_name\", \".*\"\n            )\n          ),\n          \"gate\", \"1\", \"created_by_name\", \".*\"\n        )\n        and on (status, gate)\n        (\n          label_replace(label_replace(vector(1), \"status\", \"active\", \"__name__\", \".*\"), \"gate\", \"1\", \"status\", \"${status:regex}\")\n          or\n          label_replace(label_replace(vector(1), \"status\", \"pending\", \"__name__\", \".*\"), \"gate\", \"1\", \"status\", \"${status:regex}\")\n          or\n          label_replace(label_replace(vector(1), \"status\", \"inactive\", \"__name__\", \".*\"), \"gate\", \"1\", \"status\", \"${status:regex}\")\n        )\n      ),\n      \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n    )\n  )\n)\nand on (workload_key)\n(\n  (\n    label_replace(\n      label_join(\n        count by (namespace, created_by_name) (\n          kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n        ),\n        \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n      ),\n      \"in_risk_selector\", \"all\", \"workload_key\", \".*\"\n    )\n    and on (in_risk_selector)\n    label_replace(vector(1), \"in_risk_selector\", \"${in_risk:raw}\", \"__name__\", \".*\")\n  )\n  or\n  (\n    label_replace(\n      label_join(\n        (\n          sum by (namespace, created_by_name) (\n            label_replace(\n              label_replace(\n                abs(last_over_time(kompass_rs_initial_minus_desired{resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d])),\n                \"namespace\", \"$1\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n              ),\n              \"created_by_name\", \"$2\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n            )\n          ) > 0\n        ),\n        \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n      ),\n      \"in_risk_selector\", \"in_risk\", \"workload_key\", \".*\"\n    )\n    and on (in_risk_selector)\n    label_replace(vector(1), \"in_risk_selector\", \"${in_risk:raw}\", \"__name__\", \".*\")\n  )\n  or\n  (\n    label_replace(\n      (\n        label_join(\n          count by (namespace, created_by_name) (\n            kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",created_by_kind=~\"$workload_kind\"}\n          ),\n          \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n        )\n        unless on (workload_key)\n        label_join(\n          (\n            sum by (namespace, created_by_name) (\n              label_replace(\n                label_replace(\n                  abs(last_over_time(kompass_rs_initial_minus_desired{resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d])),\n                  \"namespace\", \"$1\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n                ),\n                \"created_by_name\", \"$2\", \"resource_id\", \"([^;]+);([^;]+);([^;]+)\"\n              )\n            ) > 0\n          ),\n          \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n        )\n      ),\n      \"in_risk_selector\", \"not_in_risk\", \"workload_key\", \".*\"\n    )\n    and on (in_risk_selector)\n    label_replace(vector(1), \"in_risk_selector\", \"${in_risk:raw}\", \"__name__\", \".*\")\n  )\n)\n)\nand on (workload_key)\n(\n  label_replace(\n  (\n    label_replace(\n      sum by (workload_key) (\n        label_join(\n          count by (namespace, created_by_name) (\n            kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n          ),\n          \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n        )\n      ),\n      \"has_recommendation_selector\", \"all\", \"workload_key\", \".*\"\n    )\n    or\n    label_replace(\n      (\n        sum by (workload_key) (\n          label_join(\n            count by (namespace, created_by_name) (\n              kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n            ),\n            \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n          )\n        )\n        and on (workload_key)\n        sum by (workload_key) (\n          label_join(\n            (\n              count by (namespace, created_by_name) (\n                label_replace(\n                  last_over_time(kompass_rs_recommendations{mode=\"variants\", resource_source=\"desired\", rightsizing_policy=\"$policy\", resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d]),\n                  \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                )\n              )\n              and on (namespace, created_by_name)\n              count by (namespace, created_by_name) (\n                kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n              )\n            ),\n            \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n          )\n        )\n      ),\n      \"has_recommendation_selector\", \"with_recommendation\", \"workload_key\", \".*\"\n    )\n    or\n    label_replace(\n      (\n        sum by (workload_key) (\n          label_join(\n            count by (namespace, created_by_name) (\n              kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n            ),\n            \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n          )\n        )\n        unless on (workload_key)\n        sum by (workload_key) (\n          label_join(\n            (\n              count by (namespace, created_by_name) (\n                label_replace(\n                  last_over_time(kompass_rs_recommendations{mode=\"variants\", resource_source=\"desired\", rightsizing_policy=\"$policy\", resource_type=~\"cpu|memory\", namespace=~\"$namespace\", namespace!~\"kube[-_]system\"}[7d]),\n                  \"created_by_name\", \"$1\", \"workload_name\", \"(.*)\"\n                )\n              )\n              and on (namespace, created_by_name)\n              count by (namespace, created_by_name) (\n                kompass_pod_info{namespace=~\"$namespace\", namespace!~\"kube[-_]system\", created_by_kind=~\"$workload_kind\"}\n              )\n            ),\n            \"workload_key\", \"/\", \"namespace\", \"created_by_name\"\n          )\n        )\n      ),\n      \"has_recommendation_selector\", \"without_recommendation\", \"workload_key\", \".*\"\n    )\n  ),\n  \"has_recommendation_selector\", \"$1\", \"has_recommendation_selector\", \"(.*)\"\n)\nand on (has_recommendation_selector)\nlabel_replace(vector(1), \"has_recommendation_selector\", \"${has_recommendation:raw}\", \"__name__\", \".*\")\n)",
+                    "format": "table",
+                    "instant": true,
+                    "range": false,
+                    "refId": "L"
+                }
+            ],
+            "title": "Workloads",
+            "transformations": [
+                {
+                    "id": "joinByField",
+                    "options": {
+                        "byField": "workload_key",
+                        "mode": "outer"
+                    }
+                },
+                {
+                    "id": "organize",
+                    "options": {
+                        "excludeByName": {
+                            "Time": true,
+                            "Time 1": true,
+                            "Time 2": true,
+                            "Time 3": true,
+                            "Time 4": true,
+                            "Time 5": true,
+                            "Time 6": true,
+                            "Time 7": true,
+                            "Time 8": true,
+                            "Value": true,
+                            "Value #A": true,
+                            "workload_key": true
+                        },
+                        "includeByName": {
+                            "Value #D": true,
+                            "Value #E": true,
+                            "Value #G": true,
+                            "Value #H": true,
+                            "Value #K": true,
+                            "Value #L": true,
+                            "created_by_kind": true,
+                            "created_by_name": true,
+                            "namespace": true,
+                            "status": true
+                        },
+                        "indexByName": {
+                            "Value #D": 4,
+                            "Value #E": 7,
+                            "Value #G": 5,
+                            "Value #H": 8,
+                            "Value #K": 6,
+                            "Value #L": 9,
+                            "created_by_kind": 2,
+                            "created_by_name": 0,
+                            "namespace": 1,
+                            "status": 3
+                        },
+                        "renameByName": {
+                            "Value #D": "Current vCPU",
+                            "Value #E": "Current Memory",
+                            "Value #G": "Rec. vCPU",
+                            "Value #H": "Rec. Memory",
+                            "Value #K": "Saved vCPU %",
+                            "Value #L": "Saved Memory %",
+                            "created_by_kind": "Kind",
+                            "created_by_name": "Workload",
+                            "namespace": "Namespace",
+                            "status": "Status"
+                        }
+                    }
+                }
+            ],
+            "type": "table"
+        }
+    ],
+    "preload": false,
+    "refresh": "10s",
+    "schemaVersion": 40,
+    "tags": [],
+    "templating": {
+        "list": [
+            {
+                "allValue": ".+",
+                "current": {
+                    "text": "All",
+                    "value": [
+                        "$__all"
+                    ]
+                },
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "P4169E866C3094E38"
+                },
+                "definition": "label_values(kompass_pod_info{namespace!~\"kube[-_]system\"}, namespace)",
+                "includeAll": true,
+                "label": "Namespace",
+                "multi": true,
+                "name": "namespace",
+                "options": [],
+                "query": {
+                    "query": "label_values(kompass_pod_info{namespace!~\"kube[-_]system\"}, namespace)",
+                    "refId": "PrometheusVariableQueryEditor-VariableQuery"
+                },
+                "refresh": 1,
+                "sort": 1,
+                "type": "query"
+            },
+            {
+                "allValue": ".+",
+                "current": {
+                    "text": "All",
+                    "value": [
+                        "$__all"
+                    ]
+                },
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "P4169E866C3094E38"
+                },
+                "definition": "label_values(kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\"}, created_by_kind)",
+                "includeAll": true,
+                "label": "Kind",
+                "multi": true,
+                "name": "workload_kind",
+                "options": [],
+                "query": {
+                    "query": "label_values(kompass_pod_info{namespace=~\"$namespace\",namespace!~\"kube[-_]system\"}, created_by_kind)",
+                    "refId": "PrometheusVariableQueryEditor-VariableQuery"
+                },
+                "refresh": 1,
+                "sort": 1,
+                "type": "query"
+            },
+            {
+                "allValue": ".+",
+                "current": {
+                    "text": "$__all",
+                    "value": "$__all"
+                },
+                "description": "Filters workloads by activity state derived from kompass_rs_action_info over the last 7d (Active = has typed action, Pending = has action but no action_type, Inactive = no action in 7d).",
+                "includeAll": true,
+                "label": "Status",
+                "name": "status",
+                "options": [
+                    {
+                        "selected": false,
+                        "text": "active",
+                        "value": "active"
+                    },
+                    {
+                        "selected": false,
+                        "text": "In Progress",
+                        "value": "pending"
+                    },
+                    {
+                        "selected": false,
+                        "text": "inactive",
+                        "value": "inactive"
+                    }
+                ],
+                "query": "active,In Progress : pending,inactive",
+                "type": "custom"
+            },
+            {
+                "current": {
+                    "text": "balanced",
+                    "value": "balanced"
+                },
+                "includeAll": false,
+                "label": "Policy",
+                "name": "policy",
+                "options": [
+                    {
+                        "selected": true,
+                        "text": "balanced",
+                        "value": "balanced"
+                    },
+                    {
+                        "selected": false,
+                        "text": "cost-focused",
+                        "value": "cost-focused"
+                    },
+                    {
+                        "selected": false,
+                        "text": "stability-focused",
+                        "value": "stability-focused"
+                    }
+                ],
+                "query": "balanced,cost-focused,stability-focused",
+                "type": "custom"
+            },
+            {
+                "current": {
+                    "text": "all",
+                    "value": "all"
+                },
+                "description": "Workloads that their current requests are lower than the optimized requests",
+                "includeAll": false,
+                "label": "At Risk",
+                "name": "in_risk",
+                "options": [
+                    {
+                        "selected": true,
+                        "text": "All",
+                        "value": "all"
+                    },
+                    {
+                        "selected": false,
+                        "text": "Yes",
+                        "value": "in_risk"
+                    },
+                    {
+                        "selected": false,
+                        "text": "No",
+                        "value": "not_in_risk"
+                    }
+                ],
+                "query": "All : all, Yes : in_risk, No : not_in_risk",
+                "type": "custom"
+            },
+            {
+                "current": {
+                    "text": "all",
+                    "value": "all"
+                },
+                "description": "Filters workloads with at least one recommendation sample in the last 7d.",
+                "includeAll": false,
+                "label": "Has Recommendation",
+                "name": "has_recommendation",
+                "options": [
+                    {
+                        "selected": true,
+                        "text": "All",
+                        "value": "all"
+                    },
+                    {
+                        "selected": false,
+                        "text": "Yes",
+                        "value": "with_recommendation"
+                    },
+                    {
+                        "selected": false,
+                        "text": "No",
+                        "value": "without_recommendation"
+                    }
+                ],
+                "query": "All : all, Yes : with_recommendation, No : without_recommendation",
+                "type": "custom"
+            }
+        ]
+    },
+    "time": {
+        "from": "now-24h",
+        "to": "now"
+    },
+    "timepicker": {},
+    "timezone": "browser",
+    "title": "Workloads",
+    "uid": "workloads",
+    "version": 1,
+    "weekStart": ""
+}

@@ -142,27 +142,6 @@ spec:
       topologySpreadConstraints:
       {{- toYaml . | nindent 8 }}
       {{- end }}
-      initContainers:
-        - image: "{{ .Values.image.migrationRepository }}:{{ include "zesty-k8s.version" . }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          name: migrate
-          {{- with $insightsContainerSecurityContext }}
-          securityContext:
-          {{- toYaml . | nindent 12 }}
-          {{- end }}
-          volumeMounts:
-            - mountPath: {{ .Values.persistence.mountPath }}
-              name: {{ .Values.persistence.volumeName }}
-            - mountPath: /tmp
-              name: migrate-tmp
-            - mountPath: /home/nonroot/.cache
-              name: migrate-cache
-          env:
-            - name: TMPDIR
-              value: /tmp
-            - name: XDG_CACHE_HOME
-              value: /home/nonroot/.cache
-          args: ["schema", "apply", "--url", "sqlite://{{ .Values.persistence.mountPath}}/zesty.db", "--dev-url", "sqlite://dev?mode=memory", "--to",  "file:///bin/pkg/db/schema.sql", "--auto-approve", "--format", "json"]
       containers:
         - image: "{{ .Values.image.repository }}:{{ include "zesty-k8s.version" . }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
@@ -205,9 +184,6 @@ spec:
           securityContext:
           {{- toYaml . | nindent 12 }}
           {{- end }}
-          volumeMounts:
-            - mountPath: {{ .Values.persistence.mountPath }}
-              name: {{ .Values.persistence.volumeName }}
           envFrom:
             - configMapRef:
                 name: "{{ include "zesty-k8s.configmap" . }}"
@@ -350,10 +326,8 @@ spec:
             {{- toYaml .Values.manager.probes.liveness | nindent 12 }}
           resources:
             {{- toYaml .Values.manager.resources | nindent 12 }}
-          volumeMounts:
-            - mountPath: /data
-              name: {{ .Values.persistence.volumeName }}
           {{- with .Values.manager.extraVolumeMounts }}
+          volumeMounts:
             {{- toYaml . | nindent 12 }}
           {{- end }}
         {{- end }}
@@ -364,11 +338,7 @@ spec:
       {{- end }}
       serviceAccountName: "{{ include "zesty-k8s.serviceAccountName" . }}"
       shareProcessNamespace: true
+      {{- with .Values.manager.extraVolumes }}
       volumes:
-        - name: {{ .Values.persistence.volumeName }}
-          persistentVolumeClaim:
-            claimName: "{{ include "zesty-k8s.pvcname" . }}"
-        - name: migrate-tmp
-          emptyDir: {}
-        - name: migrate-cache
-          emptyDir: {}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
