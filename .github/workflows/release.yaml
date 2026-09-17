@@ -26,8 +26,8 @@ jobs:
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
-      - name: setup helm
-        uses: azure/setup-helm@v4
+      - name: setup chart tools
+        uses: ./.github/actions/setup-chart-tools
 
       - name: find changed charts
         id: changed-charts
@@ -55,6 +55,10 @@ jobs:
           echo "subcharts=$subcharts_changed" >> "$GITHUB_OUTPUT"
           echo "kompass=$kompass_changed" >> "$GITHUB_OUTPUT"
 
+      - name: prepare chart dependencies from this commit
+        if: steps.changed-charts.outputs.subcharts == 'true' || steps.changed-charts.outputs.kompass == 'true'
+        run: sh scripts/ci/prepare-charts.sh .ci-charts
+
       - name: install chart releaser
         if: steps.changed-charts.outputs.subcharts == 'true' || steps.changed-charts.outputs.kompass == 'true'
         uses: helm/chart-releaser-action@v1.5.0
@@ -70,7 +74,7 @@ jobs:
           mkdir -p .cr-index .cr-release-packages
 
           while IFS= read -r chart; do
-            cr package "$chart"
+            helm package ".ci-charts/${chart#charts/}" --destination .cr-release-packages
           done < "$RUNNER_TEMP/changed-subcharts"
 
           cr upload --commit "$GITHUB_SHA"
@@ -84,7 +88,7 @@ jobs:
           rm -rf .cr-index .cr-release-packages
           mkdir -p .cr-index .cr-release-packages
 
-          cr package charts/kompass
+          helm package .ci-charts/kompass --destination .cr-release-packages
           cr upload --commit "$GITHUB_SHA"
           cr index --push
         env:

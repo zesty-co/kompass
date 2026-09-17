@@ -41,8 +41,6 @@ jobs:
           set -eu pipefail
           apt-get update
           apt-get install -y curl ca-certificates tar gzip jq gnupg lsb-release unzip docker.io skopeo unzip
-          # Install Helm
-          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
           # Install AWS CLI v2
           ARCH="$(uname -m)"
           case "$ARCH" in
@@ -54,6 +52,12 @@ jobs:
           unzip -q /tmp/awscliv2.zip -d /tmp
           /tmp/aws/install
 
+      - name: Set up chart tools
+        uses: ./.github/actions/setup-chart-tools
+
+      - name: Prepare chart dependencies from this commit
+        run: sh scripts/ci/prepare-charts.sh .ci-charts
+
       - name: Log in to ECR
         run: |
           aws ecr get-login-password --region ${{ matrix.region }} | \
@@ -62,9 +66,8 @@ jobs:
       - name: Run ECR cache script
         shell: bash
         run: |
-          helm dep build ./charts/kompass
           SOURCE_REGION="eu-west-1"
-          CHART_IMAGES=$(helm template ./charts/kompass \
+          CHART_IMAGES=$(helm template .ci-charts/kompass \
             --set kompass-insights.cxLogging.enabled=true \
             --set rightsizing.cxLogging.enabled=true \
             --set rightsizing.enabled=true \

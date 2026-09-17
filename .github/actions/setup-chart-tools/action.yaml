@@ -1,0 +1,23 @@
+name: Set up chart tools
+description: Install Helm and the yq version used by chart preparation
+runs:
+  using: composite
+  steps:
+    - uses: azure/setup-helm@v4
+      with:
+        version: v3.18.2
+    - shell: bash
+      run: |
+        set -euo pipefail
+        case "$(uname -m)" in
+          x86_64) arch=amd64 ;;
+          aarch64|arm64) arch=arm64 ;;
+          *) echo "Unsupported architecture" >&2; exit 1 ;;
+        esac
+        tools_dir="$RUNNER_TEMP/kompass-chart-tools"
+        mkdir -p "$tools_dir"
+        curl --fail --location --silent --show-error \
+          "https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_$arch" \
+          --output "$tools_dir/yq"
+        chmod +x "$tools_dir/yq"
+        echo "$tools_dir" >> "$GITHUB_PATH"

@@ -3,9 +3,8 @@ name: helm-lint
 on:
   push:
     branches:
-    - main
+      - main
   pull_request:
-
 
 jobs:
   lint:
@@ -15,123 +14,93 @@ jobs:
     name: Helm Lint
     runs-on: ubuntu-latest
     env:
-      CHARTS: "kompass kompass-pod-placement kompass-insights"
+      CHARTS: "kompass kompass-pod-placement kompass-insights pod-rightsizing"
 
     steps:
-    - name: checkout
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: detect chart changes
-      run: |
-        set -e
-        git fetch origin main
+      - name: setup chart tools
+        uses: ./.github/actions/setup-chart-tools
 
-        for chart in $CHARTS; do
-          chart_path="charts/${chart}"
-          chart_key="${chart//-/_}_changed"
+      - name: test local chart preparation
+        run: sh scripts/ci/prepare-charts-test.sh
 
-          if git diff --quiet origin/main...HEAD -- "$chart_path"; then
-            echo "No changes in $chart_path"
-            echo "$chart_key=false" >> "$GITHUB_ENV"
+      - name: detect chart changes
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          if [[ "$EVENT_NAME" == pull_request ]]; then
+            base=$(git merge-base origin/main HEAD)
+          elif [[ -n "$BEFORE_SHA" && "$BEFORE_SHA" != 0000000000000000000000000000000000000000 ]]; then
+            base="$BEFORE_SHA"
           else
-            echo "Changes detected in $chart_path"
-            echo "$chart_key=true" >> "$GITHUB_ENV"
+            base=$(git hash-object -t tree /dev/null)
           fi
-        done
 
-    - name: set any chart changed
-      run: |
-        any_changed=false
+          any_changed=false
+          for chart in $CHARTS; do
+            chart_path="charts/$chart"
+            chart_key="${chart//-/_}_changed"
+            # Rightsizing is added by the first promotion, after this workflow lands.
+            if [[ ! -f "$chart_path/Chart.yaml" ]] || git diff --quiet "$base" HEAD -- "$chart_path"; then
+              echo "$chart_key=false" >> "$GITHUB_ENV"
+            else
+              echo "$chart_key=true" >> "$GITHUB_ENV"
+              any_changed=true
+            fi
+          done
+          echo "any_chart_changed=$any_changed" >> "$GITHUB_ENV"
 
-        for chart in $CHARTS; do
-          chart_key="${chart//-/_}_changed"
-          chart_changed="${!chart_key}"
-
-          if [ "$chart_changed" = "true" ]; then
-            any_changed=true
-            break
-          fi
-        done
-
-        echo "any_chart_changed=$any_changed" >> "$GITHUB_ENV"
-
-    - name: setup helm
-      uses: azure/setup-helm@v4
-      if: env.any_chart_changed == 'true'
-
-    - name: setup helm plugins
-      run: |
-        helm plugin install https://github.com/aslafy-z/helm-git --version 0.11.1 --verify=false
-        helm plugin install https://github.com/helm-unittest/helm-unittest --version 1.0.3 --verify=false
-      if: env.kompass_changed == 'true'
-
-    - name: helm dependency update
-      run: |
-        set -e
-
-        for chart in kompass-insights kompass-pod-placement; do
-          helm dependency update "./charts/$chart"
-          CHART="$chart" yq -i '
-            (.dependencies[] | select(.name == strenv(CHART))).repository = "file://../" + strenv(CHART)
-          ' ./charts/kompass/Chart.yaml
-        done
-
-        helm dependency update ./charts/kompass
-      if: env.kompass_changed == 'true'
-
-    - name: helm unittest kompass secret
-      run: helm unittest charts/kompass
-      if: env.kompass_changed == 'true'
-
-    - name: validate Chart.yaml version changed in PR
-      if: github.event_name == 'pull_request'
-      run: |
-        set -e
-
-        for chart in $CHARTS; do
-          chart_key="${chart//-/_}_changed"
-          chart_path="charts/${chart}"
-          chart_changed="${!chart_key}"
-
-          if [ "$chart_changed" = "true" ]; then
-            MAIN_VERSION=$(git show "origin/main:$chart_path/Chart.yaml" 2>/dev/null | yq -r '.version // "0.0.0"')
-            MAIN_VERSION=${MAIN_VERSION:-0.0.0}
-
-            PR_VERSION=$(yq -r '.version // "0.0.0"' "$chart_path/Chart.yaml")
-
-            echo "Chart: $chart"
-            echo "Main version: $MAIN_VERSION"
-            echo "PR version:   $PR_VERSION"
-
-            if [ "$MAIN_VERSION" = "$PR_VERSION" ]; then
-              echo "❌ Chart version has not been updated for $chart."
+      - name: validate Chart.yaml version changed in PR
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          for chart in $CHARTS; do
+            chart_key="${chart//-/_}_changed"
+            chart_path="charts/$chart"
+            [[ "${!chart_key}" == true ]] || continue
+            # A newly introduced chart has no previous release to compare against.
+            if ! git cat-file -e "origin/main:$chart_path/Chart.yaml" 2>/dev/null; then
+              echo "New chart: $chart"
+              continue
+            fi
+            main_version=$(git show "origin/main:$chart_path/Chart.yaml" | yq -r '.version')
+            pr_version=$(yq -r '.version' "$chart_path/Chart.yaml")
+            main_version="${main_version#v}"
+            pr_version="${pr_version#v}"
+            if [[ "$(printf '%s\n' "$pr_version" "$main_version" | sort -V | head -n1)" == "$pr_version" ]]; then
+              echo "$chart version ($pr_version) must be greater than main ($main_version)." >&2
               exit 1
             fi
+          done
 
-            if [ "$(printf '%s\n' "$PR_VERSION" "$MAIN_VERSION" | sort -V | head -n1)" = "$PR_VERSION" ]; then
-              echo "❌ Chart version ($PR_VERSION) must be greater than main ($MAIN_VERSION) for $chart."
-              exit 1
+      - name: prepare chart dependencies from this commit
+        if: env.any_chart_changed == 'true'
+        run: sh scripts/ci/prepare-charts.sh .ci-charts
+
+      - name: setup helm plugins
+        if: env.any_chart_changed == 'true'
+        run: |
+          helm plugin install https://github.com/helm-unittest/helm-unittest --version 1.0.3
+
+      - name: helm unittest kompass secret
+        if: env.any_chart_changed == 'true'
+        run: helm unittest .ci-charts/kompass
+
+      - name: helm lint
+        if: env.any_chart_changed == 'true'
+        run: |
+          set -euo pipefail
+          for chart in $CHARTS; do
+            chart_key="${chart//-/_}_changed"
+            # Also validate umbrella integration when only a child changed.
+            if [[ "$chart" == kompass || "${!chart_key}" == true ]]; then
+              helm lint ".ci-charts/$chart"
             fi
-
-            echo "✅ Chart version bump detected for $chart."
-          else
-            echo "⏭️  Skipping $chart - no changes detected."
-          fi
-        done
-
-    - name: helm lint
-      run: |
-        set -e
-
-        for chart in $CHARTS; do
-          chart_key="${chart//-/_}_changed"
-          chart_path="charts/${chart}"
-
-          if [ "${!chart_key}" = "true" ]; then
-            helm lint "$chart_path"
-          else
-            echo "⏭️  Skipping helm lint for $chart - no changes detected."
-          fi
-        done
+          done
