@@ -78,13 +78,6 @@ Create a name for the SA.
 {{- end -}}
 
 {{/*
-Create a name for the PVC.
-*/}}
-{{- define "zesty-k8s.pvcname" -}}
-  {{ printf "%s-db-pvc" (include "zesty-k8s.fullname" .) }}
-{{- end -}}
-
-{{/*
 Create a name for the external-secret.
 */}}
 {{- define "zesty-k8s.externalSecret.awsCred" -}}

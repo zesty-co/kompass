@@ -1,0 +1,20 @@
+{{- $jvmEnabled := default false (and .Values.jvmMetrics .Values.jvmMetrics.enabled) }}
+{{- $gpuEnabled := default false (and .Values.gpuMetrics .Values.gpuMetrics.enabled) }}
+{{- if or $jvmEnabled $gpuEnabled }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: bridge-data-exporter-role
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "pod-rightsizing.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames:
+      - {{ .Values.bridgeActor.identitySecretName | quote }}
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "create", "update"]
+{{- end }}

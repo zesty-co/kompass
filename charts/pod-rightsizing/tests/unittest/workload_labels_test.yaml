@@ -1,0 +1,303 @@
+suite: WorkloadLabels
+release:
+  name: ci
+  namespace: zesty-system
+templates:
+  - templates/action-taker/action-taker.yaml
+  - templates/guardian/configmap.yaml
+  - templates/guardian/guardian.yaml
+  - templates/recommendations-maker/recommendations-maker.yaml
+  - templates/config/pilotConfigmap.yaml
+  - templates/metrics-exporter/metrics-exporter.yaml
+  - templates/bridge-data-exporter/bridge-data-exporter.yaml
+  - templates/hooks/pre-upgrade-apply-crds.yaml
+  - templates/hooks/pre-upgrade-migrate-actions.yaml
+  - templates/hooks/post-upgrade-migrate-actions.yaml
+tests:
+  - it: applies global and component labels to the Guardian Deployment only
+    template: templates/guardian/guardian.yaml
+    set:
+      global:
+        workloadLabels:
+          globalWorkloadLabel: global
+          sharedWorkloadLabel: global
+      guardian:
+        enabled: true
+        workloadLabels:
+          guardianWorkloadLabel: guardian
+          sharedWorkloadLabel: component
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+      - equal:
+          path: metadata.labels.globalWorkloadLabel
+          value: global
+      - equal:
+          path: metadata.labels.guardianWorkloadLabel
+          value: guardian
+      - equal:
+          path: metadata.labels.sharedWorkloadLabel
+          value: global
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+      - notExists:
+          path: spec.template.metadata.labels.globalWorkloadLabel
+      - notExists:
+          path: spec.template.metadata.labels.guardianWorkloadLabel
+
+  - it: applies global and component labels to the action-taker Deployment only
+    template: templates/action-taker/action-taker.yaml
+    set:
+      global:
+        workloadLabels:
+          globalWorkloadLabel: global
+          sharedWorkloadLabel: global
+      actionTaker:
+        workloadLabels:
+          actionTakerWorkloadLabel: action-taker
+          sharedWorkloadLabel: component
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+      - equal:
+          path: metadata.labels.globalWorkloadLabel
+          value: global
+      - equal:
+          path: metadata.labels.actionTakerWorkloadLabel
+          value: action-taker
+      - equal:
+          path: metadata.labels.sharedWorkloadLabel
+          value: global
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+      - notExists:
+          path: spec.template.metadata.labels.globalWorkloadLabel
+      - notExists:
+          path: spec.template.metadata.labels.actionTakerWorkloadLabel
+
+  - it: applies global and component labels to the recommendations-maker Deployment only
+    template: templates/recommendations-maker/recommendations-maker.yaml
+    set:
+      global:
+        workloadLabels:
+          globalWorkloadLabel: global
+      recommendationsMaker:
+        workloadLabels:
+          recommendationsMakerWorkloadLabel: recommendations-maker
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+      - equal:
+          path: metadata.labels.globalWorkloadLabel
+          value: global
+      - equal:
+          path: metadata.labels.recommendationsMakerWorkloadLabel
+          value: recommendations-maker
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+      - notExists:
+          path: spec.template.metadata.labels.globalWorkloadLabel
+      - notExists:
+          path: spec.template.metadata.labels.recommendationsMakerWorkloadLabel
+
+  - it: applies workload labels to the metrics CronJob and generated Job only
+    template: templates/metrics-exporter/metrics-exporter.yaml
+    set:
+      cxLogging:
+        enabled: true
+      global:
+        workloadLabels:
+          globalWorkloadLabel: global
+      metricsExporter:
+        workloadLabels:
+          metricsExporterWorkloadLabel: metrics-exporter
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+      - equal:
+          path: metadata.labels.globalWorkloadLabel
+          value: global
+      - equal:
+          path: metadata.labels.metricsExporterWorkloadLabel
+          value: metrics-exporter
+      - equal:
+          path: spec.jobTemplate.metadata.labels.globalWorkloadLabel
+          value: global
+      - equal:
+          path: spec.jobTemplate.metadata.labels.metricsExporterWorkloadLabel
+          value: metrics-exporter
+      - equal:
+          path: spec.jobTemplate.metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+      - equal:
+          path: spec.jobTemplate.spec.template.metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+      - notExists:
+          path: spec.jobTemplate.spec.template.metadata.labels.globalWorkloadLabel
+      - notExists:
+          path: spec.jobTemplate.spec.template.metadata.labels.metricsExporterWorkloadLabel
+
+  - it: applies workload labels to the bridge CronJob and generated Job only
+    template: templates/bridge-data-exporter/bridge-data-exporter.yaml
+    set:
+      jvmMetrics:
+        enabled: true
+      global:
+        workloadLabels:
+          globalWorkloadLabel: global
+      bridgeDataExporter:
+        workloadLabels:
+          bridgeDataExporterWorkloadLabel: bridge-data-exporter
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+      - equal:
+          path: metadata.labels.globalWorkloadLabel
+          value: global
+      - equal:
+          path: metadata.labels.bridgeDataExporterWorkloadLabel
+          value: bridge-data-exporter
+      - equal:
+          path: spec.jobTemplate.metadata.labels.globalWorkloadLabel
+          value: global
+      - equal:
+          path: spec.jobTemplate.metadata.labels.bridgeDataExporterWorkloadLabel
+          value: bridge-data-exporter
+      - equal:
+          path: spec.jobTemplate.metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+      - equal:
+          path: spec.jobTemplate.spec.template.metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+      - notExists:
+          path: spec.jobTemplate.spec.template.metadata.labels.globalWorkloadLabel
+      - notExists:
+          path: spec.jobTemplate.spec.template.metadata.labels.bridgeDataExporterWorkloadLabel
+
+  - it: applies global and hook labels to the CRD hook Job
+    template: templates/hooks/pre-upgrade-apply-crds.yaml
+    documentSelector:
+      path: kind
+      value: Job
+    set:
+      global:
+        workloadLabels:
+          globalWorkloadLabel: global
+      hooks:
+        workloadLabels:
+          hooksWorkloadLabel: hooks
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+      - equal:
+          path: metadata.labels.globalWorkloadLabel
+          value: global
+      - equal:
+          path: metadata.labels.hooksWorkloadLabel
+          value: hooks
+
+  - it: applies global and hook labels to the pre-upgrade migration Job
+    template: templates/hooks/pre-upgrade-migrate-actions.yaml
+    documentSelector:
+      path: kind
+      value: Job
+    set:
+      global:
+        workloadLabels:
+          globalWorkloadLabel: global
+      hooks:
+        workloadLabels:
+          hooksWorkloadLabel: hooks
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+      - equal:
+          path: metadata.labels.globalWorkloadLabel
+          value: global
+      - equal:
+          path: metadata.labels.hooksWorkloadLabel
+          value: hooks
+
+  - it: applies global and hook labels to the post-upgrade migration Job
+    template: templates/hooks/post-upgrade-migrate-actions.yaml
+    documentSelector:
+      path: kind
+      value: Job
+    set:
+      global:
+        workloadLabels:
+          globalWorkloadLabel: global
+      hooks:
+        workloadLabels:
+          hooksWorkloadLabel: hooks
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+      - equal:
+          path: metadata.labels.globalWorkloadLabel
+          value: global
+      - equal:
+          path: metadata.labels.hooksWorkloadLabel
+          value: hooks
+
+  - it: applies the required label to the CRD hook Job when optional labels are empty
+    template: templates/hooks/pre-upgrade-apply-crds.yaml
+    documentSelector:
+      path: kind
+      value: Job
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+
+  - it: applies the required label to the pre-upgrade migration Job when optional labels are empty
+    template: templates/hooks/pre-upgrade-migrate-actions.yaml
+    documentSelector:
+      path: kind
+      value: Job
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+
+  - it: applies the required label to the post-upgrade migration Job when optional labels are empty
+    template: templates/hooks/post-upgrade-migrate-actions.yaml
+    documentSelector:
+      path: kind
+      value: Job
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+
+  - it: prevents user values from overriding required workload and pod labels
+    template: templates/action-taker/action-taker.yaml
+    set:
+      global:
+        workloadLabels:
+          app.kubernetes.io/part-of: global-value
+        podLabels:
+          app.kubernetes.io/part-of: global-value
+      actionTaker:
+        workloadLabels:
+          app.kubernetes.io/part-of: component-value
+        podLabels:
+          app.kubernetes.io/part-of: component-value
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass

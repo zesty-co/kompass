@@ -12,8 +12,6 @@ data:
   ORG_ID: "{{ .Values.orgID }}"
   MANAGER_ENABLED: "{{ .Values.manager.enabled | default false }}"
   PODMINUTEMETRICS_ENABLED: "{{ .Values.podMinuteMetrics.enabled }}"
-  PATHS_MOUNTPATH: "{{ .Values.persistence.mountPath }}"
-  STORAGE_SIZE: "{{ .Values.persistence.spec.resources.requests.storage }}"
   EXTERNAL_ID: "{{ .Values.externalID }}"
   CUSTOMPRICING_ENABLED: "{{ .Values.customPricing.enabled }}"
   CUSTOMPRICING_CPU: "{{ .Values.customPricing.cpu }}"

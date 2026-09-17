@@ -1,0 +1,39 @@
+{{- if .Values.guardian.enabled }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kompass-guardian-role
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/component: guardian
+    {{- include "pod-rightsizing.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["create", "patch", "update"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets", "daemonsets"]
+    verbs: ["patch", "update"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["create"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    resourceNames:
+      - kompass-guardian-leader-election
+      - recommendation-maker-lock
+      - action-taker-lock
+    verbs: ["update"]
+  - apiGroups: ["rightsizing.kompass.zesty.co"]
+    resources: ["actions"]
+    verbs: ["patch", "update"]
+  - apiGroups: ["rightsizing.kompass.zesty.co"]
+    resources: ["actions/status"]
+    verbs: ["patch", "update"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+{{- end }}

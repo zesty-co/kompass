@@ -1,0 +1,50 @@
+suite: BridgeHubAddress
+release:
+  name: ci
+  namespace: zesty-system
+templates:
+  - templates/action-taker/action-taker.yaml
+  - templates/config/pilotConfigmap.yaml
+  - templates/recommendations-maker/recommendations-maker.yaml
+tests:
+  - it: renders default bridge hub address for action-taker
+    template: templates/action-taker/action-taker.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: BRIDGE_HUB_ADDRESS
+            value: kompass-bridge:50051
+
+  - it: renders default bridge hub address for recommendations-maker
+    template: templates/recommendations-maker/recommendations-maker.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: BRIDGE_HUB_ADDRESS
+            value: kompass-bridge:50051
+
+  - it: renders overridden bridge hub address for action-taker
+    template: templates/action-taker/action-taker.yaml
+    set:
+      bridgeActor:
+        hubAddress: custom-bridge.example:50051
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: BRIDGE_HUB_ADDRESS
+            value: custom-bridge.example:50051
+
+  - it: renders overridden bridge hub address for recommendations-maker
+    template: templates/recommendations-maker/recommendations-maker.yaml
+    set:
+      bridgeActor:
+        hubAddress: custom-bridge.example:50051
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: BRIDGE_HUB_ADDRESS
+            value: custom-bridge.example:50051

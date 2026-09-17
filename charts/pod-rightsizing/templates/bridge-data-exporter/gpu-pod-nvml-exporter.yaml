@@ -1,0 +1,515 @@
+{{- if and .Values.gpuMetrics .Values.gpuMetrics.enabled }}
+{{- $name := printf "%s-gpu-pod-nvml-exporter" (include "name" .) | trunc 63 | trimSuffix "-" }}
+{{- $defaultPodSecurityContext := dict "runAsNonRoot" true "seccompProfile" (dict "type" "RuntimeDefault") }}
+{{- $componentPodSecurityContext := mergeOverwrite $defaultPodSecurityContext (deepCopy (default (dict) .Values.gpuMetrics.podSecurityContext)) }}
+{{- $podSecurityContext := include "pod-rightsizing.securityContext.pod" (dict "root" . "componentSecurityContext" $componentPodSecurityContext) | fromYaml }}
+{{- $defaultSecurityContext := dict "allowPrivilegeEscalation" false "capabilities" (dict "drop" (list "ALL")) "privileged" false "readOnlyRootFilesystem" true "runAsNonRoot" true "runAsUser" 65532 }}
+{{- $componentSecurityContext := mergeOverwrite $defaultSecurityContext (deepCopy (default (dict) .Values.gpuMetrics.securityContext)) }}
+{{- $securityContext := include "pod-rightsizing.securityContext.container" (dict "root" . "componentSecurityContext" $componentSecurityContext) | fromYaml }}
+{{- $podLabels := include "pod-rightsizing.podTemplateLabels" (dict "root" . "componentValues" .Values.gpuMetrics) | fromYaml }}
+{{- $podAnnotations := include "pod-rightsizing.podTemplateAnnotations" (dict "root" . "componentValues" .Values.gpuMetrics) | fromYaml }}
+{{- /* Increment the revision when exporter.py changes so the DaemonSet rolls. */}}
+{{- $podAnnotations = mergeOverwrite (dict "prometheus.io/scrape" "true" "prometheus.io/port" "9500" "prometheus.io/path" "/metrics" "gpu.zesty.co/config-revision" "3") $podAnnotations }}
+{{- $workloadLabels := include "pod-rightsizing.workloadLabels" (dict "root" . "componentValues" .Values.gpuMetrics) | fromYaml }}
+{{- $affinity := include "pod-rightsizing.affinity" (dict "root" . "componentValues" .Values.gpuMetrics) | fromYaml }}
+{{- $imagePullSecrets := include "pod-rightsizing.imagePullSecrets" (dict "root" . "componentValues" .Values.gpuMetrics) | fromYamlArray }}
+{{- $topologySpreadConstraints := include "pod-rightsizing.topologySpreadConstraints" (dict "root" . "componentValues" .Values.gpuMetrics) | fromYamlArray }}
+{{- $runtimeClassName := include "pod-rightsizing.runtimeClassName" (dict "root" . "componentValues" .Values.gpuMetrics) }}
+{{- $nodeSelector := mergeOverwrite (dict "nvidia.com/gpu.present" "true") (deepCopy (default (dict) .Values.global.nodeSelector)) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "pod-rightsizing.labels" . | nindent 4 }}
+    app.kubernetes.io/component: gpu-pod-nvml-exporter
+data:
+  exporter.py: |
+    #!/usr/bin/env python3
+    """Dependency-free NVML GPU and MIG identity exporter."""
+
+    import ctypes
+    import os
+    import re
+    import subprocess
+    import sys
+    import threading
+    import time
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+    NODE_NAME = os.environ.get("NODE_NAME", "").strip()
+    LISTEN = os.environ.get("LISTEN", "0.0.0.0")
+    PORT = int(os.environ.get("PORT", "9500"))
+    REQUEST_TIMEOUT = max(1.0, float(os.environ.get("REQUEST_TIMEOUT", "8")))
+    COLLECT_INTERVAL = max(
+      5.0, float(os.environ.get("COLLECT_INTERVAL", "20"))
+    )
+
+    MIG_LINE_RE = re.compile(
+      r"^\s*MIG\s+(\S+)\s+Device\s+\d+:\s+\(UUID:\s+(MIG-[^)]+)\)$"
+    )
+
+    NVML_SUCCESS = 0
+    NVML_DEVICE_MIG_ENABLE = 1
+
+    STATE_LOCK = threading.Lock()
+    STOP_EVENT = threading.Event()
+    STATE = {
+      "body": "",
+      "ready": False,
+      "last_collection": 0.0,
+    }
+
+
+    def log(message):
+      print(message, file=sys.stderr, flush=True)
+
+
+    def label_value(value):
+      return (
+        str(value)
+        .replace("\\", "\\\\")
+        .replace("\n", "\\n")
+        .replace('"', '\\"')
+      )
+
+
+    def labels(items):
+      return "{" + ",".join(
+        f'{key}="{label_value(value)}"' for key, value in items.items()
+      ) + "}"
+
+
+    def run_command(args):
+      try:
+        result = subprocess.run(
+          args,
+          text=True,
+          stdout=subprocess.PIPE,
+          stderr=subprocess.PIPE,
+          timeout=REQUEST_TIMEOUT,
+          check=False,
+          env={
+            "PATH": os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin"),
+            "LC_ALL": "C",
+          },
+        )
+        return result.returncode, result.stdout.strip(), result.stderr.strip()
+      except (OSError, subprocess.SubprocessError) as error:
+        return 1, "", str(error)
+
+
+    def load_nvml():
+      lib = ctypes.CDLL("libnvidia-ml.so.1")
+      lib.nvmlInit_v2.restype = ctypes.c_int
+      lib.nvmlShutdown.restype = ctypes.c_int
+      lib.nvmlDeviceGetCount_v2.argtypes = [ctypes.POINTER(ctypes.c_uint)]
+      lib.nvmlDeviceGetCount_v2.restype = ctypes.c_int
+      lib.nvmlDeviceGetHandleByIndex_v2.argtypes = [
+        ctypes.c_uint,
+        ctypes.POINTER(ctypes.c_void_p),
+      ]
+      lib.nvmlDeviceGetHandleByIndex_v2.restype = ctypes.c_int
+      lib.nvmlDeviceGetUUID.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_char_p,
+        ctypes.c_uint,
+      ]
+      lib.nvmlDeviceGetUUID.restype = ctypes.c_int
+      lib.nvmlDeviceGetMigMode.argtypes = [
+        ctypes.c_void_p,
+        ctypes.POINTER(ctypes.c_uint),
+        ctypes.POINTER(ctypes.c_uint),
+      ]
+      lib.nvmlDeviceGetMigMode.restype = ctypes.c_int
+      lib.nvmlDeviceGetMaxMigDeviceCount.argtypes = [
+        ctypes.c_void_p,
+        ctypes.POINTER(ctypes.c_uint),
+      ]
+      lib.nvmlDeviceGetMaxMigDeviceCount.restype = ctypes.c_int
+      lib.nvmlDeviceGetMigDeviceHandleByIndex.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_uint,
+        ctypes.POINTER(ctypes.c_void_p),
+      ]
+      lib.nvmlDeviceGetMigDeviceHandleByIndex.restype = ctypes.c_int
+      lib.nvmlDeviceGetGpuInstanceId.argtypes = [
+        ctypes.c_void_p,
+        ctypes.POINTER(ctypes.c_uint),
+      ]
+      lib.nvmlDeviceGetGpuInstanceId.restype = ctypes.c_int
+      lib.nvmlDeviceGetComputeInstanceId.argtypes = [
+        ctypes.c_void_p,
+        ctypes.POINTER(ctypes.c_uint),
+      ]
+      lib.nvmlDeviceGetComputeInstanceId.restype = ctypes.c_int
+      return lib
+
+
+    def nvml_check(status, operation):
+      if status != NVML_SUCCESS:
+        raise RuntimeError(f"{operation} failed with NVML status {status}")
+
+
+    def nvml_uuid(lib, handle):
+      value = ctypes.create_string_buffer(128)
+      nvml_check(
+        lib.nvmlDeviceGetUUID(handle, value, len(value)),
+        "nvmlDeviceGetUUID",
+      )
+      return value.value.decode("utf-8", errors="strict")
+
+
+    def query_profile_names():
+      status, stdout, stderr = run_command(["nvidia-smi", "-L"])
+      if status != 0:
+        return {}, stderr or stdout or "nvidia-smi -L failed"
+      profiles = {}
+      for line in stdout.splitlines():
+        match = MIG_LINE_RE.match(line)
+        if match:
+          profiles[match.group(2)] = match.group(1)
+      return profiles, ""
+
+
+    def collect_identities():
+      identities = []
+      errors = []
+      profile_names, profile_error = query_profile_names()
+      if profile_error:
+        errors.append(profile_error)
+
+      lib = None
+      initialized = False
+      try:
+        lib = load_nvml()
+        nvml_check(lib.nvmlInit_v2(), "nvmlInit_v2")
+        initialized = True
+        device_count = ctypes.c_uint()
+        nvml_check(
+          lib.nvmlDeviceGetCount_v2(ctypes.byref(device_count)),
+          "nvmlDeviceGetCount_v2",
+        )
+        for gpu_index in range(device_count.value):
+          try:
+            parent = ctypes.c_void_p()
+            nvml_check(
+              lib.nvmlDeviceGetHandleByIndex_v2(
+                gpu_index, ctypes.byref(parent)
+              ),
+              f"GPU handle {gpu_index}",
+            )
+            parent_uuid = nvml_uuid(lib, parent)
+            current_mig = ctypes.c_uint()
+            pending_mig = ctypes.c_uint()
+            nvml_check(
+              lib.nvmlDeviceGetMigMode(
+                parent, ctypes.byref(current_mig), ctypes.byref(pending_mig)
+              ),
+              f"MIG mode for {parent_uuid}",
+            )
+
+            if current_mig.value != NVML_DEVICE_MIG_ENABLE:
+              identities.append({
+                "node": NODE_NAME,
+                "gpu_uuid": parent_uuid,
+                "parent_gpu_uuid": parent_uuid,
+                "gpu_mode": "full",
+                "GPU_I_PROFILE": "",
+                "GPU_I_ID": "",
+                "GPU_CI_ID": "",
+                "gpu_index": str(gpu_index),
+              })
+              continue
+
+            max_mig_devices = ctypes.c_uint()
+            nvml_check(
+              lib.nvmlDeviceGetMaxMigDeviceCount(
+                parent, ctypes.byref(max_mig_devices)
+              ),
+              f"maximum MIG devices for {parent_uuid}",
+            )
+            for mig_index in range(max_mig_devices.value):
+              mig = ctypes.c_void_p()
+              status = lib.nvmlDeviceGetMigDeviceHandleByIndex(
+                parent, mig_index, ctypes.byref(mig)
+              )
+              if status != NVML_SUCCESS:
+                continue
+              try:
+                mig_uuid = nvml_uuid(lib, mig)
+                gpu_instance_id = ctypes.c_uint()
+                compute_instance_id = ctypes.c_uint()
+                nvml_check(
+                  lib.nvmlDeviceGetGpuInstanceId(
+                    mig, ctypes.byref(gpu_instance_id)
+                  ),
+                  f"GPU instance ID for {mig_uuid}",
+                )
+                nvml_check(
+                  lib.nvmlDeviceGetComputeInstanceId(
+                    mig, ctypes.byref(compute_instance_id)
+                  ),
+                  f"compute instance ID for {mig_uuid}",
+                )
+                identities.append({
+                  "node": NODE_NAME,
+                  "gpu_uuid": mig_uuid,
+                  "parent_gpu_uuid": parent_uuid,
+                  "gpu_mode": "mig",
+                  "GPU_I_PROFILE": profile_names.get(mig_uuid, ""),
+                  "GPU_I_ID": str(gpu_instance_id.value),
+                  "GPU_CI_ID": str(compute_instance_id.value),
+                  "gpu_index": str(gpu_index),
+                })
+              except Exception as error:
+                errors.append(str(error))
+          except Exception as error:
+            errors.append(str(error))
+      except Exception as error:
+        errors.append(str(error))
+      finally:
+        if initialized:
+          status = lib.nvmlShutdown()
+          if status != NVML_SUCCESS:
+            errors.append(f"nvmlShutdown failed with NVML status {status}")
+
+      return identities, errors
+
+
+    def collect_metrics():
+      identities, errors = collect_identities()
+      for error in errors:
+        log(f"identity collection error: {error}")
+
+      lines = [
+        "# HELP gpu_nvml_device_identity_info "
+        "Stable schedulable whole-GPU or MIG device identity from NVML.",
+        "# TYPE gpu_nvml_device_identity_info gauge",
+      ]
+      for identity in identities:
+        lines.append(f"gpu_nvml_device_identity_info{labels(identity)} 1")
+      return "\n".join(lines) + "\n"
+
+
+    def collector_loop():
+      while not STOP_EVENT.is_set():
+        loop_started = time.monotonic()
+        try:
+          body = collect_metrics()
+          with STATE_LOCK:
+            STATE.update({
+              "body": body,
+              "ready": True,
+              "last_collection": time.monotonic(),
+            })
+        except Exception as error:
+          log(f"identity collection failed: {error}")
+        wait_time = max(0.1, COLLECT_INTERVAL - (time.monotonic() - loop_started))
+        STOP_EVENT.wait(wait_time)
+
+
+    class ExporterHTTPServer(ThreadingHTTPServer):
+      allow_reuse_address = True
+      daemon_threads = True
+
+
+    class Handler(BaseHTTPRequestHandler):
+      protocol_version = "HTTP/1.1"
+
+      def setup(self):
+        super().setup()
+        self.connection.settimeout(REQUEST_TIMEOUT)
+
+      def respond(self, status, body, content_type="text/plain; charset=utf-8"):
+        payload = body.encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(payload)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        try:
+          self.wfile.write(payload)
+        except (BrokenPipeError, ConnectionResetError):
+          pass
+
+      def do_GET(self):
+        path = self.path.split("?", 1)[0]
+        if path == "/livez":
+          self.respond(200, "ok\n")
+          return
+        with STATE_LOCK:
+          state = dict(STATE)
+        freshness_limit = COLLECT_INTERVAL * 3 + REQUEST_TIMEOUT
+        ready = (
+          state["ready"]
+          and time.monotonic() - state["last_collection"] <= freshness_limit
+        )
+        if path in ("/readyz", "/healthz"):
+          self.respond(200 if ready else 503, "ok\n" if ready else "stale\n")
+          return
+        if path == "/metrics":
+          if not ready:
+            self.respond(503, "metrics are not ready\n")
+            return
+          self.respond(
+            200,
+            state["body"],
+            "text/plain; version=0.0.4; charset=utf-8",
+          )
+          return
+        self.respond(404, "not found\n")
+
+      def log_message(self, format_string, *args):
+        return
+
+
+    def main():
+      if not NODE_NAME:
+        raise SystemExit("NODE_NAME must be set")
+      collector = threading.Thread(
+        target=collector_loop, name="collector", daemon=True
+      )
+      collector.start()
+      server = ExporterHTTPServer((LISTEN, PORT), Handler)
+      log(
+        f"starting gpu-pod-nvml-exporter on {LISTEN}:{PORT} "
+        f"for node {NODE_NAME}; interval={COLLECT_INTERVAL}s"
+      )
+      try:
+        server.serve_forever(poll_interval=0.5)
+      finally:
+        STOP_EVENT.set()
+        server.server_close()
+
+
+    if __name__ == "__main__":
+      main()
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ $name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "pod-rightsizing.labels" . | nindent 4 }}
+    {{- with $workloadLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    app.kubernetes.io/component: gpu-pod-nvml-exporter
+spec:
+  revisionHistoryLimit: 2
+  minReadySeconds: 5
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      {{- include "pod-rightsizing.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: gpu-pod-nvml-exporter
+  template:
+    metadata:
+      labels:
+        {{- include "pod-rightsizing.labels" . | nindent 8 }}
+        {{- with $podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        app.kubernetes.io/component: gpu-pod-nvml-exporter
+      annotations:
+        {{- toYaml $podAnnotations | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      terminationGracePeriodSeconds: 10
+      {{- if $runtimeClassName }}
+      runtimeClassName: {{ $runtimeClassName }}
+      {{- end }}
+      nodeSelector:
+        {{- toYaml $nodeSelector | nindent 8 }}
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+        {{- with .Values.global.tolerations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with $topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: exporter
+          image: docker.io/library/python:3.13.13-slim-bookworm@sha256:355bfa66770995d7e9a0da4b3473b44d0cb451f6b56f5615ad9c39e3c4eca03f
+          imagePullPolicy: IfNotPresent
+          command:
+            - /usr/local/bin/python3
+            - -B
+            - /opt/gpu-pod-nvml-exporter/exporter.py
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: NVIDIA_VISIBLE_DEVICES
+              value: all
+            - name: NVIDIA_DRIVER_CAPABILITIES
+              value: utility
+            - name: COLLECT_INTERVAL
+              value: "20"
+            - name: REQUEST_TIMEOUT
+              value: "8"
+          ports:
+            - name: metrics
+              containerPort: 9500
+              protocol: TCP
+          {{- with $securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.gpuMetrics.resources | nindent 12 }}
+          startupProbe:
+            httpGet:
+              path: /readyz
+              port: metrics
+            failureThreshold: 12
+            periodSeconds: 5
+            timeoutSeconds: 2
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: metrics
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: metrics
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+          volumeMounts:
+            - name: exporter-script
+              mountPath: /opt/gpu-pod-nvml-exporter
+              readOnly: true
+      volumes:
+        - name: exporter-script
+          configMap:
+            name: {{ $name }}
+            defaultMode: 0555
+      {{- with $imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

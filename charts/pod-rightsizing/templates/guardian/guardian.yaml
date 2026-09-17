@@ -1,0 +1,129 @@
+{{- if .Values.guardian.enabled }}
+{{- $guardianPodSecurityContext := include "pod-rightsizing.securityContext.pod" (dict "root" . "componentSecurityContext" .Values.guardian.podSecurityContext) | fromYaml }}
+{{- $guardianSecurityContext := include "pod-rightsizing.securityContext.container" (dict "root" . "componentSecurityContext" .Values.guardian.securityContext) | fromYaml }}
+{{- $guardianPodLabels := include "pod-rightsizing.podTemplateLabels" (dict "root" . "componentValues" .Values.guardian) | fromYaml }}
+{{- $guardianPodAnnotations := include "pod-rightsizing.podTemplateAnnotations" (dict "root" . "componentValues" .Values.guardian) | fromYaml }}
+{{- $guardianPodAnnotations = mergeOverwrite (deepCopy $guardianPodAnnotations) (dict "checksum/pilot-config" (include (print $.Template.BasePath "/config/pilotConfigmap.yaml") . | sha256sum) "checksum/guardian-config" (include (print $.Template.BasePath "/guardian/configmap.yaml") . | sha256sum)) }}
+{{- $guardianWorkloadLabels := include "pod-rightsizing.workloadLabels" (dict "root" . "componentValues" .Values.guardian) | fromYaml }}
+{{- $guardianAffinity := include "pod-rightsizing.affinity" (dict "root" . "componentValues" .Values.guardian) | fromYaml }}
+{{- $guardianImagePullSecrets := include "pod-rightsizing.imagePullSecrets" (dict "root" . "componentValues" .Values.guardian) | fromYamlArray }}
+{{- $guardianTopologySpreadConstraints := include "pod-rightsizing.topologySpreadConstraints" (dict "root" . "componentValues" .Values.guardian) | fromYamlArray }}
+{{- $guardianAutomountServiceAccountToken := include "pod-rightsizing.automountServiceAccountToken" (dict "root" . "componentValues" .Values.guardian) }}
+{{- $guardianRuntimeClassName := include "pod-rightsizing.runtimeClassName" (dict "root" . "componentValues" .Values.guardian) }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "guardian.name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ include "guardian.name" . }}
+    app.kubernetes.io/component: guardian
+    {{- include "pod-rightsizing.labels" . | nindent 4 }}
+    {{- with $guardianWorkloadLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  replicas: {{ .Values.guardian.replicaCount | default 1 }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: {{ include "guardian.name" . }}
+  template:
+    metadata:
+      annotations:
+        {{- toYaml $guardianPodAnnotations | nindent 8 }}
+      labels:
+        app: {{ include "guardian.name" . }}
+        app.kubernetes.io/name: pod-rightsizing
+        app.kubernetes.io/component: guardian
+        {{- with $guardianPodLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- if .Values.guardian.priorityClassName }}
+      priorityClassName: {{ .Values.guardian.priorityClassName }}
+      {{- end }}
+      {{- if $guardianRuntimeClassName }}
+      runtimeClassName: {{ $guardianRuntimeClassName }}
+      {{- end }}
+      {{- with $guardianPodSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.global.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.global.nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if .Values.global.tolerations }}
+      tolerations:
+        {{- toYaml .Values.global.tolerations | nindent 8 }}
+      {{- end }}
+      {{- with $guardianTopologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $guardianAffinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: guardian
+          image: {{ .Values.registry }}{{ .Values.guardian.image.name }}:{{ .Values.guardian.image.tag | default .Chart.AppVersion }}
+          imagePullPolicy: {{ .Values.imagePullPolicy | default "Always" }}
+          command:
+            - /guardian
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: APP_CONFIG_MOUNTED_PATH
+              value: /etc/kompass-rightsizing/config
+            - name: GUARDIAN_CONFIG_MOUNTED_PATH
+              value: /etc/kompass-guardian/config
+          ports:
+            - name: health
+              containerPort: 8081
+              protocol: TCP
+          volumeMounts:
+            - name: rightsizing-config
+              mountPath: /etc/kompass-rightsizing/config
+              readOnly: true
+            - name: guardian-config
+              mountPath: /etc/kompass-guardian/config
+              readOnly: true
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          {{- include "pod-rightsizing.guardian.resources" . | nindent 10 }}
+          {{- with $guardianSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: rightsizing-config
+          configMap:
+            name: {{ include "kompass-pod-rightsizing-config.name" . }}
+        - name: guardian-config
+          configMap:
+            name: {{ include "kompass-guardian-config.name" . }}
+      {{- with $guardianImagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "pod-rightsizing.guardianServiceAccountName" . }}
+      {{- if ne $guardianAutomountServiceAccountToken "" }}
+      automountServiceAccountToken: {{ $guardianAutomountServiceAccountToken }}
+      {{- end }}
+      terminationGracePeriodSeconds: 10
+{{- end }}

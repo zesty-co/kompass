@@ -1,0 +1,197 @@
+suite: GPU pod NVML exporter
+release:
+  name: ci
+  namespace: gpu-system
+templates:
+  - templates/bridge-data-exporter/gpu-pod-nvml-exporter.yaml
+tests:
+  - it: is disabled with GPU metrics
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: renders release-scoped resources when GPU metrics are enabled
+    set:
+      gpuMetrics:
+        enabled: true
+    asserts:
+      - hasDocuments:
+          count: 2
+      - equal:
+          path: metadata.namespace
+          value: gpu-system
+        documentSelector:
+          path: kind
+          value: ConfigMap
+      - equal:
+          path: metadata.namespace
+          value: gpu-system
+        documentSelector:
+          path: kind
+          value: DaemonSet
+      - equal:
+          path: spec.template.spec.automountServiceAccountToken
+          value: false
+        documentSelector:
+          path: kind
+          value: DaemonSet
+      - notExists:
+          path: spec.template.spec.serviceAccountName
+        documentSelector:
+          path: kind
+          value: DaemonSet
+      - notExists:
+          path: spec.template.spec.hostPID
+        documentSelector:
+          path: kind
+          value: DaemonSet
+      - equal:
+          path: spec.template.spec.securityContext.runAsNonRoot
+          value: true
+        documentSelector:
+          path: kind
+          value: DaemonSet
+
+  - it: exposes only the identity metric
+    set:
+      gpuMetrics:
+        enabled: true
+    asserts:
+      - matchRegex:
+          path: data["exporter.py"]
+          pattern: 'gpu_nvml_device_identity_info'
+        documentSelector:
+          path: kind
+          value: ConfigMap
+      - notMatchRegex:
+          path: data["exporter.py"]
+          pattern: 'gpu_pod_nvml_|gpu_nvml_identity_(up|devices|errors)'
+        documentSelector:
+          path: kind
+          value: ConfigMap
+      - notMatchRegex:
+          path: data["exporter.py"]
+          pattern: 'kube_get_pods|nvml_processes|used_gpu_memory'
+        documentSelector:
+          path: kind
+          value: ConfigMap
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem
+          value: true
+        documentSelector:
+          path: kind
+          value: DaemonSet
+
+  - it: applies workload labels to the DaemonSet and pod labels to its pods
+    set:
+      gpuMetrics:
+        enabled: true
+        workloadLabels:
+          workload-label: workload
+        podLabels:
+          pod-label: pod
+      global:
+        workloadLabels:
+          global-workload-label: global
+        podLabels:
+          global-pod-label: global
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+        documentSelector:
+          path: kind
+          value: DaemonSet
+      - equal:
+          path: metadata.labels.workload-label
+          value: workload
+        documentSelector:
+          path: kind
+          value: DaemonSet
+      - equal:
+          path: metadata.labels.global-workload-label
+          value: global
+        documentSelector:
+          path: kind
+          value: DaemonSet
+      - notExists:
+          path: spec.template.metadata.labels.workload-label
+        documentSelector:
+          path: kind
+          value: DaemonSet
+      - equal:
+          path: spec.template.metadata.labels.pod-label
+          value: pod
+        documentSelector:
+          path: kind
+          value: DaemonSet
+      - equal:
+          path: spec.template.metadata.labels.global-pod-label
+          value: global
+        documentSelector:
+          path: kind
+          value: DaemonSet
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
+        documentSelector:
+          path: kind
+          value: DaemonSet
+
+  - it: supports standard pod configuration overrides
+    set:
+      gpuMetrics:
+        enabled: true
+        runtimeClassName: nvidia
+        imagePullSecrets:
+          - name: gpu-registry
+        podSecurityContext:
+          fsGroup: 2000
+        securityContext:
+          runAsUser: 2000
+      global:
+        nodeSelector:
+          gpu-pool: research
+    asserts:
+      - equal:
+          path: spec.template.spec.runtimeClassName
+          value: nvidia
+        documentSelector:
+          path: kind
+          value: DaemonSet
+      - equal:
+          path: spec.template.spec.imagePullSecrets[0].name
+          value: gpu-registry
+        documentSelector:
+          path: kind
+          value: DaemonSet
+      - equal:
+          path: spec.template.spec.securityContext.fsGroup
+          value: 2000
+        documentSelector:
+          path: kind
+          value: DaemonSet
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.runAsUser
+          value: 2000
+        documentSelector:
+          path: kind
+          value: DaemonSet
+      - equal:
+          path: spec.template.spec.nodeSelector.gpu-pool
+          value: research
+        documentSelector:
+          path: kind
+          value: DaemonSet
+      - equal:
+          path: spec.template.spec.nodeSelector["nvidia.com/gpu.present"]
+          value: "true"
+        documentSelector:
+          path: kind
+          value: DaemonSet
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: docker.io/library/python:3.13.13-slim-bookworm@sha256:355bfa66770995d7e9a0da4b3473b44d0cb451f6b56f5615ad9c39e3c4eca03f
+        documentSelector:
+          path: kind
+          value: DaemonSet

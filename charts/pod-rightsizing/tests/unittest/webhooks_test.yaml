@@ -1,0 +1,72 @@
+suite: Webhooks
+release:
+  name: ci
+  namespace: zesty-system
+templates:
+  - templates/webhook/validating-webhook.yaml
+  - templates/webhook/service.yaml
+  - templates/webhook/certificate.yaml
+  - templates/webhook/mutating-webhook.yaml
+tests:
+  - it: renders validating webhook with policy rules
+    template: templates/webhook/validating-webhook.yaml
+    values:
+      - ../render/fixtures/enabled-values.yaml
+    asserts:
+      - isKind:
+          of: ValidatingWebhookConfiguration
+      - equal:
+          path: webhooks[0].clientConfig.service.path
+          value: /validate-rightsizing-kompass-zesty-co-v1alpha1-policy
+      - equal:
+          path: webhooks[0].rules[0].apiGroups[0]
+          value: rightsizing.kompass.zesty.co
+      - equal:
+          path: webhooks[0].rules[0].resources[0]
+          value: policies
+      - equal:
+          path: webhooks[1].rules[0].apiGroups[0]
+          value: horizontalscaling.kompass.zesty.co
+      - equal:
+          path: webhooks[2].rules[0].resources[0]
+          value: virtualworkloads
+      - equal:
+          path: webhooks[3].clientConfig.service.path
+          value: /validate-kompass-zesty-co-v1alpha1-clustervirtualworkload
+      - equal:
+          path: webhooks[3].rules[0].resources[0]
+          value: clustervirtualworkloads
+
+  - it: renders webhook service when webhooks are enabled
+    template: templates/webhook/service.yaml
+    values:
+      - ../render/fixtures/enabled-values.yaml
+    asserts:
+      - isKind:
+          of: Service
+      - equal:
+          path: metadata.name
+          value: zesty-kompass-pod-rightsizing-webhook-service
+
+  - it: renders webhook certificate when webhooks are enabled
+    template: templates/webhook/certificate.yaml
+    values:
+      - ../render/fixtures/enabled-values.yaml
+    asserts:
+      - isKind:
+          of: Certificate
+      - equal:
+          path: metadata.name
+          value: kompass-pod-rightsizing-webhook-cert
+
+  - it: renders argo application mutating webhook when argoproj api is available
+    template: templates/webhook/mutating-webhook.yaml
+    values:
+      - ../render/fixtures/enabled-values.yaml
+    capabilities:
+      apiVersions:
+        - argoproj.io/v1alpha1
+    asserts:
+      - equal:
+          path: webhooks[6].name
+          value: mapplication.kb.io
