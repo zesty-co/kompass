@@ -364,8 +364,11 @@ victoriaMetricsCluster:
     replicaCount: 2
     resources:
       requests:
-        memory: "512Mi"
-        cpu: "0.5"
+        memory: "640Mi"
+        cpu: "530m"
+      limits:
+        memory: "896Mi"
+        cpu: "689m"
   vminsert:
     extraLabels:
       app.kubernetes.io/part-of: kompass
@@ -411,8 +414,11 @@ victoriaMetricsCluster:
     replicaCount: 2
     resources:
       requests:
-        memory: "512Mi"
-        cpu: "0.5"
+        memory: "300Mi"
+        cpu: "100m"
+      limits:
+        memory: "420Mi"
+        cpu: "130m"
   vmstorage:
     extraLabels:
       app.kubernetes.io/part-of: kompass
@@ -462,8 +468,11 @@ victoriaMetricsCluster:
     replicaCount: 2
     resources:
       requests:
-        memory: "3Gi"
-        cpu: "0.5"
+        memory: "1000Mi"
+        cpu: "500m"
+      limits:
+        memory: "1400Mi"
+        cpu: "650m"
   vmauth:
     resources:
       requests:
