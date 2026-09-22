@@ -1,0 +1,72 @@
+suite: PrecedenceAndMinResources
+release:
+  name: ci
+  namespace: zesty-system
+templates:
+  - templates/action-taker/action-taker.yaml
+  - templates/config/pilotConfigmap.yaml
+  - templates/recommendations-maker/recommendations-maker.yaml
+  - templates/metrics-exporter/metrics-exporter.yaml
+tests:
+  - it: applies global runtimeClassName to action-taker
+    values:
+      - ../render/fixtures/precedence-min-values.yaml
+    template: templates/action-taker/action-taker.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.runtimeClassName
+          value: runtime-global
+
+  - it: applies global runtimeClassName to recommendations-maker
+    values:
+      - ../render/fixtures/precedence-min-values.yaml
+    template: templates/recommendations-maker/recommendations-maker.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.runtimeClassName
+          value: runtime-global
+
+  - it: applies global runtimeClassName to metrics-exporter
+    values:
+      - ../render/fixtures/precedence-min-values.yaml
+    template: templates/metrics-exporter/metrics-exporter.yaml
+    asserts:
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.runtimeClassName
+          value: runtime-global
+
+  - it: clamps minimum resource requests for action-taker
+    values:
+      - ../render/fixtures/precedence-min-values.yaml
+    template: templates/action-taker/action-taker.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[1].resources.requests.cpu
+          value: 100m
+      - equal:
+          path: spec.template.spec.containers[1].resources.requests.memory
+          value: 128Mi
+
+  - it: clamps minimum resource requests for recommendations-maker
+    values:
+      - ../render/fixtures/precedence-min-values.yaml
+    template: templates/recommendations-maker/recommendations-maker.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.cpu
+          value: 200m
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.memory
+          value: 128Mi
+
+  - it: clamps minimum resource requests for metrics-exporter
+    values:
+      - ../render/fixtures/precedence-min-values.yaml
+    template: templates/metrics-exporter/metrics-exporter.yaml
+    asserts:
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].resources.requests.cpu
+          value: 100m
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].resources.requests.memory
+          value: 128Mi

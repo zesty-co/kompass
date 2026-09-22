@@ -1,0 +1,119 @@
+{{- $jvmEnabled := default false (and .Values.jvmMetrics .Values.jvmMetrics.enabled) }}
+{{- $gpuEnabled := default false (and .Values.gpuMetrics .Values.gpuMetrics.enabled) }}
+{{- if or $jvmEnabled $gpuEnabled }}
+{{- $bridgeDataExporterPodSecurityContext := include "pod-rightsizing.securityContext.pod" (dict "root" . "componentSecurityContext" .Values.bridgeDataExporter.podSecurityContext) | fromYaml }}
+{{- $bridgeDataExporterSecurityContext := include "pod-rightsizing.securityContext.container" (dict "root" . "componentSecurityContext" .Values.bridgeDataExporter.securityContext) | fromYaml }}
+{{- $bridgeDataExporterPodLabels := include "pod-rightsizing.podTemplateLabels" (dict "root" . "componentValues" .Values.bridgeDataExporter) | fromYaml }}
+{{- $bridgeDataExporterPodAnnotations := include "pod-rightsizing.podTemplateAnnotations" (dict "root" . "componentValues" .Values.bridgeDataExporter) | fromYaml }}
+{{- $bridgeDataExporterWorkloadLabels := include "pod-rightsizing.workloadLabels" (dict "root" . "componentValues" .Values.bridgeDataExporter) | fromYaml }}
+{{- $bridgeDataExporterAffinity := include "pod-rightsizing.affinity" (dict "root" . "componentValues" .Values.bridgeDataExporter) | fromYaml }}
+{{- $bridgeDataExporterImagePullSecrets := include "pod-rightsizing.imagePullSecrets" (dict "root" . "componentValues" .Values.bridgeDataExporter) | fromYamlArray }}
+{{- $bridgeDataExporterTopologySpreadConstraints := include "pod-rightsizing.topologySpreadConstraints" (dict "root" . "componentValues" .Values.bridgeDataExporter) | fromYamlArray }}
+{{- $bridgeDataExporterAutomountServiceAccountToken := include "pod-rightsizing.automountServiceAccountToken" (dict "root" . "componentValues" .Values.bridgeDataExporter) }}
+{{- $bridgeDataExporterRuntimeClassName := include "pod-rightsizing.runtimeClassName" (dict "root" . "componentValues" .Values.bridgeDataExporter) }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "bridge-data-exporter.name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ include "bridge-data-exporter.name" . }}
+    {{- include "pod-rightsizing.labels" . | nindent 4 }}
+    {{- with $bridgeDataExporterWorkloadLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  schedule: {{ .Values.bridgeDataExporter.schedule | default "*/15 * * * *" | quote }}
+  concurrencyPolicy: Forbid
+  failedJobsHistoryLimit: 1
+  successfulJobsHistoryLimit: 1
+  jobTemplate:
+    {{- with $bridgeDataExporterWorkloadLabels }}
+    metadata:
+      labels:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    spec:
+      backoffLimit: 1
+      template:
+        metadata:
+          {{- with $bridgeDataExporterPodAnnotations }}
+          annotations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          labels:
+            app: {{ include "bridge-data-exporter.name" . }}
+            {{- include "pod-rightsizing.labels" . | nindent 12 }}
+            {{- with $bridgeDataExporterPodLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        spec:
+          {{- if $bridgeDataExporterRuntimeClassName }}
+          runtimeClassName: {{ $bridgeDataExporterRuntimeClassName }}
+          {{- end }}
+          {{- with $bridgeDataExporterPodSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- if .Values.global.nodeSelector }}
+          nodeSelector:
+          {{- toYaml .Values.global.nodeSelector | nindent 12 }}
+          {{- end }}
+          {{- if .Values.global.tolerations }}
+          tolerations:
+          {{- toYaml .Values.global.tolerations | nindent 12 }}
+          {{- end }}
+          {{- with $bridgeDataExporterTopologySpreadConstraints }}
+          topologySpreadConstraints:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $bridgeDataExporterAffinity }}
+          affinity:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          containers:
+            - name: bridge-data-exporter
+              image: {{ .Values.registry }}{{ .Values.bridgeDataExporter.image.name }}:{{ .Values.bridgeDataExporter.image.tag  | default .Chart.AppVersion }}
+              imagePullPolicy: {{ .Values.imagePullPolicy | default "Always" }}
+              {{- if .Values.bridgeDataExporter.image.args }}
+              args:
+                {{- toYaml .Values.bridgeDataExporter.image.args | nindent 16 }}
+              {{- end }}
+              env:
+                - name: CM_NAMESPACE
+                  value: {{ .Release.Namespace }}
+                - name: VM_URL
+                  value: {{ include "pod-rightsizing.victoriaMetrics.url" . | quote }}
+                - name: JVM_ENABLED
+                  value: {{ $jvmEnabled | quote }}
+                - name: GPU_ENABLED
+                  value: {{ $gpuEnabled | quote }}
+                - name: BRIDGE_HUB_ADDRESS
+                  value: {{ .Values.bridgeActor.hubAddress | quote }}
+                - name: INSIGHTS_SECRET_NAME
+                  value: {{ .Values.bridgeActor.identitySecretName | quote }}
+                - name: POD_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
+                - name: EXPORT_WINDOW
+                  value: {{ .Values.bridgeDataExporter.exportWindow | quote }}
+                - name: EXPORT_TIMEOUT
+                  value: {{ .Values.bridgeDataExporter.exportTimeout | quote }}
+                - name: BACKFILL_MAX_WINDOWS_PER_RUN
+                  value: {{ .Values.bridgeDataExporter.maxBackfillWindowsPerRun | quote }}
+              {{- with $bridgeDataExporterSecurityContext }}
+              securityContext:
+                {{- toYaml . | nindent 16 }}
+              {{- end }}
+              {{- include "pod-rightsizing.bridgeDataExporter.resources" . | nindent 14 }}
+          restartPolicy: Never
+          {{- with $bridgeDataExporterImagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          serviceAccountName: {{ include "pod-rightsizing.bridgeDataExporterServiceAccountName" . }}
+          {{- if ne $bridgeDataExporterAutomountServiceAccountToken "" }}
+          automountServiceAccountToken: {{ $bridgeDataExporterAutomountServiceAccountToken }}
+          {{- end }}
+{{- end }}

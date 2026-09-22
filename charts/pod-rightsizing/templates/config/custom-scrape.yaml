@@ -1,0 +1,20 @@
+{{- $customScrapeConfigs := list }}
+{{- range $path, $_ := .Files.Glob "custom-scrape-configs/*.{yaml,yml}" }}
+{{- $content := tpl ($.Files.Get $path) $ }}
+{{- if ne (trim $content) "" }}
+{{- $customScrapeConfigs = append $customScrapeConfigs (dict "path" $path "content" $content) }}
+{{- end }}
+{{- end }}
+{{- if $customScrapeConfigs }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  # do not change this name, it is mounted by the global values file
+  name: kompass-vmagent-rightsizing-custom-scrape-config
+  namespace: {{ .Release.Namespace }}
+data:
+  {{- range $config := $customScrapeConfigs }}
+  {{ base $config.path }}: |-
+{{ $config.content | nindent 4 }}
+  {{- end }}
+{{- end }}

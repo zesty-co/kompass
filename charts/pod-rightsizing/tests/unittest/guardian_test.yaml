@@ -1,0 +1,408 @@
+suite: Guardian
+release:
+  name: ci
+  namespace: zesty-system
+templates:
+  - templates/config/pilotConfigmap.yaml
+  - templates/guardian/guardian.yaml
+  - templates/guardian/service_account.yaml
+  - templates/guardian/configmap.yaml
+  - templates/guardian/role.yaml
+  - templates/guardian/role_binding.yaml
+  - templates/guardian/cluster_role.yaml
+  - templates/guardian/cluster_role_binding.yaml
+tests:
+  - it: renders no Deployment when Kompass workload rightsizing is disabled
+    template: templates/guardian/guardian.yaml
+    asserts:
+       - hasDocuments:
+           count: 0
+
+  - it: renders no Guardian RBAC when Guardian is disabled
+    template: templates/guardian/role.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: renders no Guardian node proxy RBAC when Guardian is disabled
+    template: templates/guardian/cluster_role.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: renders no Guardian RBAC bindings when Guardian is disabled
+    template: templates/guardian/role_binding.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: renders no Guardian node proxy binding when Guardian is disabled
+    template: templates/guardian/cluster_role_binding.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: renders no ServiceAccount when Kompass workload rightsizing is disabled
+    template: templates/guardian/service_account.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: renders no static ConfigMap when Kompass workload rightsizing is disabled
+    template: templates/guardian/configmap.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: renders Guardian independently of the rightsizing switches
+    template: templates/guardian/guardian.yaml
+    set:
+      enabled: false
+      config.kompassWorkloadsRightsizing.enabled: false
+      guardian.enabled: true
+    asserts:
+      - isKind:
+          of: Deployment
+      - equal:
+          path: spec.strategy.type
+          value: Recreate
+      - equal:
+          path: metadata.name
+          value: kompass-guardian
+      - equal:
+          path: metadata.namespace
+          value: zesty-system
+      - equal:
+          path: spec.template.spec.serviceAccountName
+          value: zesty-kompass-guardian
+
+  - it: renders the dedicated ServiceAccount
+    template: templates/guardian/service_account.yaml
+    set:
+      guardian.enabled: true
+    asserts:
+      - isKind:
+          of: ServiceAccount
+      - equal:
+          path: metadata.name
+          value: zesty-kompass-guardian
+      - equal:
+          path: metadata.namespace
+          value: zesty-system
+
+  - it: applies a configured ServiceAccount name consistently
+    template: templates/guardian/guardian.yaml
+    set:
+      guardian.enabled: true
+      guardianServiceAccount.name: custom-guardian
+    asserts:
+      - equal:
+          path: spec.template.spec.serviceAccountName
+          value: custom-guardian
+
+  - it: grants Guardian only namespaced operational permissions
+    template: templates/guardian/role.yaml
+    set:
+      guardian.enabled: true
+    asserts:
+      - isKind:
+          of: Role
+      - equal:
+          path: metadata.namespace
+          value: zesty-system
+      - equal:
+          path: rules
+          value:
+            - apiGroups: [""]
+              resources: ["configmaps"]
+              verbs: ["create", "get", "list", "update", "watch"]
+            - apiGroups: [""]
+              resources: ["secrets"]
+              resourceNames: ["kompass-insights-secret"]
+              verbs: ["list", "watch"]
+            - apiGroups: [""]
+              resources: ["events"]
+              verbs: ["create", "patch"]
+            - apiGroups: [""]
+              resources: ["pods"]
+              verbs: ["get", "list", "watch"]
+            - apiGroups: ["apps"]
+              resources: ["deployments", "statefulsets", "daemonsets"]
+              verbs: ["get", "list", "update", "watch"]
+            - apiGroups: ["apps"]
+              resources: ["replicasets"]
+              verbs: ["get", "list", "watch"]
+            - apiGroups: ["coordination.k8s.io"]
+              resources: ["leases"]
+              verbs: ["create"]
+            - apiGroups: ["coordination.k8s.io"]
+              resources: ["leases"]
+              resourceNames:
+                - kompass-guardian-leader-election
+                - recommendation-maker-lock
+                - action-taker-lock
+              verbs: ["get", "update"]
+            - apiGroups: ["rightsizing.kompass.zesty.co"]
+              resources: ["actions"]
+              verbs: ["get", "update"]
+            - apiGroups: ["rightsizing.kompass.zesty.co"]
+              resources: ["actions/status"]
+              verbs: ["update"]
+            - apiGroups: ["*"]
+              resources: ["*"]
+              verbs: ["get"]
+
+  - it: binds the namespaced Guardian role to its dedicated ServiceAccount
+    template: templates/guardian/role_binding.yaml
+    set:
+      guardian.enabled: true
+    asserts:
+      - isKind:
+          of: RoleBinding
+      - equal:
+          path: metadata.namespace
+          value: zesty-system
+      - equal:
+          path: roleRef
+          value:
+            apiGroup: rbac.authorization.k8s.io
+            kind: Role
+            name: kompass-guardian-role
+      - equal:
+          path: subjects[0]
+          value:
+            kind: ServiceAccount
+            name: zesty-kompass-guardian
+            namespace: zesty-system
+
+  - it: grants Guardian only node-proxy cluster access
+    template: templates/guardian/cluster_role.yaml
+    set:
+      guardian.enabled: true
+    asserts:
+      - isKind:
+          of: ClusterRole
+      - equal:
+          path: rules
+          value:
+            - apiGroups: [""]
+              resources: ["nodes/proxy"]
+              verbs: ["get"]
+
+  - it: binds the Guardian cluster role to the Guardian ServiceAccount
+    template: templates/guardian/cluster_role_binding.yaml
+    set:
+      guardian.enabled: true
+    asserts:
+      - isKind:
+          of: ClusterRoleBinding
+      - equal:
+          path: roleRef
+          value:
+            apiGroup: rbac.authorization.k8s.io
+            kind: ClusterRole
+            name: kompass-guardian-cluster-role
+      - equal:
+          path: subjects[0]
+          value:
+            kind: ServiceAccount
+            name: zesty-kompass-guardian
+            namespace: zesty-system
+
+  - it: renders only the Guardian static configuration defaults
+    template: templates/guardian/configmap.yaml
+    set:
+      guardian.enabled: true
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: ConfigMap
+      - equal:
+          path: metadata.name
+          value: kompass-guardian-config
+      - equal:
+          path: data
+          value:
+            cadvisorScrapeInterval: "15s"
+            cadvisorMaxConcurrentScrapes: "4"
+            cpuThrottlingRatio: "0.5"
+            cpuThrottlingRate: "0.1"
+            cpuThrottlingConsecutiveWindows: "4"
+            cpuRequestGrowthFactor: "1.5"
+            memoryRequestGrowthFactor: "1.5"
+            cpuRequestToLimitFactor: "1.25"
+            memoryRequestToLimitFactor: "1.25"
+            stabilizationWindow: "10m"
+            recoveryApplyTimeout: "5m"
+
+  - it: mounts the shared and Guardian static configuration domains
+    template: templates/guardian/guardian.yaml
+    set:
+      guardian.enabled: true
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[0].name
+          value: CM_NAMESPACE
+      - equal:
+          path: spec.template.spec.containers[0].env[0].value
+          value: zesty-system
+      - equal:
+          path: spec.template.spec.containers[0].env[1].name
+          value: POD_NAMESPACE
+      - equal:
+          path: spec.template.spec.containers[0].env[1].valueFrom.fieldRef.fieldPath
+          value: metadata.namespace
+      - equal:
+          path: spec.template.spec.containers[0].env[2]
+          value:
+            name: APP_CONFIG_MOUNTED_PATH
+            value: /etc/kompass-rightsizing/config
+      - equal:
+          path: spec.template.spec.containers[0].env[3]
+          value:
+            name: GUARDIAN_CONFIG_MOUNTED_PATH
+            value: /etc/kompass-guardian/config
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[0]
+          value:
+            name: rightsizing-config
+            mountPath: /etc/kompass-rightsizing/config
+            readOnly: true
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[1]
+          value:
+            name: guardian-config
+            mountPath: /etc/kompass-guardian/config
+            readOnly: true
+      - equal:
+          path: spec.template.spec.volumes[0].configMap.name
+          value: kompass-rightsizing-config
+      - equal:
+          path: spec.template.spec.volumes[1].configMap.name
+          value: kompass-guardian-config
+
+  - it: configures Guardian Coralogix logging from global values
+    template: templates/guardian/guardian.yaml
+    set:
+      guardian.enabled: true
+      global.cxLogging.enabled: true
+      global.cxLogging.apiKeySecret.name: cx-secret
+      global.cxLogging.apiKeySecret.key: api-key
+      global.cxLogging.clusterName: cluster-one
+      global.cxLogging.metricsUrl: https://metrics.example.test
+      global.cxLogging.ingressUrl: https://logs.example.test
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[4]
+          value:
+            name: CX_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: cx-secret
+                key: api-key
+                optional: true
+      - equal:
+          path: spec.template.spec.containers[0].env[5]
+          value:
+            name: CX_CLUSTER_NAME
+            value: cluster-one
+      - equal:
+          path: spec.template.spec.containers[0].env[7]
+          value:
+            name: CORALOGIX_INGRESS_URL
+            value: https://logs.example.test
+
+  - it: supports the shared static ConfigMap name override
+    template: templates/guardian/guardian.yaml
+    set:
+      guardian.enabled: true
+      podRightsizingConfig.name: custom-rightsizing-config
+    asserts:
+      - equal:
+          path: spec.template.spec.volumes[0].configMap.name
+          value: custom-rightsizing-config
+
+  - it: renders the Guardian command and health endpoints
+    template: templates/guardian/guardian.yaml
+    set:
+      guardian.enabled: true
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].command[0]
+          value: /guardian
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet
+          value:
+            path: /healthz
+            port: 8081
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet
+          value:
+            path: /readyz
+            port: 8081
+
+  - it: defaults resources to the Action Taker minimum requests
+    template: templates/guardian/guardian.yaml
+    set:
+      guardian.enabled: true
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.cpu
+          value: 100m
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.memory
+          value: 128Mi
+      - notExists:
+          path: spec.template.spec.containers[0].resources.limits
+
+  - it: clamps requests to the Action Taker minimums
+    template: templates/guardian/guardian.yaml
+    set:
+      guardian.enabled: true
+      guardian.resources.requests.cpu: 1m
+      guardian.resources.requests.memory: 1Mi
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.cpu
+          value: 100m
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.memory
+          value: 128Mi
+
+  - it: preserves requests above the minimum and optional limits
+    template: templates/guardian/guardian.yaml
+    set:
+      guardian.enabled: true
+      guardian.resources.requests.cpu: 250m
+      guardian.resources.requests.memory: 256Mi
+      guardian.resources.limits.cpu: 500m
+      guardian.resources.limits.memory: 512Mi
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.cpu
+          value: 250m
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.memory
+          value: 256Mi
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.cpu
+          value: 500m
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.memory
+          value: 512Mi
+
+  - it: applies global runtime and security configuration
+    template: templates/guardian/guardian.yaml
+    set:
+      guardian.enabled: true
+      guardian.runtimeClassName: component-runtime
+      global.runtimeClassName: global-runtime
+      global.securityContext.readOnlyRootFilesystem: true
+    asserts:
+      - equal:
+          path: spec.template.spec.runtimeClassName
+          value: global-runtime
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem
+          value: true

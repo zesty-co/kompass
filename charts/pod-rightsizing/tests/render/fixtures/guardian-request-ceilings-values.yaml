@@ -1,0 +1,18 @@
+global:
+  guardian:
+    requestCeilings:
+      actionTaker:
+        kube-rbac-proxy:
+          cpuRequest: "8m"
+          memoryRequest: 96Mi
+        action-taker:
+          cpuRequest: "9000m"
+          memoryRequest: 21Gi
+      recommendationsMaker:
+        recommendations-maker:
+          cpuRequest: "4500m"
+          memoryRequest: 20Gi
+      gpuMetrics:
+        exporter:
+          cpuRequest: 30m
+          memoryRequest: 48Mi

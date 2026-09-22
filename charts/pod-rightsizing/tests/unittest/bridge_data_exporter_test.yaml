@@ -1,0 +1,229 @@
+suite: BridgeDataExporter
+release:
+  name: ci
+  namespace: zesty-system
+templates:
+  - templates/bridge-data-exporter/bridge-data-exporter.yaml
+  - templates/bridge-data-exporter/role.yaml
+  - templates/bridge-data-exporter/role_binding.yaml
+  - templates/bridge-data-exporter/cluster_role.yaml
+  - templates/bridge-data-exporter/cluster_role_binding.yaml
+tests:
+  - it: renders the JVM exporter schedule and environment
+    template: templates/bridge-data-exporter/bridge-data-exporter.yaml
+    set:
+      jvmMetrics:
+        enabled: true
+    asserts:
+      - isKind:
+          of: CronJob
+      - equal:
+          path: spec.schedule
+          value: "*/15 * * * *"
+      - equal:
+          path: spec.concurrencyPolicy
+          value: Forbid
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: JVM_ENABLED
+            value: "true"
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: GPU_ENABLED
+            value: "false"
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: EXPORT_WINDOW
+            value: 15m
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: EXPORT_TIMEOUT
+            value: 10m
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: BACKFILL_MAX_WINDOWS_PER_RUN
+            value: "672"
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: INSIGHTS_SECRET_NAME
+            value: kompass-insights-secret
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: POD_NAME
+        not: true
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: POD_IP
+        not: true
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: BRIDGE_ACTOR_PORT
+        not: true
+
+  - it: supports exporter and bridge overrides
+    template: templates/bridge-data-exporter/bridge-data-exporter.yaml
+    set:
+      jvmMetrics:
+        enabled: true
+      bridgeDataExporter:
+        schedule: "15 * * * *"
+        exportWindow: 2h
+        exportTimeout: 20m
+        maxBackfillWindowsPerRun: 12
+      bridgeActor:
+        hubAddress: custom-bridge:50051
+        identitySecretName: custom-insights
+    asserts:
+      - equal:
+          path: spec.schedule
+          value: "15 * * * *"
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: BRIDGE_HUB_ADDRESS
+            value: custom-bridge:50051
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: INSIGHTS_SECRET_NAME
+            value: custom-insights
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: EXPORT_WINDOW
+            value: 2h
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: EXPORT_TIMEOUT
+            value: 20m
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: BACKFILL_MAX_WINDOWS_PER_RUN
+            value: "12"
+
+  - it: grants identity and backfill access
+    template: templates/bridge-data-exporter/role.yaml
+    set:
+      jvmMetrics:
+        enabled: true
+      bridgeActor:
+        identitySecretName: custom-insights
+    asserts:
+      - isKind:
+          of: Role
+      - equal:
+          path: metadata.namespace
+          value: zesty-system
+      - equal:
+          path: rules[0].resources
+          value:
+            - secrets
+      - equal:
+          path: rules[0].resourceNames
+          value:
+            - custom-insights
+      - equal:
+          path: rules[0].verbs
+          value:
+            - get
+      - equal:
+          path: rules[1].resources
+          value:
+            - configmaps
+      - equal:
+          path: rules[1].verbs
+          value:
+            - get
+            - create
+            - update
+
+  - it: binds the namespaced identity role
+    template: templates/bridge-data-exporter/role_binding.yaml
+    set:
+      jvmMetrics:
+        enabled: true
+    asserts:
+      - isKind:
+          of: RoleBinding
+      - equal:
+          path: roleRef.kind
+          value: Role
+      - equal:
+          path: subjects[0].namespace
+          value: zesty-system
+
+  - it: renders GPU exporter and its inventory permissions without JVM
+    template: templates/bridge-data-exporter/bridge-data-exporter.yaml
+    set:
+      gpuMetrics:
+        enabled: true
+    asserts:
+      - isKind:
+          of: CronJob
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: JVM_ENABLED
+            value: "false"
+      - contains:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env
+          content:
+            name: GPU_ENABLED
+            value: "true"
+
+  - it: grants cluster reads required by GPU inventory
+    template: templates/bridge-data-exporter/cluster_role.yaml
+    set:
+      gpuMetrics:
+        enabled: true
+    asserts:
+      - isKind:
+          of: ClusterRole
+      - equal:
+          path: rules[0].resources
+          value:
+            - nodes
+            - pods
+      - equal:
+          path: rules[1].resources
+          value:
+            - configmaps
+      - equal:
+          path: rules[2].resources
+          value:
+            - daemonsets
+      - notExists:
+          path: rules[3]
+
+  - it: binds GPU inventory cluster role to exporter service account
+    template: templates/bridge-data-exporter/cluster_role_binding.yaml
+    set:
+      gpuMetrics:
+        enabled: true
+    asserts:
+      - isKind:
+          of: ClusterRoleBinding
+      - equal:
+          path: roleRef.kind
+          value: ClusterRole
+      - equal:
+          path: subjects[0].namespace
+          value: zesty-system

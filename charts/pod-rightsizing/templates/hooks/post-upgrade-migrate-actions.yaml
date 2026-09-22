@@ -1,0 +1,229 @@
+{{- $hooksPodSecurityContext := include "pod-rightsizing.securityContext.pod" (dict "root" . "componentSecurityContext" dict) | fromYaml }}
+{{- $hooksSecurityContext := include "pod-rightsizing.securityContext.container" (dict "root" . "componentSecurityContext" dict) | fromYaml }}
+{{- $hookImagePullSecrets := include "pod-rightsizing.hookImagePullSecrets" . | fromYamlArray -}}
+{{- $hooksWorkloadLabels := include "pod-rightsizing.workloadLabels" (dict "root" . "componentValues" .Values.hooks) | fromYaml }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: action-migration-post-upgrade
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-upgrade
+    "helm.sh/hook-weight": "10"
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: action-migration-post-upgrade
+  annotations:
+    "helm.sh/hook": post-upgrade
+    "helm.sh/hook-weight": "10"
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
+rules:
+- apiGroups: ["kompass.zesty.co"]
+  resources: ["actions"]
+  verbs: ["get", "list", "patch", "update"]
+- apiGroups: ["kompass.zesty.co"]
+  resources: ["actions/status"]
+  verbs: ["get", "patch", "update"]
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "update", "patch", "delete"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "statefulsets", "daemonsets", "replicasets"]
+  verbs: ["get"]
+- apiGroups: ["batch"]
+  resources: ["jobs", "cronjobs"]
+  verbs: ["get"]
+- apiGroups: ["argoproj.io"]
+  resources: ["rollouts"]
+  verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: action-migration-post-upgrade
+  annotations:
+    "helm.sh/hook": post-upgrade
+    "helm.sh/hook-weight": "10"
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
+subjects:
+- kind: ServiceAccount
+  name: action-migration-post-upgrade
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: action-migration-post-upgrade
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: action-migration-post-upgrade
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-upgrade
+    "helm.sh/hook-weight": "20"
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed,before-hook-creation
+  {{- with $hooksWorkloadLabels }}
+  labels:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      name: action-migration-post-upgrade
+      labels:
+        app.kubernetes.io/name: action-migration-post-upgrade
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      serviceAccountName: action-migration-post-upgrade
+      {{- with $hookImagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.global.nodeSelector }}
+      nodeSelector:
+      {{- toYaml .Values.global.nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if .Values.global.tolerations }}
+      tolerations:
+      {{- toYaml .Values.global.tolerations | nindent 8 }}
+      {{- end }}
+      {{- with $hooksPodSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: action-migration-post-upgrade
+        image: {{ .Values.hooks.image.registry }}/{{ .Values.hooks.image.repository }}:{{ .Values.hooks.image.tag }}
+        {{- with $hooksSecurityContext }}
+        securityContext:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        command:
+        - /bin/bash
+        - -c
+        - |
+          set -euo pipefail
+
+          NAMESPACE="{{ .Release.Namespace }}"
+          MIGRATION_CM_NAME="action-migration-initial-values"
+          MANAGED_CM_NAME="{{ include "kompass-pod-rightsizing-initial-values-config.name" . }}"
+
+          echo "Post-upgrade: Migrating data from $MIGRATION_CM_NAME to $MANAGED_CM_NAME"
+
+          # Hash the key using FNV-32a
+          hash_string() {
+            local input="$1"
+            local hash=2166136261
+            local prime=16777619
+            for (( i=0; i<${#input}; i++ )); do
+              byte=$(printf '%d' "'${input:$i:1}")
+              hash=$(( (hash ^ byte) * prime ))
+              hash=$(( hash & 0xFFFFFFFF ))
+            done
+            printf "%08x" $hash
+          }
+
+          # Check if migration ConfigMap exists
+          if ! kubectl get configmap "$MIGRATION_CM_NAME" -n "$NAMESPACE" &>/dev/null; then
+            echo "Migration ConfigMap $MIGRATION_CM_NAME not found, nothing to migrate"
+            exit 0
+          fi
+
+          # Get migration ConfigMap data
+          MIGRATION_DATA=$(kubectl get configmap "$MIGRATION_CM_NAME" -n "$NAMESPACE" -o json | jq -r '.data // {}')
+          
+          if [[ "$MIGRATION_DATA" == "{}" ]]; then
+            echo "Migration ConfigMap is empty, nothing to migrate"
+            exit 0
+          fi
+
+          echo "Found migration data, processing..."
+
+          # Check if managed initial values ConfigMap exists
+          if ! kubectl get configmap "$MANAGED_CM_NAME" -n "$NAMESPACE" &>/dev/null; then
+            echo "Managed initial values ConfigMap $MANAGED_CM_NAME does not exist, exiting"
+            exit 0
+          fi
+
+          # Copy each key from migration CM to managed CM
+          echo "$MIGRATION_DATA" | jq -r 'keys[]' | while read -r key; do
+            value=$(echo "$MIGRATION_DATA" | jq -r --arg k "$key" '.[$k]')
+            echo "  Migrating key: $key"
+            
+            # Update managed ConfigMap with the key-value pair
+            kubectl get configmap "$MANAGED_CM_NAME" -n "$NAMESPACE" -o json | \
+              jq --arg key "$key" --arg value "$value" '.data[$key] = $value' | \
+              kubectl apply -f -
+          done
+
+          echo "ConfigMap migration completed. Now updating Action statuses..."
+
+          # Get all Actions to update their status
+          ACTIONS_JSON=$(kubectl get actions.kompass.zesty.co --all-namespaces -o json || echo '{"items": []}')
+          
+          # Process each Action to update status
+          echo "$ACTIONS_JSON" | jq -c '.items[]' | while read -r action; do
+            ACTION_NAME=$(echo "$action" | jq -r '.metadata.name')
+            ACTION_NAMESPACE=$(echo "$action" | jq -r '.metadata.namespace')
+            WORKLOAD_NAME=$(echo "$action" | jq -r '.spec.workload.name')
+            WORKLOAD_KIND=$(echo "$action" | jq -r '.spec.workload.kind')
+            
+            echo "Processing Action: $ACTION_NAMESPACE/$ACTION_NAME (Workload: $WORKLOAD_KIND/$WORKLOAD_NAME)"
+            
+            # Get the workload to extract UID
+            WORKLOAD_JSON=$(kubectl get "$WORKLOAD_KIND" "$WORKLOAD_NAME" -n "$ACTION_NAMESPACE" -o json 2>/dev/null || echo "")
+            
+            if [[ -z "$WORKLOAD_JSON" || "$WORKLOAD_JSON" == "" ]]; then
+              echo "  Warning: Workload $WORKLOAD_KIND/$WORKLOAD_NAME not found, skipping"
+              continue
+            fi
+            
+            WORKLOAD_UID=$(echo "$WORKLOAD_JSON" | jq -r '.metadata.uid')
+            
+            # Create the key to lookup in migration ConfigMap: "namespace;name;kind;uid"
+            WORKLOAD_KIND_LOWER=$(echo "$WORKLOAD_KIND" | tr '[:upper:]' '[:lower:]')
+            RESOURCE_ID="${ACTION_NAMESPACE};${WORKLOAD_NAME};${WORKLOAD_KIND_LOWER}"
+            CM_KEY="${RESOURCE_ID};${WORKLOAD_UID}"
+
+            HASHED_KEY=$(hash_string "$CM_KEY")
+            
+            # Get initial values from migration ConfigMap (as JSON string)
+            CONTAINERS_INITIAL_VALUES_STR=$(echo "$MIGRATION_DATA" | jq -r --arg k "$HASHED_KEY" '.[$k] // ""')
+            
+            if [[ -z "$CONTAINERS_INITIAL_VALUES_STR" || "$CONTAINERS_INITIAL_VALUES_STR" == "null" ]]; then
+              echo "  No initial values found in migration ConfigMap for key: $HASHED_KEY"
+              continue
+            fi
+            
+            # Parse the JSON string and transform field names to uppercase (CPU, Memory)
+            CONTAINERS_ARRAY=$(echo "$CONTAINERS_INITIAL_VALUES_STR" | jq -c 'map({name: .name, CPU: .cpu, Memory: .memory})')
+            
+            echo "  Updating Action status with workloadUID: $WORKLOAD_UID"
+            echo "  ContainersInitialValues: $CONTAINERS_ARRAY"
+            
+            # Patch Action status with workloadUID and containersInitialValues
+            # containersInitialValues must be an array of {name, CPU, Memory}
+            kubectl patch action "$ACTION_NAME" -n "$ACTION_NAMESPACE" --type=merge --subresource=status -p "{
+              \"status\": {
+                \"workloadUID\": \"$WORKLOAD_UID\",
+                \"containersInitialValues\": $CONTAINERS_ARRAY
+              }
+            }"
+            
+            echo "  Action status updated successfully"
+          done
+
+          echo "Post-upgrade migration completed successfully"
+          
+          # Delete the migration ConfigMap as it's no longer needed
+          echo "Deleting migration ConfigMap $MIGRATION_CM_NAME..."
+          kubectl delete configmap "$MIGRATION_CM_NAME" -n "$NAMESPACE" --ignore-not-found=true
+          echo "Migration ConfigMap deleted"
+      restartPolicy: Never
+  backoffLimit: 0
