@@ -1,0 +1,31 @@
+{{- if or (and .Values.global.cxLogging .Values.global.cxLogging.enabled) .Values.cxLogging.enabled }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: metrics-exporter-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - "nodes/proxy"
+  verbs:
+  - "get"
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  resourceNames:
+  - kompass-insights-secret
+  verbs:
+  - get
+  - list
+  - watch
+{{- end }}
+  

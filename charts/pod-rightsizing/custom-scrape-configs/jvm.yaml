@@ -1,0 +1,411 @@
+{{- $scrapeConfigs := list }}
+{{- $jvmMetrics := .Values.jvmMetrics | default dict }}
+{{- $autoDiscovery := $jvmMetrics.autoDiscovery | default dict }}
+{{- if $jvmMetrics.enabled }}
+{{- if not $jvmMetrics.scrapeConfigs }}
+{{- if not ($autoDiscovery.enabled | default false) }}
+{{- fail "jvmMetrics.scrapeConfigs must be defined when jvmMetrics.autoDiscovery.enabled is false" }}
+{{- end }}
+{{- else }}
+{{- range $jvmMetrics.scrapeConfigs }}
+{{- $scrapeConfigs = append $scrapeConfigs . }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- if and ($jvmMetrics.enabled | default false) ($autoDiscovery.enabled | default false) }}
+{{- $autoDiscoveryScrapeConfig := dict "annotations" (dict "kompass.zesty.co/jvm-auto-discovered" "true") }}
+{{- $scrapeConfigs = append $scrapeConfigs $autoDiscoveryScrapeConfig }}
+{{- end }}
+{{- if $scrapeConfigs }}
+{{- range $index, $scrapeConfig := $scrapeConfigs }}
+{{- $labelKeys := keys ($scrapeConfig.labels | default dict) | sortAlpha }}
+{{- $annotationKeys := keys ($scrapeConfig.annotations | default dict) | sortAlpha }}
+{{- if not (or $labelKeys $annotationKeys) }}
+{{- printf "jvmMetrics.scrapeConfigs[%d] must define labels or annotations" $index | fail }}
+{{- end }}
+{{- $namespaces := $scrapeConfig.namespaces | default list }}
+{{- $namespacesToExclude := $scrapeConfig.namespacesToExclude | default list }}
+{{- if and (hasKey $scrapeConfig "namespaces") (empty $scrapeConfig.namespaces) }}
+{{- printf "jvmMetrics.scrapeConfigs[%d].namespaces cannot be empty" $index | fail }}
+{{- end }}
+{{- if and (hasKey $scrapeConfig "namespaces") (not (kindIs "slice" $scrapeConfig.namespaces)) }}
+{{- printf "jvmMetrics.scrapeConfigs[%d].namespaces must be a list" $index | fail }}
+{{- end }}
+{{- if and (hasKey $scrapeConfig "namespacesToExclude") (empty $scrapeConfig.namespacesToExclude) }}
+{{- printf "jvmMetrics.scrapeConfigs[%d].namespacesToExclude cannot be empty" $index | fail }}
+{{- end }}
+{{- if and (hasKey $scrapeConfig "namespacesToExclude") (not (kindIs "slice" $scrapeConfig.namespacesToExclude)) }}
+{{- printf "jvmMetrics.scrapeConfigs[%d].namespacesToExclude must be a list" $index | fail }}
+{{- end }}
+{{- if and $namespaces $namespacesToExclude }}
+{{- printf "jvmMetrics.scrapeConfigs[%d] cannot set both namespaces and namespacesToExclude" $index | fail }}
+{{- end }}
+{{- if and (hasKey $scrapeConfig "scrapeInterval") (empty $scrapeConfig.scrapeInterval) }}
+{{- printf "jvmMetrics.scrapeConfigs[%d].scrapeInterval cannot be empty" $index | fail }}
+{{- end }}
+{{- if and (hasKey $scrapeConfig "path") (empty $scrapeConfig.path) }}
+{{- printf "jvmMetrics.scrapeConfigs[%d].path cannot be empty" $index | fail }}
+{{- end }}
+{{- if hasKey $scrapeConfig "scheme" }}
+{{- if empty $scrapeConfig.scheme }}
+{{- printf "jvmMetrics.scrapeConfigs[%d].scheme cannot be empty" $index | fail }}
+{{- else if not (or (eq $scrapeConfig.scheme "http") (eq $scrapeConfig.scheme "https")) }}
+{{- printf "jvmMetrics.scrapeConfigs[%d].scheme must be either http or https" $index | fail }}
+{{- end }}
+{{- end }}
+{{- $excludedNamespacePatterns := list }}
+{{- range $namespacesToExclude }}
+{{- $excludedNamespacePatterns = append $excludedNamespacePatterns (regexQuoteMeta (toString .)) }}
+{{- end }}
+{{- $globalClusterName := "" }}
+{{- if and $.Values.global $.Values.global.cxLogging $.Values.global.cxLogging.clusterName }}
+{{- $globalClusterName = $.Values.global.cxLogging.clusterName }}
+{{- end }}
+{{- $chartClusterName := "" }}
+{{- if and $.Values.cxLogging $.Values.cxLogging.clusterName }}
+{{- $chartClusterName = $.Values.cxLogging.clusterName }}
+{{- end }}
+{{- $jvmClusterName := $scrapeConfig.clusterName | default $globalClusterName | default $chartClusterName }}
+- job_name: jvm-job-{{ add $index 1 }}
+  {{- with $scrapeConfig.scrapeInterval }}
+  scrape_interval: {{ . }}
+  {{- end }}
+  {{- with $scrapeConfig.path }}
+  metrics_path: {{ . }}
+  {{- end }}
+  {{- with $scrapeConfig.scheme }}
+  scheme: {{ . }}
+  {{- end }}
+  kubernetes_sd_configs:
+    - role: pod
+      {{- with $namespaces }}
+      namespaces:
+        names:
+          {{- range . }}
+          - {{ . | quote }}
+          {{- end }}
+      {{- end }}
+  relabel_configs:
+    - source_labels:
+        {{- range $key := $labelKeys }}
+        - __meta_kubernetes_pod_label_{{ $key | replace "/" "_" | replace "." "_" | replace "-" "_" }}
+        {{- end }}
+        {{- range $key := $annotationKeys }}
+        - __meta_kubernetes_pod_annotation_{{ $key | replace "/" "_" | replace "." "_" | replace "-" "_" }}
+        {{- end }}
+      separator: ";"
+      action: keep
+      {{- $patterns := list }}
+      {{- if $labelKeys }}
+        {{- $parts := list }}
+        {{- range $key := $labelKeys }}
+          {{- $parts = append $parts (regexQuoteMeta (toString (get $scrapeConfig.labels $key))) }}
+        {{- end }}
+        {{- range $annotationKeys }}
+          {{- $parts = append $parts ".*" }}
+        {{- end }}
+        {{- $patterns = append $patterns (printf "(%s)" (join ";" $parts)) }}
+      {{- end }}
+      {{- if $annotationKeys }}
+        {{- $parts := list }}
+        {{- range $labelKeys }}
+          {{- $parts = append $parts ".*" }}
+        {{- end }}
+        {{- range $key := $annotationKeys }}
+          {{- $parts = append $parts (regexQuoteMeta (toString (get $scrapeConfig.annotations $key))) }}
+        {{- end }}
+        {{- $patterns = append $patterns (printf "(%s)" (join ";" $parts)) }}
+      {{- end }}
+      regex: {{ join "|" $patterns | quote }}
+    {{- with $namespacesToExclude }}
+    - source_labels: [__meta_kubernetes_namespace]
+      action: drop
+      regex: {{ printf "^(%s)$" (join "|" $excludedNamespacePatterns) | quote }}
+    {{- end }}
+    - source_labels: [__meta_kubernetes_namespace]
+      target_label: namespace
+    - source_labels: [__meta_kubernetes_pod_phase]
+      action: keep
+      regex: Running
+    - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scheme]
+      regex: (https?)
+      target_label: __scheme__
+      replacement: $1
+    - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+      regex: (/.+)
+      target_label: __metrics_path__
+      replacement: $1
+    - source_labels: [__meta_kubernetes_pod_name]
+      target_label: pod
+    - source_labels: [__meta_kubernetes_pod_uid]
+      target_label: pod_uid
+    - source_labels: [__meta_kubernetes_pod_container_name]
+      target_label: container
+    {{- if $jvmClusterName }}
+    - target_label: cluster
+      replacement: {{ $jvmClusterName | quote }}
+    {{- end }}
+    - source_labels: [__meta_kubernetes_pod_controller_kind]
+      target_label: workload_kind
+    - source_labels: [__meta_kubernetes_pod_controller_name]
+      target_label: workload_name
+    - source_labels: [__meta_kubernetes_pod_label_app]
+      regex: (.+)
+      target_label: application
+      replacement: $1
+    - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+      regex: (.+)
+      target_label: application
+      replacement: $1
+  metric_relabel_configs:
+    - source_labels: [__name__, name]
+      regex: '(java_lang_garbagecollector_collectiontime|java_lang_garbagecollector_collectioncount|java_lang_GarbageCollector_CollectionTime|java_lang_GarbageCollector_CollectionCount);(.+)'
+      target_label: gc
+      replacement: $2
+    - source_labels: [__name__]
+      regex: '(java_lang_garbagecollector_collectiontime|java_lang_GarbageCollector_CollectionTime)'
+      target_label: __name__
+      replacement: 'jvm_gc_collection_seconds_sum'
+    - source_labels: [__name__]
+      regex: '(java_lang_garbagecollector_collectioncount|java_lang_GarbageCollector_CollectionCount)'
+      target_label: __name__
+      replacement: 'jvm_gc_collection_seconds_count'
+    - source_labels: [__name__, gc]
+      regex: 'jvm_gc_collection_seconds_(sum|count);G1 Concurrent GC'
+      action: drop
+    - source_labels: [__name__, gc]
+      regex: 'jvm_gc_collection_seconds_(sum|count);.+'
+      target_label: gc_generation
+      replacement: 'unknown'
+    - source_labels: [__name__, gc]
+      regex: 'jvm_gc_collection_seconds_(sum|count);(G1 Young Generation|Copy)'
+      target_label: gc_generation
+      replacement: 'young'
+    - source_labels: [__name__, gc]
+      regex: 'jvm_gc_collection_seconds_(sum|count);(PS Scavenge)'
+      target_label: gc_generation
+      replacement: 'young'
+    - source_labels: [__name__, gc]
+      regex: 'jvm_gc_collection_seconds_(sum|count);(G1 Old Generation|MarkSweepCompact)'
+      target_label: gc_generation
+      replacement: 'old'
+    - source_labels: [__name__, gc]
+      regex: 'jvm_gc_collection_seconds_(sum|count);(PS MarkSweep)'
+      target_label: gc_generation
+      replacement: 'old'
+    - source_labels: [__name__, gc]
+      regex: 'jvm_gc_collection_seconds_(sum|count);.+'
+      target_label: gc_collector_family
+      replacement: 'unknown'
+    - source_labels: [__name__, gc]
+      regex: 'jvm_gc_collection_seconds_(sum|count);(G1 Young Generation|G1 Old Generation)'
+      target_label: gc_collector_family
+      replacement: 'g1'
+    - source_labels: [__name__, gc]
+      regex: 'jvm_gc_collection_seconds_(sum|count);(Copy|MarkSweepCompact)'
+      target_label: gc_collector_family
+      replacement: 'serial'
+    - source_labels: [__name__, gc]
+      regex: 'jvm_gc_collection_seconds_(sum|count);(PS Scavenge|PS MarkSweep)'
+      target_label: gc_collector_family
+      replacement: 'parallel'
+    - source_labels: [__name__]
+      regex: '(java_lang_memory_heapmemoryusage_used|java_lang_Memory_HeapMemoryUsage_used)'
+      target_label: __name__
+      replacement: 'jvm_memory_used_bytes'
+    - source_labels: [__name__]
+      regex: 'jvm_memory_bytes_used'
+      target_label: __name__
+      replacement: 'jvm_memory_used_bytes'
+    - source_labels: [__name__]
+      regex: '(java_lang_memory_heapmemoryusage_committed|java_lang_Memory_HeapMemoryUsage_committed)'
+      target_label: __name__
+      replacement: 'jvm_memory_committed_bytes'
+    - source_labels: [__name__]
+      regex: 'jvm_memory_bytes_committed'
+      target_label: __name__
+      replacement: 'jvm_memory_committed_bytes'
+    - source_labels: [__name__]
+      regex: '(java_lang_memory_heapmemoryusage_max|java_lang_Memory_HeapMemoryUsage_max)'
+      target_label: __name__
+      replacement: 'jvm_memory_bytes_max'
+    - source_labels: [__name__]
+      regex: 'jvm_memory_max_bytes'
+      target_label: __name__
+      replacement: 'jvm_memory_bytes_max'
+    - source_labels: [__name__, area]
+      regex: '(jvm_memory_used_bytes|jvm_memory_committed_bytes|jvm_memory_bytes_max);'
+      target_label: area
+      replacement: 'heap'
+    - source_labels: [__name__]
+      regex: '(java_lang_memory_nonheapmemoryusage_used|java_lang_Memory_NonHeapMemoryUsage_used)'
+      target_label: __name__
+      replacement: 'jvm_memory_used_bytes'
+    - source_labels: [__name__]
+      regex: '(java_lang_memory_nonheapmemoryusage_committed|java_lang_Memory_NonHeapMemoryUsage_committed)'
+      target_label: __name__
+      replacement: 'jvm_memory_committed_bytes'
+    - source_labels: [__name__]
+      regex: '(java_lang_memory_nonheapmemoryusage_max|java_lang_Memory_NonHeapMemoryUsage_max)'
+      target_label: __name__
+      replacement: 'jvm_memory_bytes_max'
+    - source_labels: [__name__, area]
+      regex: '(jvm_memory_used_bytes|jvm_memory_committed_bytes|jvm_memory_bytes_max);'
+      target_label: area
+      replacement: 'nonheap'
+    - source_labels: [__name__, pool]
+      regex: 'jvm_memory_pool_(used|committed|max)_bytes;(.+)'
+      target_label: id
+      replacement: $2
+    - source_labels: [__name__, pool]
+      regex: 'jvm_memory_pool_bytes_(used|committed|max);(.+)'
+      target_label: id
+      replacement: $2
+    - source_labels: [__name__, pool]
+      regex: 'jvm_memory_pool_(used|committed|max)_bytes;.+'
+      target_label: area
+      replacement: 'unknown'
+    - source_labels: [__name__, pool]
+      regex: 'jvm_memory_pool_bytes_(used|committed|max);.+'
+      target_label: area
+      replacement: 'unknown'
+    - source_labels: [__name__, pool]
+      regex: 'jvm_memory_pool_(used|committed|max)_bytes;(G1 Eden Space|Eden Space|G1 Survivor Space|Survivor Space|G1 Old Gen|Tenured Gen)'
+      target_label: area
+      replacement: 'heap'
+    - source_labels: [__name__, pool]
+      regex: 'jvm_memory_pool_(used|committed|max)_bytes;(PS Eden Space|PS Survivor Space|PS Old Gen|ZHeap|Shenandoah)'
+      target_label: area
+      replacement: 'heap'
+    - source_labels: [__name__, pool]
+      regex: 'jvm_memory_pool_bytes_(used|committed|max);(G1 Eden Space|Eden Space|G1 Survivor Space|Survivor Space|G1 Old Gen|Tenured Gen)'
+      target_label: area
+      replacement: 'heap'
+    - source_labels: [__name__, pool]
+      regex: 'jvm_memory_pool_bytes_(used|committed|max);(PS Eden Space|PS Survivor Space|PS Old Gen|ZHeap|Shenandoah)'
+      target_label: area
+      replacement: 'heap'
+    - source_labels: [__name__, pool]
+      regex: 'jvm_memory_pool_(used|committed|max)_bytes;(CodeHeap .+|Compressed Class Space|Metaspace)'
+      target_label: area
+      replacement: 'nonheap'
+    - source_labels: [__name__, pool]
+      regex: 'jvm_memory_pool_(used|committed|max)_bytes;(Code Cache)'
+      target_label: area
+      replacement: 'nonheap'
+    - source_labels: [__name__, pool]
+      regex: 'jvm_memory_pool_bytes_(used|committed|max);(CodeHeap .+|Compressed Class Space|Metaspace)'
+      target_label: area
+      replacement: 'nonheap'
+    - source_labels: [__name__, pool]
+      regex: 'jvm_memory_pool_bytes_(used|committed|max);(Code Cache)'
+      target_label: area
+      replacement: 'nonheap'
+    - source_labels: [__name__]
+      regex: 'jvm_memory_pool_used_bytes'
+      target_label: __name__
+      replacement: 'jvm_memory_used_bytes'
+    - source_labels: [__name__]
+      regex: 'jvm_memory_pool_bytes_used'
+      target_label: __name__
+      replacement: 'jvm_memory_used_bytes'
+    - source_labels: [__name__]
+      regex: 'jvm_memory_pool_committed_bytes'
+      target_label: __name__
+      replacement: 'jvm_memory_committed_bytes'
+    - source_labels: [__name__]
+      regex: 'jvm_memory_pool_bytes_committed'
+      target_label: __name__
+      replacement: 'jvm_memory_committed_bytes'
+    - source_labels: [__name__]
+      regex: 'jvm_memory_pool_max_bytes'
+      target_label: __name__
+      replacement: 'jvm_memory_bytes_max'
+    - source_labels: [__name__]
+      regex: 'jvm_memory_pool_bytes_max'
+      target_label: __name__
+      replacement: 'jvm_memory_bytes_max'
+    - source_labels: [__name__, id, pool]
+      regex: '(jvm_memory_used_bytes|jvm_memory_committed_bytes|jvm_memory_bytes_max);;.+'
+      action: drop
+    - if: '{__name__=~"jvm_memory_(used_bytes|committed_bytes|bytes_max)"}'
+      action: labeldrop
+      regex: 'pool'
+    - source_labels: [__name__, name]
+      regex: '(java_lang_memorypool_collectionusage_used|java_lang_memorypool_usage_max|java_lang_MemoryPool_CollectionUsage_used|java_lang_MemoryPool_Usage_max);(.+)'
+      target_label: pool
+      replacement: $2
+    - source_labels: [__name__]
+      regex: '(java_lang_memorypool_collectionusage_used|java_lang_MemoryPool_CollectionUsage_used)'
+      target_label: __name__
+      replacement: 'jvm_memory_pool_collection_used_bytes'
+    - source_labels: [__name__]
+      regex: '(java_lang_memorypool_usage_max|java_lang_MemoryPool_Usage_max)'
+      target_label: __name__
+      replacement: 'jvm_memory_pool_collection_bytes_max'
+    - source_labels: [__name__]
+      regex: 'jvm_memory_pool_collection_max_bytes'
+      target_label: __name__
+      replacement: 'jvm_memory_pool_collection_bytes_max'
+    - source_labels: [__name__, pool]
+      regex: 'jvm_memory_pool_collection_(used_bytes|bytes_max);.+'
+      target_label: pool_generation
+      replacement: 'unknown'
+    - source_labels: [__name__, pool]
+      regex: 'jvm_memory_pool_collection_(used_bytes|bytes_max);(G1 Eden Space|Eden Space)'
+      target_label: pool_generation
+      replacement: 'eden'
+    - source_labels: [__name__, pool]
+      regex: 'jvm_memory_pool_collection_(used_bytes|bytes_max);(G1 Survivor Space|Survivor Space)'
+      target_label: pool_generation
+      replacement: 'survivor'
+    - source_labels: [__name__, pool]
+      regex: 'jvm_memory_pool_collection_(used_bytes|bytes_max);(G1 Old Gen|Tenured Gen)'
+      target_label: pool_generation
+      replacement: 'old'
+    - source_labels: [__name__]
+      regex: 'jvm_threads_current'
+      target_label: __name__
+      replacement: 'jvm_threads_live_threads'
+    - source_labels: [__name__]
+      regex: 'jvm_threads_daemon'
+      target_label: __name__
+      replacement: 'jvm_threads_daemon_threads'
+    - source_labels: [__name__]
+      regex: 'jvm_threads_peak'
+      target_label: __name__
+      replacement: 'jvm_threads_peak_threads'
+    - source_labels: [__name__]
+      regex: 'jvm_threads_started_total'
+      target_label: __name__
+      replacement: 'jvm_threads_started_threads_total'
+    - source_labels: [__name__]
+      regex: 'jvm_threads_state'
+      target_label: __name__
+      replacement: 'jvm_threads_states_threads'
+    - source_labels: [__name__]
+      regex: 'jvm_classes_currently_loaded'
+      target_label: __name__
+      replacement: 'jvm_classes_loaded_classes'
+    - source_labels: [__name__]
+      regex: 'jvm_classes_loaded_total'
+      target_label: __name__
+      replacement: 'jvm_classes_loaded_classes_total'
+    - source_labels: [__name__]
+      regex: 'jvm_classes_unloaded_total'
+      target_label: __name__
+      replacement: 'jvm_classes_unloaded_classes_total'
+    - source_labels: [__name__]
+      regex: 'jvm_runtime_info'
+      target_label: __name__
+      replacement: 'jvm_info'
+    - source_labels: [__name__]
+      regex: 'process_cpu_time_ns_total'
+      target_label: __name__
+      replacement: 'process_cpu_ns_total'
+    - source_labels: [__name__]
+      regex: '(jvm_info|jvm_gc_collection_seconds_sum|jvm_gc_collection_seconds_count|jvm_gc_pause_seconds_sum|jvm_gc_pause_seconds_count|jvm_memory_used_bytes|jvm_memory_committed_bytes|jvm_memory_bytes_max|jvm_memory_pool_collection_used_bytes|jvm_memory_pool_collection_bytes_max|jvm_threads_live_threads|jvm_threads_daemon_threads|jvm_threads_peak_threads|jvm_threads_started_threads_total|jvm_threads_states_threads|jvm_classes_loaded_classes|jvm_classes_loaded_classes_total|jvm_classes_unloaded_classes_total|process_cpu_seconds_total|process_cpu_ns_total)'
+      action: keep
+{{ end }}
+
+{{ end }}

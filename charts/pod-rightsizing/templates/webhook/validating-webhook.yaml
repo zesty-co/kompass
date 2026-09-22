@@ -1,0 +1,108 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: kompass-pod-rightsizing-validating-webhook
+  annotations:
+    cert-manager.io/inject-ca-from: "{{ .Release.Namespace }}/kompass-pod-rightsizing-webhook-cert"
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: {{ include "kompass-webhook-svc.name" . }}
+      namespace: {{ .Release.Namespace }}
+      path: /validate-rightsizing-kompass-zesty-co-v1alpha1-policy
+  failurePolicy: Fail
+  name: vpolicy-v1alpha1.kb.io
+  rules:
+  - apiGroups:
+    - rightsizing.kompass.zesty.co
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+    resources:
+    - policies
+  sideEffects: NoneOnDryRun
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: {{ include "kompass-webhook-svc.name" . }}
+      namespace: {{ .Release.Namespace }}
+      path: /validate-horizontalscaling-kompass-zesty-co-v1alpha1-policy
+  failurePolicy: Fail
+  name: vhorizontalscalingpolicy-v1alpha1.kb.io
+  rules:
+  - apiGroups:
+    - horizontalscaling.kompass.zesty.co
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+    resources:
+    - policies
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: {{ include "kompass-webhook-svc.name" . }}
+      namespace: {{ .Release.Namespace }}
+      path: /validate-kompass-zesty-co-v1alpha1-virtualworkload
+  failurePolicy: Fail
+  name: vvirtualworkload-v1alpha1.kb.io
+  rules:
+  - apiGroups:
+    - kompass.zesty.co
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - virtualworkloads
+  sideEffects: NoneOnDryRun
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: {{ include "kompass-webhook-svc.name" . }}
+      namespace: {{ .Release.Namespace }}
+      path: /validate-kompass-zesty-co-v1alpha1-clustervirtualworkload
+  failurePolicy: Fail
+  name: vclustervirtualworkload-v1alpha1.kb.io
+  rules:
+  - apiGroups:
+    - kompass.zesty.co
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - clustervirtualworkloads
+  sideEffects: NoneOnDryRun
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: {{ include "kompass-webhook-svc.name" . }}
+      namespace: {{ .Release.Namespace }}
+      path: /validate-rightsizing-kompass-zesty-co-v1alpha1-initialvalues
+  failurePolicy: Fail
+  name: vinitialvalues-v1alpha1.kb.io
+  rules:
+  - apiGroups:
+    - rightsizing.kompass.zesty.co
+    apiVersions:
+    - v1alpha1
+    operations:
+    - DELETE
+    resources:
+    - initialvalues
+  sideEffects: NoneOnDryRun

@@ -1,0 +1,12 @@
+{{- $cmName := include "kompass-pod-rightsizing-initial-values-config.name" . -}}
+{{- $existing := lookup "v1" "ConfigMap" .Release.Namespace $cmName -}}
+{{- if not $existing }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $cmName }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/resource-policy": keep
+data: {}
+{{- end }}

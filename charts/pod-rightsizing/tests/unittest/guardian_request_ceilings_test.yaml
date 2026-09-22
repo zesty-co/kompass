@@ -1,0 +1,90 @@
+suite: Guardian request ceilings
+release:
+  name: ci
+  namespace: zesty-system
+templates:
+  - templates/action-taker/action-taker.yaml
+  - templates/recommendations-maker/recommendations-maker.yaml
+  - templates/config/pilotConfigmap.yaml
+  - templates/bridge-data-exporter/gpu-pod-nvml-exporter.yaml
+  - templates/guardian/guardian.yaml
+  - templates/guardian/configmap.yaml
+tests:
+  - it: renders versioned ceilings for every Action Taker container and preserves annotations
+    template: templates/action-taker/action-taker.yaml
+    set:
+      guardian:
+        enabled: false
+      global:
+        podAnnotations:
+          global-annotation: preserved
+      actionTaker:
+        podAnnotations:
+          component-annotation: preserved
+    asserts:
+      - equal:
+          path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]
+          value: '{"containers":{"action-taker":{"cpuRequest":"9000m","memoryRequest":"21Gi"},"kube-rbac-proxy":{"cpuRequest":"8m","memoryRequest":"96Mi"}},"version":1}'
+      - equal:
+          path: spec.template.metadata.annotations.global-annotation
+          value: preserved
+      - equal:
+          path: spec.template.metadata.annotations.component-annotation
+          value: preserved
+
+  - it: renders versioned ceilings for the Recommendations Maker container
+    template: templates/recommendations-maker/recommendations-maker.yaml
+    set:
+      guardian:
+        enabled: false
+    asserts:
+      - equal:
+          path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]
+          value: '{"containers":{"recommendations-maker":{"cpuRequest":"4500m","memoryRequest":"20Gi"}},"version":1}'
+
+  - it: renders versioned ceilings for the GPU exporter DaemonSet
+    template: templates/bridge-data-exporter/gpu-pod-nvml-exporter.yaml
+    set:
+      gpuMetrics:
+        enabled: true
+      guardian:
+        enabled: false
+    asserts:
+      - equal:
+          path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]
+          value: '{"containers":{"exporter":{"cpuRequest":"30m","memoryRequest":"48Mi"}},"version":1}'
+        documentSelector:
+          path: kind
+          value: DaemonSet
+
+  - it: excludes Guardian from request-ceiling annotations
+    template: templates/guardian/guardian.yaml
+    set:
+      guardian:
+        enabled: true
+    asserts:
+      - notExists:
+          path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]
+
+  - it: fails when an Action Taker container ceiling is missing
+    template: templates/action-taker/action-taker.yaml
+    set:
+      global:
+        guardian:
+          requestCeilings:
+            actionTaker:
+              kube-rbac-proxy:
+                cpuRequest: ""
+    asserts:
+      - failedTemplate:
+          errorMessage: global.guardian.requestCeilings.actionTaker.kube-rbac-proxy.cpuRequest is required
+
+  - it: renders ceilings when Guardian is disabled
+    template: templates/action-taker/action-taker.yaml
+    set:
+      guardian:
+        enabled: false
+    asserts:
+      - equal:
+          path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]
+          value: '{"containers":{"action-taker":{"cpuRequest":"9000m","memoryRequest":"21Gi"},"kube-rbac-proxy":{"cpuRequest":"8m","memoryRequest":"96Mi"}},"version":1}'

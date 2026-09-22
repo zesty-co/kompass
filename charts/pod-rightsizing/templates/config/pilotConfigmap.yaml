@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kompass-pod-rightsizing-config.name" . }}
+  namespace: {{ .Release.Namespace }}
+data:
+{{- $jvmMetrics := .Values.jvmMetrics | default dict }}
+{{- $jvmAutoDiscovery := $jvmMetrics.autoDiscovery | default dict }}
+    kompassWorkloadsRightsizingEnabled: {{ (.Values.config).kompassWorkloadsRightsizing.enabled | quote }}
+    kompassWorkloadsRightsizingPolicyName: "stability-focused"
+    kompassWorkloadsRightsizingExcludedWorkloads: |
+      - kind: deployment
+        name: kompass-guardian
+
+    recommendationsInterval: {{ (.Values.config).recommendationsInterval | default "30m" | quote }}
+    probeEventsInterval: {{ (.Values.config).probeEventsInterval | default "1m" | quote }}
+    cooldownBetweenActions: {{ (.Values.config).cooldownBetweenActions | default "0m" | quote }}
+    hpaLookbackPeriod: {{ (.Values.config).hpaLookbackPeriod | default "3m" | quote }}
+    bypassHpaVpaConflictValidator: {{ (.Values.config).bypassHpaVpaConflictValidator | default "true" | quote }}
+
+    hpaThresholdCpuLimit: {{ (.Values.config).hpaThresholdCpuLimit | default "0.9" | quote }}
+    hpaThresholdCpuRequest: {{ (.Values.config).hpaThresholdCpuRequest | default "1.1" | quote }}
+    hpaThresholdMemoryLimit: {{ (.Values.config).hpaThresholdMemoryLimit | default "0.8" | quote }}
+    hpaThresholdMemoryRequest: {{ (.Values.config).hpaThresholdMemoryRequest | default "1" | quote }}
+
+    hpaMaxValue: {{ (.Values.config).hpaMaxValue | default "200" | quote }}
+    hpaMinValue: {{ (.Values.config).hpaMinValue | default "70" | quote }}
+
+    failedActionRetriesAmount: {{ (.Values.config).failedActionRetriesAmount | default "1" | quote }}
+    jvmAutoDiscoveryEnabled: {{ and ($jvmMetrics.enabled | default false) ($jvmAutoDiscovery.enabled | default false) | quote }}
+    jvmAutoDiscoveryEnvSignals: {{ include "pod-rightsizing.jvmAutoDiscovery.envSignals" . | quote }}
+    jvmAutoDiscoveryCommandSignals: {{ include "pod-rightsizing.jvmAutoDiscovery.commandSignals" . | quote }}
+    jvmAutoDiscoveryImageSignals: {{ include "pod-rightsizing.jvmAutoDiscovery.imageSignals" . | quote }}
+    
+    builtinPolicies: |
+{{ toYaml .Values.config.builtinPolicies | indent 6 }}
+    horizontalScalingBuiltinPolicies: |
+{{ toYaml .Values.config.horizontalScalingBuiltinPolicies | indent 6 }}
+
+    throttlingRollbackTimeRange: |
+{{- if and .Values.config (.Values.config).throttlingRollbackTimeRange }}
+{{ (.Values.config).throttlingRollbackTimeRange | nindent 6 }}
+{{- else }}
+      from: "20m"
+      to: "120m"
+{{- end }}
