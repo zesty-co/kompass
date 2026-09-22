@@ -1,0 +1,18 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kompass-pod-rightsizing-dashboards-config.name" . }}
+  labels:
+    grafana_dashboard: "1"
+data:
+  virtual-workloads-dashboard.json: |-
+{{ .Files.Get "dashboards/virtual-workloads-dashboard.json" | indent 4 }}
+  mda-dashboard.json: |-
+{{ .Files.Get "dashboards/mda-dashboard.json" | indent 4 }}
+  workloads-table.json: |-
+{{ .Files.Get "dashboards/workloads-table.json" | indent 4 }}
+  audit-log-dashboard.json: |-
+{{ .Files.Get "dashboards/audit-log-dashboard.json" | indent 4 }}
+  jvm-dashboard.json: |-
+{{ .Files.Get "dashboards/jvm-dashboard.json" | indent 4 }}

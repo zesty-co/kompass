@@ -1,0 +1,62 @@
+{{- if and .Values.gpuMetrics .Values.gpuMetrics.enabled }}
+{{- $dcgmExporter := .Values.gpuMetrics.dcgmExporter | default dict }}
+{{- $podSelector := $dcgmExporter.podSelector | default list }}
+{{- if empty $podSelector }}
+{{- fail "gpuMetrics.dcgmExporter.podSelector must define at least one label" }}
+{{- end }}
+{{- $metricsPortName := required "gpuMetrics.dcgmExporter.metricsPortName is required" $dcgmExporter.metricsPortName }}
+- job_name: dcgm-exporter
+  scrape_interval: 30s
+  scrape_timeout: 29s
+  kubernetes_sd_configs:
+    - role: pod
+  relabel_configs:
+    {{- range $index, $selector := $podSelector }}
+    {{- $label := required (printf "gpuMetrics.dcgmExporter.podSelector[%d].label is required" $index) $selector.label }}
+    {{- $value := required (printf "gpuMetrics.dcgmExporter.podSelector[%d].value is required" $index) $selector.value }}
+    - source_labels: [{{ printf "__meta_kubernetes_pod_label_%s" (regexReplaceAll "[^a-zA-Z0-9_]" $label "_") }}]
+      regex: {{ regexQuoteMeta (toString $value) | quote }}
+      action: keep
+    {{- end }}
+    - source_labels: [__meta_kubernetes_pod_container_port_name]
+      regex: {{ regexQuoteMeta (toString $metricsPortName) | quote }}
+      action: keep
+    - source_labels: [__meta_kubernetes_pod_phase]
+      regex: Running
+      action: keep
+    - source_labels: [__meta_kubernetes_pod_node_name]
+      target_label: node
+    - source_labels: [__meta_kubernetes_pod_name]
+      target_label: exporter_pod
+    - source_labels: [__meta_kubernetes_namespace]
+      target_label: exporter_namespace
+
+- job_name: gpu-pod-nvml-exporter
+  scrape_interval: 30s
+  scrape_timeout: 29s
+  kubernetes_sd_configs:
+    - role: pod
+  relabel_configs:
+    - source_labels:
+      - __meta_kubernetes_pod_label_app_kubernetes_io_component
+      regex: gpu-pod-nvml-exporter
+      action: keep
+    - source_labels:
+      - __meta_kubernetes_pod_container_port_name
+      regex: metrics
+      action: keep
+    - source_labels:
+      - __meta_kubernetes_pod_phase
+      regex: Running
+      action: keep
+    - source_labels:
+      - __meta_kubernetes_pod_node_name
+      target_label: node
+    - source_labels:
+      - __meta_kubernetes_pod_name
+      target_label: exporter_pod
+    - source_labels:
+      - __meta_kubernetes_namespace
+      target_label: exporter_namespace
+
+{{- end }}

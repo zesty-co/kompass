@@ -1,0 +1,183 @@
+{{- $recommendationsMakerPodSecurityContext := include "pod-rightsizing.securityContext.pod" (dict "root" . "componentSecurityContext" .Values.recommendationsMaker.podSecurityContext) | fromYaml }}
+{{- $recommendationsMakerSecurityContext := include "pod-rightsizing.securityContext.container" (dict "root" . "componentSecurityContext" .Values.recommendationsMaker.securityContext) | fromYaml }}
+{{- $recommendationsMakerPodLabels := include "pod-rightsizing.podTemplateLabels" (dict "root" . "componentValues" .Values.recommendationsMaker) | fromYaml }}
+{{- $recommendationsMakerPodAnnotations := include "pod-rightsizing.podTemplateAnnotations" (dict "root" . "componentValues" .Values.recommendationsMaker) | fromYaml }}
+{{- $recommendationsMakerPodAnnotations = mergeOverwrite (deepCopy $recommendationsMakerPodAnnotations) (dict "checksum/pilot-config" (include (print $.Template.BasePath "/config/pilotConfigmap.yaml") . | sha256sum)) }}
+{{- $recommendationsMakerWorkloadLabels := include "pod-rightsizing.workloadLabels" (dict "root" . "componentValues" .Values.recommendationsMaker) | fromYaml }}
+{{- $recommendationsMakerAffinity := include "pod-rightsizing.affinity" (dict "root" . "componentValues" .Values.recommendationsMaker) | fromYaml }}
+{{- $recommendationsMakerImagePullSecrets := include "pod-rightsizing.imagePullSecrets" (dict "root" . "componentValues" .Values.recommendationsMaker) | fromYamlArray }}
+{{- $recommendationsMakerTopologySpreadConstraints := include "pod-rightsizing.topologySpreadConstraints" (dict "root" . "componentValues" .Values.recommendationsMaker) | fromYamlArray }}
+{{- $recommendationsMakerAutomountServiceAccountToken := include "pod-rightsizing.automountServiceAccountToken" (dict "root" . "componentValues" .Values.recommendationsMaker) }}
+{{- $recommendationsMakerRuntimeClassName := include "pod-rightsizing.runtimeClassName" (dict "root" . "componentValues" .Values.recommendationsMaker) }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "recommendations-maker.name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ include "recommendations-maker.name" . }}
+    {{- include "pod-rightsizing.labels" . | nindent 4 }}
+    {{- with $recommendationsMakerWorkloadLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  replicas: {{ .Values.recommendationsMaker.replicaCount | default 1 }}
+  selector:
+    matchLabels:
+      app: {{ include "recommendations-maker.name" . }}
+  template:
+    metadata:
+      annotations:
+        {{- toYaml $recommendationsMakerPodAnnotations | nindent 8 }}
+      labels:
+        app: {{ include "recommendations-maker.name" . }}
+        app.kubernetes.io/name: pod-rightsizing
+        {{- with $recommendationsMakerPodLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- if .Values.recommendationsMaker.priorityClassName }}
+      priorityClassName: {{ .Values.recommendationsMaker.priorityClassName }}
+      {{- end }}
+      {{- if $recommendationsMakerRuntimeClassName }}
+      runtimeClassName: {{ $recommendationsMakerRuntimeClassName }}
+      {{- end }}
+      {{- with $recommendationsMakerPodSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.global.nodeSelector }}
+      nodeSelector:
+      {{- toYaml .Values.global.nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if .Values.global.tolerations }}
+      tolerations:
+      {{- toYaml .Values.global.tolerations | nindent 8 }}
+      {{- end }}
+      {{- with $recommendationsMakerTopologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $recommendationsMakerAffinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Values.recommendationsMaker.name }}
+          image: {{ .Values.registry }}{{ .Values.recommendationsMaker.image.name }}:{{ .Values.recommendationsMaker.image.tag  | default .Chart.AppVersion }}
+          imagePullPolicy: {{ .Values.imagePullPolicy | default "Always" }}
+          {{- if .Values.recommendationsMaker.image.args }}
+          args: {{ toYaml .Values.recommendationsMaker.image.args | nindent 10 }}
+          {{- end }}
+          env:
+            - name: CM_NAME
+              value: {{ include "kompass-pod-rightsizing-config.name" . }}
+            - name: CM_NAMESPACE
+              value: {{ .Release.Namespace }}
+            - name: LEADER_ELECTION_ENABLED
+              value: "{{ .Values.recommendationsMaker.leaderElection.enabled }}"
+            - name: VM_URL
+              value: {{ include "pod-rightsizing.victoriaMetrics.url" . }}
+            - name: APP_CONFIG_MOUNTED_PATH
+              value: /etc/kompass-rightsizing/config
+            - name: SAVE_QUERIES_TO_FILES
+              value: "false"
+            - name: CONTAINER_NAME
+              value: {{ .Values.recommendationsMaker.name }}
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: BRIDGE_ACTOR_PORT
+              value: {{ (.Values.bridgeActor.port | default 50052) | quote }}
+            - name: BRIDGE_HUB_ADDRESS
+              value: {{ .Values.bridgeActor.hubAddress | quote }}
+            - name: ORG_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.bridgeActor.identitySecretName | quote }}
+                  key: ORG_ID
+            - name: CLUSTER_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.bridgeActor.identitySecretName | quote }}
+                  key: CLUSTER_ID
+            - name: RIGHTSIZING_SECRET_NAME
+              value: {{ .Values.secret }}
+            {{- if and .Values.global.cxLogging .Values.global.cxLogging.enabled }}
+            - name: CX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ dig "apiKeySecret" "name" "kompass-cx-logging" .Values.global.cxLogging | quote }}
+                  key: {{ dig "apiKeySecret" "key" "CX_API_KEY" .Values.global.cxLogging | quote }}
+                  optional: true
+            - name: CX_CLUSTER_NAME
+              value: {{ .Values.global.cxLogging.clusterName }}
+            - name: CORALOGIX_METRICS_URL
+              value: {{ .Values.global.cxLogging.metricsUrl }}
+            - name: CORALOGIX_INGRESS_URL
+              value: {{ .Values.global.cxLogging.ingressUrl }}
+            {{- else if and .Values.cxLogging .Values.cxLogging.enabled }}
+            - name: CX_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ dig "apiKeySecret" "name" "kompass-cx-logging" .Values.cxLogging | quote }}
+                  key: {{ dig "apiKeySecret" "key" "CX_API_KEY" .Values.cxLogging | quote }}
+                  optional: true
+            - name: CX_CLUSTER_NAME
+              value: {{ .Values.cxLogging.clusterName }}
+            - name: CORALOGIX_METRICS_URL
+              value: {{ .Values.cxLogging.metricsUrl }}
+            - name: CORALOGIX_INGRESS_URL
+              value: {{ .Values.cxLogging.ingressUrl }}
+            {{- end }}
+            {{- if and .Values.config .Values.config.excludeNamespaces }}
+            - name: EXCLUDE_NAMESPACES
+              value: {{ .Values.config.excludeNamespaces | toJson | quote }}
+            {{- end }}
+            {{- if .Values.recommendationsMaker.env }}
+            {{- range .Values.recommendationsMaker.env }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+            {{- end }}
+          volumeMounts:
+            - mountPath: /recommendations-data
+              name: recommendations-storage
+            - mountPath: /etc/kompass-rightsizing/config
+              name: rightsizing-config
+              readOnly: true
+          {{- with $recommendationsMakerSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- include "pod-rightsizing.recommendationsMaker.resources" . | nindent 10 }}
+          ports:
+            - containerPort: 8088
+              name: http
+              protocol: TCP
+            - containerPort: {{ .Values.bridgeActor.port | default 50052 }}
+              name: bridge-actor
+              protocol: TCP
+      volumes:
+        - name: recommendations-storage
+          emptyDir: {}
+        - name: rightsizing-config
+          configMap:
+            name: {{ include "kompass-pod-rightsizing-config.name" . }}
+      {{- with $recommendationsMakerImagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "pod-rightsizing.serviceAccountName" . }}
+      {{- if ne $recommendationsMakerAutomountServiceAccountToken "" }}
+      automountServiceAccountToken: {{ $recommendationsMakerAutomountServiceAccountToken }}
+      {{- end }}
