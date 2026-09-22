@@ -5,6 +5,11 @@ on:
     branches:
       - main
 
+# Release runs share the gh-pages index; let each publication finish before the next.
+concurrency:
+  group: chart-release
+  cancel-in-progress: false
+
 jobs:
   release:
     if: "!startsWith(github.event.head_commit.message, 'chore:') && !startsWith(github.event.head_commit.message, 'docs:')"
@@ -67,29 +72,29 @@ jobs:
         env:
           CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: release subcharts
-        if: steps.changed-charts.outputs.subcharts == 'true'
+      - name: initialize release directories
+        if: steps.changed-charts.outputs.subcharts == 'true' || steps.changed-charts.outputs.kompass == 'true'
         run: |
           rm -rf .cr-index .cr-release-packages
           mkdir -p .cr-index .cr-release-packages
 
+      - name: package subcharts
+        if: steps.changed-charts.outputs.subcharts == 'true'
+        run: |
           while IFS= read -r chart; do
             helm package ".ci-charts/${chart#charts/}" --destination .cr-release-packages
           done < "$RUNNER_TEMP/changed-subcharts"
 
-          cr upload --commit "$GITHUB_SHA"
-          cr index --push
-        env:
-          CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: release kompass
+      - name: package kompass
         if: steps.changed-charts.outputs.kompass == 'true'
-        run: |
-          rm -rf .cr-index .cr-release-packages
-          mkdir -p .cr-index .cr-release-packages
+        run: helm package .ci-charts/kompass --destination .cr-release-packages
 
-          helm package .ci-charts/kompass --destination .cr-release-packages
+      - name: publish charts and index
+        if: steps.changed-charts.outputs.subcharts == 'true' || steps.changed-charts.outputs.kompass == 'true'
+        run: |
           cr upload --commit "$GITHUB_SHA"
+          # Build one index containing all packages, from the current Pages branch.
+          git fetch origin gh-pages:refs/remotes/origin/gh-pages
           cr index --push
         env:
           CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
