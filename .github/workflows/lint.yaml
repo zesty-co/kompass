@@ -97,10 +97,13 @@ jobs:
         if: env.any_chart_changed == 'true'
         run: |
           set -euo pipefail
+          # Validate rightsizing only through the umbrella, including child-only changes.
+          helm lint .ci-charts/kompass --set rightsizing.enabled=false
+          helm lint .ci-charts/kompass --set rightsizing.enabled=true
           for chart in $CHARTS; do
+            [[ "$chart" != kompass && "$chart" != pod-rightsizing ]] || continue
             chart_key="${chart//-/_}_changed"
-            # Also validate umbrella integration when only a child changed.
-            if [[ "$chart" == kompass || "${!chart_key}" == true ]]; then
+            if [[ "${!chart_key}" == true ]]; then
               helm lint ".ci-charts/$chart"
             fi
           done
