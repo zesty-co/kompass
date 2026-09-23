@@ -164,6 +164,28 @@ tests:
       - matchRegex:
           path: data["jvm.yaml"]
           pattern: 'names:\n\s+- "java-test"'
+      - matchRegex:
+          path: data["jvm.yaml"]
+          pattern: >-
+            (?m)- source_labels: \[__name__, pool\]\s+
+            regex: 'jvm_memory_pool_collection_\(used_bytes\|bytes_max\);\.\+'\s+
+            target_label: pool_generation\s+
+            replacement: 'unknown'\s+
+            - source_labels: \[__name__, pool\]\s+
+            regex: 'jvm_memory_pool_collection_\(used_bytes\|bytes_max\);\(G1 Eden Space\|Eden Space\|PS Eden Space\)'\s+
+            target_label: pool_generation\s+
+            replacement: 'eden'\s+
+            - source_labels: \[__name__, pool\]\s+
+            regex: 'jvm_memory_pool_collection_\(used_bytes\|bytes_max\);\(G1 Survivor Space\|Survivor Space\|PS Survivor Space\)'\s+
+            target_label: pool_generation\s+
+            replacement: 'survivor'\s+
+            - source_labels: \[__name__, pool\]\s+
+            regex: 'jvm_memory_pool_collection_\(used_bytes\|bytes_max\);\(G1 Old Gen\|Tenured Gen\|PS Old Gen\)'\s+
+            target_label: pool_generation\s+
+            replacement: 'old'\s+
+            - source_labels: \[__name__, pool_generation\]\s+
+            regex: 'jvm_memory_pool_collection_\(used_bytes\|bytes_max\);unknown'\s+
+            action: drop
 
   - it: renders auto-discovery annotation selector when JVM metrics and auto-discovery are enabled
     set:

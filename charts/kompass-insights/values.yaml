@@ -130,11 +130,10 @@ podMinuteMetrics:
   enabled: true
 
 customPricing:
-  enabled: false
-  cpu: 0
-  ram: 0
-  spotCpu:
-  spotRam:
+  cpu: 0.031611
+  ram: 0.004237
+  spotCpu: 0.006655
+  spotRam: 0.000892
 
 insights:
   extraEnv: []

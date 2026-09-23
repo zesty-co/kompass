@@ -1,0 +1,96 @@
+suite: ComponentResources
+release:
+  name: ci
+  namespace: zesty-system
+templates:
+  - templates/action-taker/action-taker.yaml
+  - templates/config/pilotConfigmap.yaml
+  - templates/recommendations-maker/recommendations-maker.yaml
+tests:
+  - it: uses the pre-Guardian Action Taker resources when Guardian is disabled
+    template: templates/action-taker/action-taker.yaml
+    set:
+      guardian.enabled: false
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.cpu
+          value: 5m
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.memory
+          value: 64Mi
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.cpu
+          value: 500m
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.memory
+          value: 128Mi
+      - equal:
+          path: spec.template.spec.containers[1].resources.requests.cpu
+          value: 100m
+      - equal:
+          path: spec.template.spec.containers[1].resources.requests.memory
+          value: 128Mi
+      - notExists:
+          path: spec.template.spec.containers[1].resources.limits
+
+  - it: uses the pre-Guardian Recommendations Maker resources when Guardian is disabled
+    template: templates/recommendations-maker/recommendations-maker.yaml
+    set:
+      guardian.enabled: false
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.cpu
+          value: 200m
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.memory
+          value: 128Mi
+      - notExists:
+          path: spec.template.spec.containers[0].resources.limits
+
+  - it: uses Guardian-enabled Action Taker requests and limits when Guardian is enabled
+    template: templates/action-taker/action-taker.yaml
+    set:
+      guardian.enabled: true
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.cpu
+          value: 100m
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.memory
+          value: 48Mi
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.cpu
+          value: 200m
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.memory
+          value: 64Mi
+      - equal:
+          path: spec.template.spec.containers[1].resources.requests.memory
+          value: 288Mi
+      - equal:
+          path: spec.template.spec.containers[1].resources.requests.cpu
+          value: 352m
+      - equal:
+          path: spec.template.spec.containers[1].resources.limits.memory
+          value: 400Mi
+      - equal:
+          path: spec.template.spec.containers[1].resources.limits.cpu
+          value: 460m
+
+  - it: uses Guardian-enabled Recommendations Maker requests and limits when Guardian is enabled
+    template: templates/recommendations-maker/recommendations-maker.yaml
+    set:
+      guardian.enabled: true
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.cpu
+          value: 300m
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.memory
+          value: 288Mi
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.cpu
+          value: 330m
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.memory
+          value: 400Mi
