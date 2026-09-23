@@ -1,6 +1,0 @@
-enabled: true
-config:
-  kompassWorkloadsRightsizing:
-    enabled: true
-global:
-  clusterIssuerName: kompass-ci-cluster-issuer

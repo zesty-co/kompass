@@ -2,4 +2,3 @@
 {{- include "kompass.validate.podPlacementRequiresRightsizing" . -}}
 {{- include "kompass.validate.victoriaMetricsEnabled" . -}}
 {{- include "kompass.validate.requiredLabels" . -}}
-{{- include "kompass.validate.guardianRequestCeilings" . -}}
