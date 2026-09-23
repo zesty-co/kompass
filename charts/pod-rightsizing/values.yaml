@@ -83,14 +83,11 @@ actionTaker:
   name: "action-taker"
   image:
     name: "/pod-rightsizing/action-taker"
-    tag: "v0.9.0"
+    tag: "v0.9.1"
   resources:
     requests:
       cpu: 100m
-      memory: 176Mi
-    limits:
-      cpu: 200m
-      memory: 224Mi
+      memory: 128Mi
 guardian:
   enabled: false
   replicaCount: 1
@@ -116,7 +113,7 @@ guardian:
       type: RuntimeDefault
   image:
     name: "/pod-rightsizing/guardian"
-    tag: "v0.9.0"
+    tag: "v0.9.1"
   resources:
     requests:
       cpu: 100m
@@ -171,16 +168,13 @@ recommendationsMaker:
   name: "recommendations-maker"
   image:
     name: "/pod-rightsizing/recommendations-maker"
-    tag: "v0.9.0"
+    tag: "v0.9.1"
     args:
   port: 8088
   resources:
     requests:
       cpu: 200m
       memory: 128Mi
-    limits:
-      cpu: 200m
-      memory: 144Mi
 metricsExporter:
   name: "metrics-exporter"
   runtimeClassName: ""
@@ -211,7 +205,7 @@ metricsExporter:
   #     type: RuntimeDefault
   image:
     name: "/pod-rightsizing/metrics-exporter"
-    tag: "v0.9.0"
+    tag: "v0.9.1"
     args:
   resources:
     requests:
@@ -251,7 +245,7 @@ bridgeDataExporter:
   #     type: RuntimeDefault
   image:
     name: "/pod-rightsizing/bridge-data-exporter"
-    tag: "v0.9.0"
+    tag: "v0.9.1"
     args:
   resources:
     requests:

@@ -541,6 +541,15 @@ resources:
 Recommendations Maker resources with minimum values enforced
 */}}
 {{- define "pod-rightsizing.recommendationsMaker.resources" -}}
+{{- if .Values.guardian.enabled }}
+resources:
+  requests:
+    cpu: 300m
+    memory: 288Mi
+  limits:
+    cpu: 330m
+    memory: 400Mi
+{{- else }}
 {{- $resources := .Values.recommendationsMaker.resources | default dict -}}
 {{- $userCpu := $resources.requests.cpu | default "200m" -}}
 {{- $userMemory := $resources.requests.memory | default "128Mi" -}}
@@ -552,12 +561,22 @@ resources:
   limits:
     {{- toYaml . | nindent 4 }}
 {{- end }}
+{{- end }}
 {{- end -}}
 
 {{/*
 Action Taker resources with minimum values enforced
 */}}
 {{- define "pod-rightsizing.actionTaker.resources" -}}
+{{- if .Values.guardian.enabled }}
+resources:
+  requests:
+    cpu: 352m
+    memory: 288Mi
+  limits:
+    cpu: 460m
+    memory: 400Mi
+{{- else }}
 {{- $resources := .Values.actionTaker.resources | default dict -}}
 {{- $userCpu := $resources.requests.cpu | default "100m" -}}
 {{- $userMemory := $resources.requests.memory | default "128Mi" -}}
@@ -568,6 +587,7 @@ resources:
 {{- with $resources.limits }}
   limits:
     {{- toYaml . | nindent 4 }}
+{{- end }}
 {{- end }}
 {{- end -}}
 
