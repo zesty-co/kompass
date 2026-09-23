@@ -5,7 +5,7 @@ on:
     branches:
       - main
 
-# Release runs share the gh-pages index; let each publication finish before the next.
+# Candidate and production deployments share the Pages site.
 concurrency:
   group: chart-release
   cancel-in-progress: false
@@ -14,22 +14,21 @@ jobs:
   release:
     if: "!startsWith(github.event.head_commit.message, 'chore:') && !startsWith(github.event.head_commit.message, 'docs:')"
     permissions:
-      contents: write
+      contents: read
+      pages: write
+      id-token: write
     runs-on: ubuntu-latest
-    env:
-      CR_GIT_REPO: ${{ github.event.repository.name }}
-      CR_OWNER: ${{ github.repository_owner }}
+    environment: github-pages
+    outputs:
+      charts: ${{ steps.candidate.outputs.charts }}
+      repository_url: ${{ steps.candidate.outputs.url }}
+      changed: ${{ steps.candidate.outputs.changed }}
 
     steps:
       - name: checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: git config
-        run: |
-          git config user.name "$GITHUB_ACTOR"
-          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
       - name: setup chart tools
         uses: ./.github/actions/setup-chart-tools
@@ -64,19 +63,8 @@ jobs:
         if: steps.changed-charts.outputs.subcharts == 'true' || steps.changed-charts.outputs.kompass == 'true'
         run: sh scripts/ci/prepare-charts.sh .ci-charts
 
-      - name: install chart releaser
-        if: steps.changed-charts.outputs.subcharts == 'true' || steps.changed-charts.outputs.kompass == 'true'
-        uses: helm/chart-releaser-action@v1.5.0
-        with:
-          install_only: true
-        env:
-          CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: initialize release directories
-        if: steps.changed-charts.outputs.subcharts == 'true' || steps.changed-charts.outputs.kompass == 'true'
-        run: |
-          rm -rf .cr-index .cr-release-packages
-          mkdir -p .cr-index .cr-release-packages
+        run: mkdir -p .cr-release-packages
 
       - name: package subcharts
         if: steps.changed-charts.outputs.subcharts == 'true'
@@ -86,15 +74,114 @@ jobs:
           done < "$RUNNER_TEMP/changed-subcharts"
 
       - name: package kompass
-        if: steps.changed-charts.outputs.kompass == 'true'
+        if: steps.changed-charts.outputs.subcharts == 'true' || steps.changed-charts.outputs.kompass == 'true'
         run: helm package .ci-charts/kompass --destination .cr-release-packages
 
-      - name: publish charts and index
-        if: steps.changed-charts.outputs.subcharts == 'true' || steps.changed-charts.outputs.kompass == 'true'
+      - name: configure Pages
+        id: pages
+        uses: actions/configure-pages@v5
+
+      - name: build candidate site without changing the customer index
+        id: candidate
+        env:
+          PAGES_URL: ${{ steps.pages.outputs.base_url }}
         run: |
+          shopt -s nullglob
+          packages=(.cr-release-packages/*.tgz)
+          if [ "${#packages[@]}" -eq 0 ]; then
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git fetch origin gh-pages
+          git worktree add --detach "$RUNNER_TEMP/pages" FETCH_HEAD
+          path="candidates/$GITHUB_SHA/$GITHUB_RUN_ID"
+          url="${PAGES_URL%/}/$path"
+          mkdir -p "$RUNNER_TEMP/pages/$path"
+          cp "${packages[@]}" "$RUNNER_TEMP/pages/$path/"
+          helm repo index "$RUNNER_TEMP/pages/$path" --url "$url"
+          charts=$(yq -o=json '.entries | to_entries | map(.value[0] | {"name": .name, "version": .version})' "$RUNNER_TEMP/pages/$path/index.yaml" | jq -c .)
+          echo "charts=$charts" >> "$GITHUB_OUTPUT"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo 'changed=true' >> "$GITHUB_OUTPUT"
+          (cd .cr-release-packages && sha256sum *.tgz > SHA256SUMS)
+
+      - uses: actions/upload-artifact@v4
+        if: steps.candidate.outputs.changed == 'true'
+        with:
+          name: candidate-charts
+          path: .cr-release-packages/
+          overwrite: true
+
+      - uses: actions/upload-pages-artifact@v3
+        if: steps.candidate.outputs.changed == 'true'
+        with:
+          name: candidate-site-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/pages
+
+      - uses: actions/deploy-pages@v4
+        if: steps.candidate.outputs.changed == 'true'
+        with:
+          artifact_name: candidate-site-${{ github.run_attempt }}
+
+  validate:
+    needs: release
+    if: needs.release.outputs.changed == 'true'
+    permissions:
+      contents: read
+      pull-requests: read
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        chart: ${{ fromJSON(needs.release.outputs.charts) }}
+    uses: ./.github/workflows/jenkins.yaml
+    with:
+      repository_url: ${{ needs.release.outputs.repository_url }}
+      chart_name: ${{ matrix.chart.name }}
+      chart_version: ${{ matrix.chart.version }}
+    secrets: inherit
+
+  promote:
+    needs: [release, validate]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    environment: github-pages
+    env:
+      CR_GIT_REPO: ${{ github.event.repository.name }}
+      CR_OWNER: ${{ github.repository_owner }}
+      CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: git config
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+      - uses: helm/chart-releaser-action@v1.5.0
+        with:
+          install_only: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: candidate-charts
+          path: .cr-release-packages
+      - name: publish validated charts and index
+        run: |
+          (cd .cr-release-packages && sha256sum --check SHA256SUMS)
+          mkdir -p .cr-index
           cr upload --commit "$GITHUB_SHA"
-          # Build one index containing all packages, from the current Pages branch.
           git fetch origin gh-pages:refs/remotes/origin/gh-pages
           cr index --push
-        env:
-          CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          git fetch origin gh-pages
+          git worktree add --detach "$RUNNER_TEMP/pages" FETCH_HEAD
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          name: production-site-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/pages
+      - uses: actions/deploy-pages@v4
+        with:
+          artifact_name: production-site-${{ github.run_attempt }}

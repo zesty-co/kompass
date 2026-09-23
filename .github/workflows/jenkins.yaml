@@ -2,10 +2,28 @@ name: trigger-jenkins
 
 on:
   pull_request:
+  workflow_call:
+    inputs:
+      repository_url:
+        required: true
+        type: string
+      chart_name:
+        required: true
+        type: string
+      chart_version:
+        required: true
+        type: string
+    secrets:
+      JENKINS_URL:
+        required: true
+      JENKINS_USER:
+        required: true
+      JENKINS_API_TOKEN:
+        required: true
 
 jobs:
   jenkins:
-    if: "!startsWith(github.event.pull_request.title, 'chore:') && !startsWith(github.event.pull_request.title, 'docs:')"
+    if: github.event_name != 'pull_request' || (!startsWith(github.event.pull_request.title, 'chore:') && !startsWith(github.event.pull_request.title, 'docs:'))
     concurrency:
       group: jenkins-ci
       cancel-in-progress: false
@@ -20,6 +38,7 @@ jobs:
     steps:
       - name: Detect umbrella chart changes
         id: changes
+        if: github.event_name == 'pull_request'
         uses: dorny/paths-filter@v3
         with:
           filters: |
@@ -27,15 +46,30 @@ jobs:
               - charts/kompass/**
 
       - name: Install dependencies
-        if: steps.changes.outputs.kompass == 'true'
+        if: github.event_name != 'pull_request' || steps.changes.outputs.kompass == 'true'
         run: apt-get update && apt-get install -y curl jq
 
       - name: Trigger Jenkins Build
         id: trigger
-        if: steps.changes.outputs.kompass == 'true'
+        if: github.event_name != 'pull_request' || steps.changes.outputs.kompass == 'true'
+        shell: bash
+        env:
+          JENKINS_URL: ${{ secrets.JENKINS_URL }}
+          JENKINS_USER: ${{ secrets.JENKINS_USER }}
+          JENKINS_API_TOKEN: ${{ secrets.JENKINS_API_TOKEN }}
+          INSTALLATION_BRANCH: ${{ github.head_ref || 'main' }}
+          REPOSITORY_URL: ${{ inputs.repository_url }}
+          CHART_NAME: ${{ inputs.chart_name }}
+          CHART_VERSION: ${{ inputs.chart_version }}
         run: |
-          TRIGGER_URL="${{ secrets.JENKINS_URL }}/job/Run_Unified_Installation_pipline_controller/buildWithParameters?UNIFIED_INSTALLATION_BRANCH=${{ github.head_ref }}"
-          QUEUE_ITEM_URL=$(curl --fail -sS -X POST "$TRIGGER_URL" -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_API_TOKEN }}" --dump-header - | grep -i Location | awk '{print $2}' | tr -d '\r')
+          parameters=(--data-urlencode "UNIFIED_INSTALLATION_BRANCH=$INSTALLATION_BRANCH")
+          if [ -n "$REPOSITORY_URL" ]; then
+            curl --fail --retry 12 --retry-all-errors --retry-delay 10 --connect-timeout 10 --max-time 30 \
+              "$REPOSITORY_URL/index.yaml" --output /dev/null
+            parameters+=(--data-urlencode "HELM_REPO_URL=$REPOSITORY_URL" --data-urlencode "CHART_NAME=$CHART_NAME" --data-urlencode "CHART_VERSION=$CHART_VERSION")
+          fi
+          TRIGGER_URL="$JENKINS_URL/job/Run_Unified_Installation_pipline_controller/buildWithParameters"
+          QUEUE_ITEM_URL=$(curl --fail -sS -X POST "$TRIGGER_URL" -u "$JENKINS_USER:$JENKINS_API_TOKEN" "${parameters[@]}" --dump-header - | grep -i Location | awk '{print $2}' | tr -d '\r')
 
           if [ -z "$QUEUE_ITEM_URL" ]; then
             echo "::error::Failed to trigger Jenkins job or get queue item URL."
@@ -47,7 +81,7 @@ jobs:
 
       - name: Wait for Build to Start and Get Build Number
         id: get_build_number
-        if: steps.changes.outputs.kompass == 'true'
+        if: github.event_name != 'pull_request' || steps.changes.outputs.kompass == 'true'
         shell: bash
         run: |
           QUEUE_URL="${{ steps.trigger.outputs.queue_url }}"
@@ -82,7 +116,7 @@ jobs:
 
       - name: Wait for Build Completion
         id: check_build
-        if: steps.changes.outputs.kompass == 'true'
+        if: github.event_name != 'pull_request' || steps.changes.outputs.kompass == 'true'
         shell: bash
         run: |
           BUILD_URL="${{ steps.get_build_number.outputs.build_url }}"
@@ -116,5 +150,5 @@ jobs:
           exit 1
 
       - name: Skip Jenkins Build
-        if: steps.changes.outputs.kompass != 'true'
+        if: github.event_name == 'pull_request' && steps.changes.outputs.kompass != 'true'
         run: echo "No changes in charts/kompass/**. Skipping Jenkins trigger."
