@@ -352,17 +352,20 @@
       target_label: pool_generation
       replacement: 'unknown'
     - source_labels: [__name__, pool]
-      regex: 'jvm_memory_pool_collection_(used_bytes|bytes_max);(G1 Eden Space|Eden Space)'
+      regex: 'jvm_memory_pool_collection_(used_bytes|bytes_max);(G1 Eden Space|Eden Space|PS Eden Space)'
       target_label: pool_generation
       replacement: 'eden'
     - source_labels: [__name__, pool]
-      regex: 'jvm_memory_pool_collection_(used_bytes|bytes_max);(G1 Survivor Space|Survivor Space)'
+      regex: 'jvm_memory_pool_collection_(used_bytes|bytes_max);(G1 Survivor Space|Survivor Space|PS Survivor Space)'
       target_label: pool_generation
       replacement: 'survivor'
     - source_labels: [__name__, pool]
-      regex: 'jvm_memory_pool_collection_(used_bytes|bytes_max);(G1 Old Gen|Tenured Gen)'
+      regex: 'jvm_memory_pool_collection_(used_bytes|bytes_max);(G1 Old Gen|Tenured Gen|PS Old Gen)'
       target_label: pool_generation
       replacement: 'old'
+    - source_labels: [__name__, pool_generation]
+      regex: 'jvm_memory_pool_collection_(used_bytes|bytes_max);unknown'
+      action: drop
     - source_labels: [__name__]
       regex: 'jvm_threads_current'
       target_label: __name__

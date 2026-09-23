@@ -83,6 +83,7 @@ spec:
             - containerPort: 8443
               name: https
               protocol: TCP
+          {{- if .Values.guardian.enabled }}
           resources:
             limits:
               cpu: 200m
@@ -90,6 +91,15 @@ spec:
             requests:
               cpu: 100m
               memory: 48Mi
+          {{- else }}
+          resources:
+            limits:
+              cpu: 500m
+              memory: 128Mi
+            requests:
+              cpu: 5m
+              memory: 64Mi
+          {{- end }}
           {{- with $actionTakerKubeRbacProxySecurityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
