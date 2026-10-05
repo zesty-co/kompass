@@ -1,0 +1,92 @@
+suite: Pod Placement license configuration
+templates:
+  - templates/deployment.yaml
+  - templates/role.yaml
+tests:
+  - it: reads the default license in read-only mode with only named list and watch permissions
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: READ_ONLY_MODE
+            value: "true"
+        template: templates/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LICENSE_SECRET_NAME
+            value: kompass-license
+        template: templates/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LICENSE_DOCUMENT_KEY
+            value: kompass_license
+        template: templates/deployment.yaml
+      - contains:
+          path: rules
+          content:
+            apiGroups: [""]
+            resources: [secrets]
+            resourceNames: [kompass-license]
+            verbs: [list, watch]
+        template: templates/role.yaml
+      - contains:
+          path: rules
+          content:
+            apiGroups: [""]
+            resources: [secrets]
+            resourceNames: [kompass-insights-secret]
+            verbs: [get]
+        template: templates/role.yaml
+
+  - it: keeps the default document key on a partial override and reserves only license environment names
+    set:
+      enabled: true
+      global.license.secretName: custom-license
+      env:
+        - name: LICENSE_SECRET_NAME
+          value: ignored-license
+        - name: LICENSE_DOCUMENT_KEY
+          value: ignored-document
+        - name: CUSTOM_ENV
+          value: retained
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LICENSE_SECRET_NAME
+            value: custom-license
+        template: templates/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LICENSE_DOCUMENT_KEY
+            value: kompass_license
+        template: templates/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CUSTOM_ENV
+            value: retained
+        template: templates/deployment.yaml
+      - lengthEqual:
+          path: spec.template.spec.containers[0].env
+          count: 7
+        template: templates/deployment.yaml
+      - contains:
+          path: rules
+          content:
+            apiGroups: [""]
+            resources: [secrets]
+            resourceNames: [custom-license]
+            verbs: [list, watch]
+        template: templates/role.yaml
+
+  - it: omits the Role when RBAC creation is disabled
+    set:
+      rbac.create: false
+    asserts:
+      - hasDocuments:
+          count: 0
+        template: templates/role.yaml

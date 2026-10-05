@@ -25,6 +25,7 @@ rules:
     verbs:
       - get
       - list
+      - watch
   - apiGroups:
       - apps
     resources:
@@ -39,6 +40,15 @@ rules:
     resources:
       - jobs
     verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: [""]
+    resources: [secrets]
+    resourceNames:
+      - {{ .Values.global.license.secretName | quote }}
+    verbs: ["update"]
+  # Kubernetes cannot restrict Secret creation by resourceNames.
+  - apiGroups: [""]
+    resources: [secrets]
+    verbs: ["create"]
 {{- if .Values.pvcExpansion.enabled }}
   - apiGroups: [""]
     resources:

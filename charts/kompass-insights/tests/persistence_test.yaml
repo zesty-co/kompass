@@ -1,0 +1,64 @@
+suite: Insights storage without persistence
+templates:
+  - templates/deployment.yaml
+  - templates/configMap.yaml
+release:
+  namespace: insights-test
+tests:
+  - it: omits database storage and migration while retaining a read-only root filesystem
+    asserts:
+      - notExists:
+          path: spec.template.spec.volumes
+        template: templates/deployment.yaml
+      - notExists:
+          path: spec.template.spec.containers[0].volumeMounts
+        template: templates/deployment.yaml
+      - notExists:
+          path: spec.template.spec.initContainers
+        template: templates/deployment.yaml
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem
+          value: true
+        template: templates/deployment.yaml
+      - notExists:
+          path: data.PATHS_MOUNTPATH
+        template: templates/configMap.yaml
+      - notExists:
+          path: data.STORAGE_SIZE
+        template: templates/configMap.yaml
+
+  - it: retains manager extra volumes and mounts without database storage
+    set:
+      manager.extraVolumes:
+        - name: manager-config
+          configMap:
+            name: manager-config
+      manager.extraVolumeMounts:
+        - name: manager-config
+          mountPath: /etc/manager
+          readOnly: true
+    asserts:
+      - equal:
+          path: spec.template.spec.volumes
+          value:
+            - name: manager-config
+              configMap:
+                name: manager-config
+        template: templates/deployment.yaml
+      - notExists:
+          path: spec.template.spec.containers[0].volumeMounts
+        template: templates/deployment.yaml
+      - equal:
+          path: spec.template.spec.containers[1].volumeMounts
+          value:
+            - name: manager-config
+              mountPath: /etc/manager
+              readOnly: true
+        template: templates/deployment.yaml
+      - equal:
+          path: spec.template.spec.containers[1].securityContext.readOnlyRootFilesystem
+          value: true
+        template: templates/deployment.yaml
+      - notExists:
+          path: spec.template.spec.initContainers
+        template: templates/deployment.yaml

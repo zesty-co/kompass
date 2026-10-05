@@ -84,13 +84,16 @@ tests:
     asserts:
       - notFailedTemplate: {}
 
-  - it: accepts manager ceilings when Insights manager is enabled
+  - it: accepts default manager ceilings with Insights
+    values:
+      - fixtures/valid-guardian-request-ceilings.yaml
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: accepts custom manager ceilings with Insights
     values:
       - fixtures/valid-guardian-request-ceilings.yaml
     set:
-      kompass-insights:
-        manager:
-          enabled: true
       global:
         guardian:
           requestCeilings:
@@ -101,16 +104,42 @@ tests:
     asserts:
       - notFailedTemplate: {}
 
-  - it: requires manager ceilings when Insights manager is enabled
+  - it: requires manager ceilings even with the obsolete disable flag
     values:
       - fixtures/valid-guardian-request-ceilings.yaml
     set:
-      kompass-insights:
-        manager:
-          enabled: true
+      global.guardian.requestCeilings.insights.manager: ""
+      kompass-insights.manager.enabled: false
     asserts:
       - failedTemplate:
           errorMessage: global.guardian.requestCeilings.insights.containers.manager is required
+
+  - it: rejects a non-map manager ceiling
+    values:
+      - fixtures/valid-guardian-request-ceilings.yaml
+    set:
+      global.guardian.requestCeilings.insights.manager: invalid
+    asserts:
+      - failedTemplate:
+          errorMessage: global.guardian.requestCeilings.insights.containers.manager must be a map
+
+  - it: skips Insights ceilings when the entire Insights chart is disabled
+    values:
+      - fixtures/valid-guardian-request-ceilings.yaml
+    set:
+      kompass-insights.enabled: false
+      global.guardian.requestCeilings.insights: ""
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: rejects non-map workload ceilings
+    values:
+      - fixtures/valid-guardian-request-ceilings.yaml
+    set:
+      global.guardian.requestCeilings.insights: invalid
+    asserts:
+      - failedTemplate:
+          errorMessage: global.guardian.requestCeilings.insights.containers must be a map
 
   - it: rejects kube-state-metrics name overrides
     values:
@@ -149,6 +178,81 @@ tests:
     asserts:
       - failedTemplate:
           errorMessage: global.guardian.requestCeilings.insights.containers.kompass-insights.memoryRequest is required
+
+  - it: rejects a malformed first-party CPU request
+    values:
+      - fixtures/valid-guardian-request-ceilings.yaml
+    set:
+      global.guardian.requestCeilings.insights.kompass-insights.cpuRequest: invalid
+    asserts:
+      - failedTemplate:
+          errorMessage: global.guardian.requestCeilings.insights.containers.kompass-insights.cpuRequest must be a positive supported quantity (scientific exponent range -18 to 18), got "invalid"
+
+  - it: rejects whitespace-padded first-party quantities
+    values:
+      - fixtures/valid-guardian-request-ceilings.yaml
+    set:
+      global.guardian.requestCeilings.insights.kompass-insights.cpuRequest: " 1m "
+    asserts:
+      - failedTemplate:
+          errorMessage: global.guardian.requestCeilings.insights.containers.kompass-insights.cpuRequest must be a positive supported quantity (scientific exponent range -18 to 18), got " 1m "
+
+  - it: accepts first-party quantities with a bounded scientific exponent
+    values:
+      - fixtures/valid-guardian-request-ceilings.yaml
+    set:
+      global.guardian.requestCeilings.insights.kompass-insights.cpuRequest: "1e3"
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: accepts first-party scientific exponent boundaries
+    values:
+      - fixtures/valid-guardian-request-ceilings.yaml
+    set:
+      global.guardian.requestCeilings.insights.kompass-insights.cpuRequest: "1e18"
+      global.guardian.requestCeilings.insights.kompass-insights.memoryRequest: "1e-18"
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: rejects a zero first-party memory request
+    values:
+      - fixtures/valid-guardian-request-ceilings.yaml
+    set:
+      global.guardian.requestCeilings.insights.kompass-insights.memoryRequest: 0Mi
+    asserts:
+      - failedTemplate:
+          errorMessage: global.guardian.requestCeilings.insights.containers.kompass-insights.memoryRequest must be a positive supported quantity (scientific exponent range -18 to 18), got "0Mi"
+
+  - it: rejects a zero quantity expressed with an exponent
+    values:
+      - fixtures/valid-guardian-request-ceilings.yaml
+    set:
+      global.guardian.requestCeilings.insights.kompass-insights.cpuRequest: "0e1"
+    asserts:
+      - failedTemplate:
+          errorMessage: global.guardian.requestCeilings.insights.containers.kompass-insights.cpuRequest must be a positive supported quantity (scientific exponent range -18 to 18), got "0e1"
+
+  - it: rejects an exponent outside the supported range in third-party annotations
+    values:
+      - fixtures/valid-guardian-request-ceilings.yaml
+    set:
+      kubeStateMetrics:
+        annotations:
+          guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"kube-state-metrics":{"cpuRequest":"1e999999999999999999999","memoryRequest":"1Mi"}}}'
+    asserts:
+      - failedTemplate:
+          errorMessage: kubeStateMetrics.annotations[guardian.kompass.zesty.co/request-ceilings].containers.kube-state-metrics.cpuRequest must be a positive supported quantity (scientific exponent range -18 to 18), got "1e999999999999999999999"
+
+  - it: rejects a negative third-party CPU request
+    values:
+      - fixtures/valid-guardian-request-ceilings.yaml
+    set:
+      kubeStateMetrics:
+        annotations:
+          guardian.kompass.zesty.co/request-ceilings: '{"version":1,"containers":{"kube-state-metrics":{"cpuRequest":"-1m","memoryRequest":"1Mi"}}}'
+    asserts:
+      - failedTemplate:
+          errorMessage: kubeStateMetrics.annotations[guardian.kompass.zesty.co/request-ceilings].containers.kube-state-metrics.cpuRequest must be a positive supported quantity (scientific exponent range -18 to 18), got "-1m"
 
   - it: rejects an empty third-party memory request
     values:

@@ -1,0 +1,34 @@
+suite: Insights ConfigMap
+templates:
+  - templates/configMap.yaml
+tests:
+  - it: ignores legacy S3 overrides without changing Athena or metadata settings
+    set:
+      s3override.enabled: true
+      s3override.bucket: legacy-upload-bucket
+      s3override.region: us-west-2
+      awsAthena.enabled: true
+      awsAthena.athenaBucketName: athena-results-bucket
+      awsAthena.athenaRegion: eu-west-1
+      metadata.enabled: true
+      metadata.region: us-east-1
+    asserts:
+      - notExists:
+          path: data.S3BUCKET
+      - notExists:
+          path: data.REGION
+      - equal:
+          path: data.ATHENA_ENABLED
+          value: "true"
+      - equal:
+          path: data.ATHENA_BUCKET_NAME
+          value: athena-results-bucket
+      - equal:
+          path: data.ATHENA_REGION
+          value: eu-west-1
+      - equal:
+          path: data.METADATA_ENABLED
+          value: "true"
+      - equal:
+          path: data.METADATA_REGION
+          value: us-east-1

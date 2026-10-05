@@ -1,0 +1,96 @@
+suite: Manager is always present with Insights
+templates:
+  - templates/deployment.yaml
+  - templates/configMap.yaml
+  - templates/service-manager.yaml
+  - templates/role.yaml
+  - templates/monitoring/cronjob.yaml
+tests:
+  - it: renders Manager and its configuration service and license permissions by default
+    set:
+      manager.repository: 473301030746.dkr.ecr.us-west-2.amazonaws.com/zesty-k8s/kompass-manager
+    asserts: &managerAssertions
+      - equal:
+          path: spec.template.spec.containers[1].name
+          value: manager
+        template: templates/deployment.yaml
+      - equal:
+          path: metadata.name
+          value: kompass-manager
+        template: templates/service-manager.yaml
+      - equal:
+          path: data.MANAGER_ENABLED
+          value: "true"
+        template: templates/configMap.yaml
+      - equal:
+          path: data.IMAGE_PREFIX
+          value: 473301030746.dkr.ecr.us-west-2.amazonaws.com/zesty-k8s
+        template: templates/configMap.yaml
+      - equal:
+          path: data.IMAGE_PULL_SECRET_NAME
+          value: ""
+        template: templates/configMap.yaml
+      - contains:
+          path: rules
+          content:
+            apiGroups: [""]
+            resources: [secrets]
+            resourceNames: [kompass-license]
+            verbs: [update]
+        template: templates/role.yaml
+      - contains:
+          path: rules
+          content:
+            apiGroups: [""]
+            resources: [secrets]
+            verbs: [create]
+        template: templates/role.yaml
+
+  - it: ignores the obsolete Manager disable flag
+    set:
+      manager.enabled: false
+      manager.repository: 473301030746.dkr.ecr.us-west-2.amazonaws.com/zesty-k8s/kompass-manager
+    asserts: *managerAssertions
+
+  - it: pins Agent and monitoring enablement over extra env
+    set:
+      cxLogging.enabled: true
+      insights.extraEnv:
+        - name: MANAGER_ENABLED
+          value: "false"
+        - name: MANAGER_ENABLED
+          valueFrom:
+            secretKeyRef:
+              name: conflicting-credentials
+              key: MANAGER_ENABLED
+        - name: CUSTOM_ENV
+          value: retained
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name == "MANAGER_ENABLED")]
+          value:
+            name: MANAGER_ENABLED
+            value: "true"
+        template: templates/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CUSTOM_ENV
+            value: retained
+        template: templates/deployment.yaml
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].env[?(@.name == "MANAGER_ENABLED")]
+          value:
+            name: MANAGER_ENABLED
+            value: "true"
+        template: templates/monitoring/cronjob.yaml
+
+  - it: validates the Manager repository even with the obsolete disable flag
+    templates:
+      - templates/deployment.yaml
+    set:
+      manager.enabled: false
+      manager.repository: unqualified
+    asserts:
+      - failedTemplate:
+          errorMessage: manager.repository must be a qualified registry/repository path

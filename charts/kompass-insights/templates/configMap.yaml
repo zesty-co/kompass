@@ -1,3 +1,4 @@
+{{- include "zesty-k8s.validate.managerRepository" . -}}
 {{- include "zesty-k8s.validate.pricing" . -}}
 apiVersion: v1
 kind: ConfigMap
@@ -10,16 +11,16 @@ metadata:
     {{- include "zesty-k8s.requiredLabels" . | nindent 4 }}
 data:
   ORG_ID: "{{ .Values.orgID }}"
-  MANAGER_ENABLED: "{{ .Values.manager.enabled | default false }}"
+  MANAGER_ENABLED: "true"
+  {{- $imagePath := splitList "/" .Values.manager.repository }}
+  IMAGE_PREFIX: {{ initial $imagePath | join "/" | quote }}
+  IMAGE_PULL_SECRET_NAME: {{ .Values.global.imagePullSecret.name | quote }}
   PODMINUTEMETRICS_ENABLED: "{{ .Values.podMinuteMetrics.enabled }}"
-  PATHS_MOUNTPATH: "{{ .Values.persistence.mountPath }}"
-  STORAGE_SIZE: "{{ .Values.persistence.spec.resources.requests.storage }}"
   EXTERNAL_ID: "{{ .Values.externalID }}"
-  CUSTOMPRICING_ENABLED: "{{ .Values.customPricing.enabled }}"
   CUSTOMPRICING_CPU: "{{ .Values.customPricing.cpu }}"
   CUSTOMPRICING_RAM: "{{ .Values.customPricing.ram }}"
-  CUSTOMPRICING_SPOTCPU: "{{ .Values.customPricing.spotCpu }}"
-  CUSTOMPRICING_SPOTRAM: "{{ .Values.customPricing.spotRam }}"
+  CUSTOMPRICING_SPOTCPU: "{{ .Values.customPricing.spotCpu | default .Values.customPricing.cpu }}"
+  CUSTOMPRICING_SPOTRAM: "{{ .Values.customPricing.spotRam | default .Values.customPricing.ram }}"
   {{- if .Values.prometheus.url }}
   PROMETHEUS_SERVER_ENDPOINT: "{{ .Values.prometheus.url }}"
   {{- end }}
@@ -53,10 +54,6 @@ data:
   MASTER_ROLE_EXTERNALID: "{{ .Values.assumeRole.masterExternalID }}"
   ZESTY_ROLE_EXTERNALID: "{{ .Values.assumeRole.zestyExternalID }}"
   ZESTY_ROLE_ARN: "{{ .Values.assumeRole.roleArn }}"
-  {{- end }}
-  {{- if .Values.s3override.enabled }}
-  S3BUCKET: "{{ .Values.s3override.bucket }}"
-  REGION: "{{ .Values.s3override.region }}"
   {{- end }}
   LOG_LEVEL: "{{ .Values.log.level }}"
   LOG_REMOTE: "{{ .Values.log.remote }}"

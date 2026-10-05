@@ -1,0 +1,54 @@
+suite: Manager image tag resolution
+templates:
+  - templates/deployment.yaml
+  - templates/configMap.yaml
+tests:
+  - it: gives an explicit manager tag precedence over the agent tag
+    set:
+      image.tag: a1b2c3d4
+      manager.tag: e5f6a7b8
+      image.repository: 473301030746.dkr.ecr.us-west-2.amazonaws.com/zesty-k8s/agent
+      manager.repository: 473301030746.dkr.ecr.us-west-2.amazonaws.com/zesty-k8s/kompass-manager
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: 473301030746.dkr.ecr.us-west-2.amazonaws.com/zesty-k8s/agent:a1b2c3d4
+        template: templates/deployment.yaml
+      - equal:
+          path: spec.template.spec.containers[1].image
+          value: 473301030746.dkr.ecr.us-west-2.amazonaws.com/zesty-k8s/kompass-manager:e5f6a7b8
+        template: templates/deployment.yaml
+
+  - it: falls back to the custom agent tag when the manager tag is unset
+    set:
+      image.tag: a1b2c3d4
+      manager.tag: null
+      image.repository: 473301030746.dkr.ecr.us-west-2.amazonaws.com/zesty-k8s/agent
+      manager.repository: 473301030746.dkr.ecr.us-west-2.amazonaws.com/zesty-k8s/kompass-manager
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: 473301030746.dkr.ecr.us-west-2.amazonaws.com/zesty-k8s/agent:a1b2c3d4
+        template: templates/deployment.yaml
+      - equal:
+          path: spec.template.spec.containers[1].image
+          value: 473301030746.dkr.ecr.us-west-2.amazonaws.com/zesty-k8s/kompass-manager:a1b2c3d4
+        template: templates/deployment.yaml
+
+  - it: falls back to the chart appVersion when both tags are unset
+    chart:
+      appVersion: test-app-version
+    set:
+      image.tag: null
+      manager.tag: null
+      image.repository: 473301030746.dkr.ecr.us-west-2.amazonaws.com/zesty-k8s/agent
+      manager.repository: 473301030746.dkr.ecr.us-west-2.amazonaws.com/zesty-k8s/kompass-manager
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: 473301030746.dkr.ecr.us-west-2.amazonaws.com/zesty-k8s/agent:test-app-version
+        template: templates/deployment.yaml
+      - equal:
+          path: spec.template.spec.containers[1].image
+          value: 473301030746.dkr.ecr.us-west-2.amazonaws.com/zesty-k8s/kompass-manager:test-app-version
+        template: templates/deployment.yaml

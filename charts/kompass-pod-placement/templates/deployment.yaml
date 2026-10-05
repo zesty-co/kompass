@@ -2,6 +2,7 @@
 {{- $configuredPodLabels := deepCopy (.Values.podLabels | default dict) -}}
 {{- $requiredLabels := include "kompass-pod-placement.requiredLabels" . | fromYaml -}}
 {{- $podLabels := mergeOverwrite $commonLabels $configuredPodLabels $requiredLabels -}}
+{{- $reservedLicenseEnvNames := list "LICENSE_SECRET_NAME" "LICENSE_DOCUMENT_KEY" -}}
 {{- $annotations := deepCopy (.Values.annotations | default dict) -}}
 {{- $podPlacementCeilings := dig "guardian" "requestCeilings" "podPlacement" (dict) .Values.global -}}
 {{- if $podPlacementCeilings -}}
@@ -72,6 +73,10 @@ spec:
             - {{ . | quote }}
             {{- end }}
           env:
+            - name: LICENSE_SECRET_NAME
+              value: {{ .Values.global.license.secretName | quote }}
+            - name: LICENSE_DOCUMENT_KEY
+              value: {{ .Values.global.license.documentKey | quote }}
             - name: ZESTY_SECRET_NAME
               value: {{ .Values.kompassInsightSecret }}
             - name: KOMPASS_CHART_VERSION
@@ -121,8 +126,10 @@ spec:
               value: {{ .Values.cxLogging.ingressUrl }}
               {{- end }}
             {{- end }}
-            {{- with .Values.env }}
-            {{- toYaml . | nindent 12 }}
+            {{- range .Values.env }}
+              {{- if not (has .name $reservedLicenseEnvNames) }}
+              {{- toYaml (list .) | nindent 12 }}
+              {{- end }}
             {{- end }}
           {{- with .Values.envFrom }}
           envFrom:
@@ -142,8 +149,12 @@ spec:
             {{- toYaml .Values.probes.readiness | nindent 12 }}
           livenessProbe:
             {{- toYaml .Values.probes.liveness | nindent 12 }}
+          {{- $resources := .Values.resources }}
+          {{- if .Values.global.guardian.enabled }}
+          {{- $resources = .Values.guardianProtectedResources }}
+          {{- end }}
           resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+            {{- toYaml $resources | nindent 12 }}
           volumeMounts:
           {{- if and .Values.enabled .Values.webhook.enabled }}
             - mountPath: "/tmp/k8s-webhook-server/serving-certs"

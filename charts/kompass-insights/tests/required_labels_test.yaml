@@ -10,8 +10,6 @@ templates:
   - templates/monitoring/cluster_role.yaml
   - templates/configMap.yaml
   - templates/serviceAccount.yaml
-  - templates/pvc.yaml
-  - templates/credentials-secret.yaml
   - templates/clusterRole.yaml
   - templates/service.yaml
   - templates/role.yaml
@@ -20,9 +18,6 @@ templates:
 tests:
   - it: labels every rendered native resource
     set:
-      encryptedCredentials: enc-123
-      secret.create: true
-      manager.enabled: true
       global.cxLogging.enabled: true
     asserts:
       - equal:
@@ -33,8 +28,6 @@ tests:
     templates:
       - templates/deployment.yaml
       - templates/configMap.yaml
-    set:
-      secret.create: false
     asserts:
       - equal:
           path: metadata.labels["app.kubernetes.io/part-of"]
@@ -53,7 +46,6 @@ tests:
       - templates/deployment.yaml
       - templates/configMap.yaml
     set:
-      secret.create: false
       global.podLabels:
         app.kubernetes.io/part-of: global-other
       insights.podLabels:
@@ -68,7 +60,6 @@ tests:
     templates:
       - templates/monitoring/cronjob.yaml
     set:
-      secret.create: false
       global.cxLogging.enabled: true
       global.podLabels:
         app.kubernetes.io/part-of: global-other

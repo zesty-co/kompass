@@ -1,4 +1,8 @@
 global:
+  # Manager or external delivery provisions the license Secret in the release namespace.
+  license:
+    secretName: kompass-license
+    documentKey: kompass_license
   cxLogging:
     enabled: false
     clusterName: ""
@@ -12,42 +16,34 @@ global:
   imagePullSecret:
     name: ""
     dockerconfigjson: ""
-
+  guardian:
+    enabled: false
 # Enable "write" mode, where the Pod Placement can make 
 enabled: false
-
 nameOverride: ~
 fullnameOverride: ~
-
 # kompassInsightSecret -- Name of the Kubernetes secret created by the Kompass Insight
 kompassInsightSecret: "kompass-insights-secret"
-
 image:
   registry: 672188301118.dkr.ecr.eu-west-1.amazonaws.com/zesty-k8s/pod-placement
   pullPolicy: Always
   tag: ~
-
 imagePullSecrets: []
-
 serviceAccount:
   create: true
   annotations: {}
-
 replicaCount: 2
-
 autoscaling:
   enabled: false
   minReplicas: 2
   maxReplicas: 2
   targetCPUUtilizationPercentage: 80
   targetMemoryUtilizationPercentage: 80
-
 service:
   portName: https
   port: 443
   targetPortName: https
   type: ClusterIP
-
 ports:
   https:
     name: https
@@ -61,7 +57,6 @@ ports:
     name: healthz
     containerPort: 8081
     protocol: TCP
-
 resources:
   requests:
     cpu: 100m
@@ -70,23 +65,26 @@ resources:
   limits:
     cpu: 200m
     memory: 256Mi
-
+# Resources applied when Guardian protects this workload.
+guardianProtectedResources:
+  requests:
+    cpu: 100m
+    memory: 144Mi
+  limits:
+    cpu: 200m
+    memory: 192Mi
 nodeSelector: {}
 tolerations: []
 affinity: {}
-
 # Workload annotations applied to the Pod Placement Deployment metadata.
 annotations: {}
 podAnnotations: {}
 podLabels: {}
-
 extraArgs: []
 env: []
 envFrom: []
-
 extraVolumes: []
 extraVolumeMounts: []
-
 probes:
   readiness:
     httpGet:
@@ -100,15 +98,12 @@ probes:
       port: healthz
     initialDelaySeconds: 0
     periodSeconds: 10
-
 podDisruptionBudget:
   enabled: true
   minAvailable: 1
   maxUnavailable: ~
-
 rbac:
   create: true
-
 cxLogging:
   enabled: false
   clusterName: ""
@@ -118,7 +113,6 @@ cxLogging:
     key: CX_API_KEY
   ingressUrl: https://ingress.eu2.coralogix.com/
   otelEndpoint: ""
-
 podSecurityContext:
   runAsUser: 1000
   runAsGroup: 1000
@@ -126,23 +120,19 @@ podSecurityContext:
   runAsNonRoot: true
   seccompProfile:
     type: RuntimeDefault
-
 # cache.securityContext -- Security context for the Cache container.
 # See: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container
 securityContext:
   allowPrivilegeEscalation: false
   capabilities:
     drop:
-    - ALL
+      - ALL
   readOnlyRootFilesystem: true
-
 # todo: use these values in deployment
-
 webhook:
   enabled: true
   failurePolicy: Ignore
   timeoutSeconds: 5
-
 evictionWindow:
   # Cron expression (5-field: minute hour day-of-month month day-of-week) that
   # defines when eviction windows open.
