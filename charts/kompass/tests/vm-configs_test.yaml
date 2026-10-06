@@ -3,6 +3,91 @@ templates:
   - templates/dependencies/vm-configs.yaml
 
 tests:
+  - it: leaves the existing node scrape jobs unchanged by default
+    documentSelector:
+      path: metadata.name
+      value: kompass-vmagent-scrape-configs
+    asserts:
+      - notMatchRegex:
+          path: data["kompass-scrape-config.yml"]
+          pattern: "job_name: 'kwok-"
+      - notMatchRegex:
+          path: data["kompass-scrape-config.yml"]
+          pattern: "__meta_kubernetes_node_label_kwok_x_k8s_io_node"
+      - matchRegex:
+          path: data["kompass-scrape-config.yml"]
+          pattern: "job_name: 'kubelet'[\\s\\S]*authorization:[\\s\\S]*replacement: /api/v1/nodes/\\$1/proxy/metrics/cadvisor[\\s\\S]*job_name: 'kubelet-resource'[\\s\\S]*authorization:[\\s\\S]*replacement: /api/v1/nodes/\\$1/proxy/metrics/resource[\\s\\S]*job_name: 'kubelet-volume'[\\s\\S]*authorization:[\\s\\S]*replacement: /api/v1/nodes/\\$1/proxy/metrics"
+
+  - it: renders only the two dedicated KWOK jobs when enabled
+    documentSelector:
+      path: metadata.name
+      value: kompass-vmagent-scrape-configs
+    set:
+      global:
+        kwok:
+          enabled: true
+    asserts:
+      - matchRegex:
+          path: data["kompass-scrape-config.yml"]
+          pattern: "job_name: 'kwok-cadvisor'[\\s\\S]*job_name: 'kwok-resource'"
+      - notMatchRegex:
+          path: data["kompass-scrape-config.yml"]
+          pattern: "job_name: 'kwok-volume'"
+      - notMatchRegex:
+          path: data["kompass-scrape-config.yml"]
+          pattern: "job_name: 'kwok-[^']+'[\\s\\S]*job_name: 'kwok-[^']+'[\\s\\S]*job_name: 'kwok-[^']+'"
+
+  - it: drops fake nodes from all normal node jobs when KWOK is enabled
+    documentSelector:
+      path: metadata.name
+      value: kompass-vmagent-scrape-configs
+    set:
+      global:
+        kwok:
+          enabled: true
+    asserts:
+      - matchRegex:
+          path: data["kompass-scrape-config.yml"]
+          pattern: "job_name: 'kubelet'[\\s\\S]*source_labels: \\[__meta_kubernetes_node_label_kwok_x_k8s_io_node\\][\\s\\S]*action: drop[\\s\\S]*job_name: 'kubelet-resource'[\\s\\S]*source_labels: \\[__meta_kubernetes_node_label_kwok_x_k8s_io_node\\][\\s\\S]*action: drop[\\s\\S]*job_name: 'kubelet-volume'[\\s\\S]*source_labels: \\[__meta_kubernetes_node_label_kwok_x_k8s_io_node\\][\\s\\S]*action: drop[\\s\\S]*job_name: 'kwok-cadvisor'"
+
+  - it: discovers annotated KWOK nodes and defaults bare metrics hosts to port 10247
+    documentSelector:
+      path: metadata.name
+      value: kompass-vmagent-scrape-configs
+    set:
+      global:
+        kwok:
+          enabled: true
+    asserts:
+      - matchRegex:
+          path: data["kompass-scrape-config.yml"]
+          pattern: "job_name: 'kwok-cadvisor'[\\s\\S]*source_labels: \\[__address__\\][\\s\\S]*replacement: \\$1:10247[\\s\\S]*job_name: 'kwok-resource'[\\s\\S]*source_labels: \\[__address__\\][\\s\\S]*replacement: \\$1:10247"
+      - matchRegex:
+          path: data["kompass-scrape-config.yml"]
+          pattern: "source_labels: \\[__meta_kubernetes_node_annotation_kompass_zesty_co_metrics_scheme\\][\\s\\S]*regex: \\(https\\?\\)[\\s\\S]*target_label: __scheme__"
+
+  - it: keeps KWOK throttling and resource metric names needed by rightsizing
+    documentSelector:
+      path: metadata.name
+      value: kompass-vmagent-scrape-configs
+    set:
+      global:
+        kwok:
+          enabled: true
+    asserts:
+      - matchRegex:
+          path: data["kompass-scrape-config.yml"]
+          pattern: "job_name: 'kwok-cadvisor'[\\s\\S]*container_cpu_cfs_throttled_seconds_total[\\s\\S]*job_name: 'kwok-resource'"
+      - matchRegex:
+          path: data["kompass-scrape-config.yml"]
+          pattern: "regex: '\\(container_cpu_usage_seconds_total\\|container_memory_working_set_bytes\\|node_cpu_usage_seconds_total\\|node_memory_working_set_bytes\\)'[\\s\\S]*replacement: kubelet_resource_\\$1"
+      - matchRegex:
+          path: data["kompass-scrape-config.yml"]
+          pattern: "kubelet_resource_node_memory_working_set_bytes\\|kube_pod_container_status_terminated_reason"
+      - notMatchRegex:
+          path: data["kompass-scrape-config.yml"]
+          pattern: "kubelet_resource_kube_pod_container_status_terminated_reason"
+
   - it: renders main vmagent config with scrape config fragments directory
     documentSelector:
       path: metadata.name

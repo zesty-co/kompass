@@ -1,0 +1,67 @@
+suite: Shared global license location
+templates:
+  - charts/kompass-insights/templates/deployment.yaml
+  - charts/kompass-insights/templates/configMap.yaml
+  - charts/kompass-insights/templates/role.yaml
+  - charts/kompass-pod-placement/templates/deployment.yaml
+  - charts/kompass-pod-placement/templates/role.yaml
+tests:
+  - it: propagates the parent license to consumers and named permissions over child globals
+    set:
+      global.license.secretName: shared-license
+      global.license.documentKey: shared-document
+      kompass-insights.global.license.secretName: ignored-insights-license
+      kompass-pod-placement.global.license.secretName: ignored-placement-license
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LICENSE_SECRET_NAME
+            value: shared-license
+        template: charts/kompass-insights/templates/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LICENSE_DOCUMENT_KEY
+            value: shared-document
+        template: charts/kompass-insights/templates/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: LICENSE_SECRET_NAME
+            value: shared-license
+        template: charts/kompass-insights/templates/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: LICENSE_DOCUMENT_KEY
+            value: shared-document
+        template: charts/kompass-insights/templates/deployment.yaml
+      - contains:
+          path: rules
+          content:
+            apiGroups: [""]
+            resources: [secrets]
+            resourceNames: [shared-license]
+            verbs: [update]
+        template: charts/kompass-insights/templates/role.yaml
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LICENSE_SECRET_NAME
+            value: shared-license
+        template: charts/kompass-pod-placement/templates/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LICENSE_DOCUMENT_KEY
+            value: shared-document
+        template: charts/kompass-pod-placement/templates/deployment.yaml
+      - contains:
+          path: rules
+          content:
+            apiGroups: [""]
+            resources: [secrets]
+            resourceNames: [shared-license]
+            verbs: [list, watch]
+        template: charts/kompass-pod-placement/templates/role.yaml

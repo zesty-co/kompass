@@ -264,27 +264,49 @@ Global values override component values for matching keys.
 {{- end -}}
 
 {{/*
-Validate that every expected container has non-empty Guardian request ceilings.
+Validate that a Guardian request ceiling is a positive supported quantity.
+*/}}
+{{- define "kompass.guardian.validatePositiveQuantity" -}}
+{{- $path := .path -}}
+{{- $value := printf "%v" .value -}}
+{{- /* Helm templates do not expose Kubernetes resource.ParseQuantity; support a bounded quantity subset. */ -}}
+{{- $quantityPattern := "^[+]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[eE][+-]?(?:0|[1-9]|1[0-8])|n|u|m|k|M|G|T|P|E|Ki|Mi|Gi|Ti|Pi|Ei)?$" -}}
+{{- if not (regexMatch $quantityPattern $value) -}}
+{{- fail (printf "%s must be a positive supported quantity (scientific exponent range -18 to 18), got %q" $path $value) -}}
+{{- end -}}
+{{- $positiveSignificandPattern := "^[+]?0*(?:[1-9][0-9]*(?:\\.[0-9]*)?|\\.[0-9]*[1-9][0-9]*)" -}}
+{{- if not (regexMatch $positiveSignificandPattern $value) -}}
+{{- fail (printf "%s must be a positive supported quantity (scientific exponent range -18 to 18), got %q" $path $value) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Validate that every expected container has positive Guardian request ceilings.
+Keep map lookups in else branches because Helm lint suppresses required/fail errors.
 */}}
 {{- define "kompass.guardian.validateContainers" -}}
 {{- $path := .path -}}
 {{- $containers := required (printf "%s.containers is required" $path) .containers -}}
 {{- if not (kindIs "map" $containers) -}}
 {{- fail (printf "%s.containers must be a map" $path) -}}
-{{- end -}}
+{{- else -}}
 {{- range $containerName := .expectedContainers -}}
 {{- $containerPath := printf "%s.containers.%s" $path $containerName -}}
 {{- $container := required (printf "%s is required" $containerPath) (get $containers $containerName) -}}
 {{- if not (kindIs "map" $container) -}}
 {{- fail (printf "%s must be a map" $containerPath) -}}
-{{- end -}}
+{{- else -}}
 {{- $cpuRequest := required (printf "%s.cpuRequest is required" $containerPath) (get $container "cpuRequest") -}}
 {{- if empty (trim (printf "%v" $cpuRequest)) -}}
 {{- fail (printf "%s.cpuRequest must not be empty" $containerPath) -}}
 {{- end -}}
+{{- include "kompass.guardian.validatePositiveQuantity" (dict "path" (printf "%s.cpuRequest" $containerPath) "value" $cpuRequest) -}}
 {{- $memoryRequest := required (printf "%s.memoryRequest is required" $containerPath) (get $container "memoryRequest") -}}
 {{- if empty (trim (printf "%v" $memoryRequest)) -}}
 {{- fail (printf "%s.memoryRequest must not be empty" $containerPath) -}}
+{{- end -}}
+{{- include "kompass.guardian.validatePositiveQuantity" (dict "path" (printf "%s.memoryRequest" $containerPath) "value" $memoryRequest) -}}
+{{- end -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}
@@ -305,12 +327,14 @@ Validate a third-party workload's JSON Guardian request-ceiling annotation.
 {{- $annotation := required (printf "%s is required" .path) .annotation -}}
 {{- if not (kindIs "string" $annotation) -}}
 {{- fail (printf "%s must be a JSON string" .path) -}}
-{{- end -}}
+{{- else -}}
 {{- $decoded := fromJson $annotation -}}
 {{- if not (kindIs "map" $decoded) -}}
 {{- fail (printf "%s must be valid JSON" .path) -}}
-{{- end -}}
+{{- else -}}
 {{- include "kompass.guardian.validateContainers" (dict "path" .path "containers" (get $decoded "containers") "expectedContainers" .expectedContainers) -}}
+{{- end -}}
+{{- end -}}
 {{- end -}}
 
 {{/*
@@ -322,11 +346,7 @@ Validate Guardian request ceilings for every workload this release can install.
 {{- include "kompass.guardian.validateFirstParty" (dict "requestCeilings" $requestCeilings "workload" "bridge" "expectedContainers" (list "bridge")) -}}
 {{- end -}}
 {{- if (index .Values "kompass-insights").enabled -}}
-{{- $insightsContainers := list "kompass-insights" -}}
-{{- if dig "manager" "enabled" false (index .Values "kompass-insights") -}}
-{{- $insightsContainers = append $insightsContainers "manager" -}}
-{{- end -}}
-{{- include "kompass.guardian.validateFirstParty" (dict "requestCeilings" $requestCeilings "workload" "insights" "expectedContainers" $insightsContainers) -}}
+{{- include "kompass.guardian.validateFirstParty" (dict "requestCeilings" $requestCeilings "workload" "insights" "expectedContainers" (list "kompass-insights" "manager")) -}}
 {{- end -}}
 {{- include "kompass.guardian.validateFirstParty" (dict "requestCeilings" $requestCeilings "workload" "podPlacement" "expectedContainers" (list "pod-placement")) -}}
 {{- if .Values.rightsizing.enabled -}}

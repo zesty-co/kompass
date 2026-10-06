@@ -1,6 +1,15 @@
 # -- Global values that are applied across multiple components of the Kompass chart.
 # These values often use YAML anchors (&anchorName) to define a value once and reuse it (*anchorName) elsewhere.
 global:
+  # Shared license location for Insights, Manager, Bridge, and Pod Placement.
+  # Manager or external delivery provisions the Secret in the release namespace.
+  license:
+    secretName: kompass-license
+    documentKey: kompass_license
+  # -- (object) KWOK test-cluster integration.
+  kwok:
+    # -- (bool) Enable scraping metrics from fake KWOK nodes.
+    enabled: false
   # -- (string) Overrides the name of the VictoriaMetrics VM Auth service.
   # This value is referenced by the YAML anchor '&vmName'.
   # IMPORTANT: If you change this value, you MUST also update 'victoriaMetricsRemoteUrl'
@@ -24,7 +33,7 @@ global:
   clusterIssuerName: kompass-selfsigned-issuer
   # -- (bool)
   useHelmPriorityHooks: true
-  # -- (map) global node selector for Kompass components
+  # -- (map) global node selector for Kompass components.
   nodeSelector: {}
   # -- (array) global tolerations for Kompass components
   tolerations: []
@@ -56,6 +65,8 @@ global:
     dockerconfigjson: ""
   # -- (map) Guardian request ceilings for first-party Kompass workloads.
   guardian:
+    # -- (bool) Enable Guardian resource profiles for first-party Kompass charts.
+    enabled: false
     requestCeilings:
       bridge:
         bridge:
@@ -65,6 +76,9 @@ global:
         kompass-insights:
           cpuRequest: "3"
           memoryRequest: "25Gi"
+        manager:
+          cpuRequest: "100m"
+          memoryRequest: "128Mi"
       podPlacement:
         pod-placement:
           cpuRequest: "2"
@@ -145,7 +159,6 @@ global:
     # otelEndpoint: ingress.eu2.coralogix.com:443
     # -- (string) global configmap name
   globalConfigName: global-config
-
 validator:
   image:
     registry: 672188301118.dkr.ecr.eu-west-1.amazonaws.com/docker-hub/bitnami
@@ -174,7 +187,6 @@ validator:
   serviceAccountName: kompass-validator
   # -- (array) Topology spread constraints for validator job.
   topologySpreadConstraints: []
-
 kompass-insights:
   # -- (bool) Enable or disable the Kompass Insights feature components.
   # This should be disabled only for distinct scenarios and is not recommended for most use-cases.
@@ -183,38 +195,14 @@ kompass-insights:
   # -- (string) REQUIRED: Your Zesty organization ID.
   # Provided during the onboarding process. This value MUST be set.
   orgID: ""
-  # -- (string) Plaintext credentials value.
-  # Use this with `secret.create=true` to let the chart create the credentials Secret.
-  # -- WARNING: values files can be exposed via Git, CI logs, or release metadata.
-  encryptedCredentials: ""
-  # -- (map) Kubernetes Secret containing encrypted credentials.
-  # This credentials source secret is separate from `kompass-insights.insights.secret`.
-  # Modes:
-  # - `secret.create=false`: Secret already exists.
-  # - `secret.create=true`: chart creates Secret from `encryptedCredentials`.
-  secret:
-    # -- (bool) If true, chart creates credentials Secret from `encryptedCredentials`.
-    create: true
-    # -- (string) Name of the credentials Kubernetes Secret.
-    name: kompass-credentials
-
   admission:
     # -- (bool) Enable or disable the Zesty Kompass mutating webhook for admission control.
     # Required for certain features such as Spot Management.
     enabled: false
-
   awsCluster:
     # -- (bool) Override for deprecated functionality related to specific AWS cluster handling.
     # Consult Zesty documentation before enabling this option. Generally should remain false.
     enabled: false
-
-  persistence:
-    spec:
-      # -- (string) Specify the StorageClass to use for PersistentVolumeClaims.
-      # If set to null (~), the cluster's default StorageClass will be used (if one exists).
-      # Example: "gp2", "standard", "managed-premium"
-      storageClassName: *storageClassName
-
   assumeRole:
     # -- (bool) Configuration for using AWS IAM Role.
     # Consult Zesty documentation before disabling this option. Generally should remain true.
@@ -225,7 +213,6 @@ kompass-insights:
     # -- (string) REQUIRED if assumeRole.enabled is true: The External ID configured for the IAM role.
     # Provided during the onboarding process to prevent confused deputy problems.
     zestyExternalID: ~
-
   # -- (map) Configuration for sending CX logs.
   cxLogging:
     # -- (bool) Enable or disable sending CX logs to Zesty.
@@ -239,12 +226,11 @@ kompass-insights:
     apiKeySecret:
       name: kompass-cx-logging
       key: CX_API_KEY
-    # -- (string) domain: The domain of the Coralogix ingress endpoint.
-    # -- (string) logUrl: The URL endpoint for sending logs to Coralogix.
-    # -- (string) timeDeltaUrl: The URL endpoint for time synchronization with Coralogix.
-    # -- (string) ingressLogsUrl: The URL endpoint for Coralogix ingress logs.
-    # -- (string) ingressUrl: The URL endpoint for Coralogix ingress.
-
+      # -- (string) domain: The domain of the Coralogix ingress endpoint.
+      # -- (string) logUrl: The URL endpoint for sending logs to Coralogix.
+      # -- (string) timeDeltaUrl: The URL endpoint for time synchronization with Coralogix.
+      # -- (string) ingressLogsUrl: The URL endpoint for Coralogix ingress logs.
+      # -- (string) ingressUrl: The URL endpoint for Coralogix ingress.
 rightsizing:
   # -- (bool) Enable or disable the Zesty rightsizing feature components.
   enabled: false
@@ -263,19 +249,15 @@ rightsizing:
   # -- (map) Optional custom replica aggregation quantiles (integers 1..99).
   config:
     customReplicaAggregationMethodsOverride: {}
-
 disk:
   # -- (bool) Enable or disable the Zesty disk optimization feature components.
   enabled: false
-
   agentManager:
     # -- (string) REQUIRED if disk.enabled is true: The Zesty API Key for disk agent management.
     # Provided during the onboarding process.
     apiKey: ""
-
 kompass-pod-placement:
   enabled: false
-
 victoriaMetrics:
   enabled: true
   serviceAccount:
@@ -308,7 +290,6 @@ victoriaMetrics:
       memory.allowedPercent: 60
       dedup.minScrapeInterval: 30s
       enableTCP6: true
-
 victoriaMetricsCluster:
   enabled: false
   serviceAccount:
@@ -338,30 +319,30 @@ victoriaMetricsCluster:
     affinity:
       podAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchExpressions:
-            - key: app
-              operator: In
-              values:
-              - vmstorage
-            - key: app.kubernetes.io/name
-              operator: In
-              values:
-              - victoriaMetricsCluster
-          topologyKey: topology.kubernetes.io/zone
+          - labelSelector:
+              matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                    - vmstorage
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - victoriaMetricsCluster
+            topologyKey: topology.kubernetes.io/zone
       podAntiAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchExpressions:
-            - key: app
-              operator: In
-              values:
-              - vmselect
-            - key: app.kubernetes.io/name
-              operator: In
-              values:
-              - victoriaMetricsCluster
-          topologyKey: kubernetes.io/hostname
+          - labelSelector:
+              matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                    - vmselect
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - victoriaMetricsCluster
+            topologyKey: kubernetes.io/hostname
     replicaCount: 2
     resources:
       requests:
@@ -387,30 +368,30 @@ victoriaMetricsCluster:
     affinity:
       podAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchExpressions:
-            - key: app
-              operator: In
-              values:
-              - vmstorage
-            - key: app.kubernetes.io/name
-              operator: In
-              values:
-              - victoriaMetricsCluster
-          topologyKey: topology.kubernetes.io/zone
+          - labelSelector:
+              matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                    - vmstorage
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - victoriaMetricsCluster
+            topologyKey: topology.kubernetes.io/zone
       podAntiAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchExpressions:
-            - key: app
-              operator: In
-              values:
-              - vminsert
-            - key: app.kubernetes.io/name
-              operator: In
-              values:
-              - victoriaMetricsCluster
-          topologyKey: kubernetes.io/hostname
+          - labelSelector:
+              matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                    - vminsert
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - victoriaMetricsCluster
+            topologyKey: kubernetes.io/hostname
     replicaCount: 2
     resources:
       requests:
@@ -440,30 +421,30 @@ victoriaMetricsCluster:
     affinity:
       podAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchExpressions:
-            - key: app
-              operator: In
-              values:
-              - vmstorage
-            - key: app.kubernetes.io/name
-              operator: In
-              values:
-              - victoriaMetricsCluster
-          topologyKey: topology.kubernetes.io/zone
+          - labelSelector:
+              matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                    - vmstorage
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - victoriaMetricsCluster
+            topologyKey: topology.kubernetes.io/zone
       podAntiAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchExpressions:
-            - key: app
-              operator: In
-              values:
-              - vmstorage
-            - key: app.kubernetes.io/name
-              operator: In
-              values:
-              - victoriaMetricsCluster
-          topologyKey: kubernetes.io/hostname
+          - labelSelector:
+              matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                    - vmstorage
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - victoriaMetricsCluster
+            topologyKey: kubernetes.io/hostname
     replicaCount: 2
     resources:
       requests:
@@ -487,31 +468,31 @@ victoriaMetricsMigration:
   affinity:
     podAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
-      - labelSelector:
-          matchExpressions:
-          - key: app
-            operator: In
-            values:
-            - vmstorage
-          - key: app.kubernetes.io/name
-            operator: In
-            values:
-            - victoriaMetricsCluster
-        topologyKey: topology.kubernetes.io/zone
-      preferredDuringSchedulingIgnoredDuringExecution:
-      - weight: 100
-        podAffinityTerm:
-          labelSelector:
+        - labelSelector:
             matchExpressions:
-            - key: app
-              operator: In
-              values:
-              - vminsert
-            - key: app.kubernetes.io/name
-              operator: In
-              values:
-              - victoriaMetricsCluster
-          topologyKey: kubernetes.io/hostname
+              - key: app
+                operator: In
+                values:
+                  - vmstorage
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - victoriaMetricsCluster
+          topologyKey: topology.kubernetes.io/zone
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                    - vminsert
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - victoriaMetricsCluster
+            topologyKey: kubernetes.io/hostname
   # -- (bool) Pod automountServiceAccountToken for VictoriaMetrics migration job.
   automountServiceAccountToken: ~
   # -- (array) Pod imagePullSecrets for VictoriaMetrics migration job.
@@ -533,7 +514,6 @@ victoriaMetricsMigration:
   serviceAccountName: ""
   # -- (array) Topology spread constraints for VictoriaMetrics migration job.
   topologySpreadConstraints: []
-
 metricsScrapeFilters:
   kubeStateMetrics:
     exact:
@@ -562,7 +542,6 @@ metricsScrapeFilters:
       - kube_node_status_allocatable
     prefixes:
       - kompass_rs_
-
 victoriaMetricsAgent:
   enabled: true
   image:
@@ -601,14 +580,13 @@ victoriaMetricsAgent:
               name: kompass-vmagent-rightsizing-custom-scrape-config
               optional: true
   remoteWrite:
-  - url: *vmRemoteWritePrometheusUrl
+    - url: *vmRemoteWritePrometheusUrl
   rbac:
     extraRules:
-    - apiGroups: [""]
-      resources:
-      - nodes/proxy
-      verbs: ["get"]
-
+      - apiGroups: [""]
+        resources:
+          - nodes/proxy
+        verbs: ["get"]
 victoriaMetricsAlert:
   enabled: true
   global:
@@ -632,7 +610,7 @@ victoriaMetricsAlert:
     extraArgs:
       configCheckInterval: 1m
       rule:
-      - /config/*.yaml
+        - /config/*.yaml
       evaluationInterval: 30s
       enableTCP6: true
     configMap: kompass-vm-custom-recording-rules
@@ -641,7 +619,6 @@ victoriaMetricsAlert:
   alertmanager:
     podLabels:
       app.kubernetes.io/part-of: kompass
-
 victoriaMetricsAuth:
   enabled: true
   image:
@@ -665,37 +642,37 @@ victoriaMetricsAuth:
   affinity:
     podAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
-      - weight: 100
-        podAffinityTerm:
-          labelSelector:
-            matchExpressions:
-            - key: app
-              operator: In
-              values:
-              - vmstorage
-            - key: app.kubernetes.io/name
-              operator: In
-              values:
-              - victoriaMetricsCluster
-          topologyKey: topology.kubernetes.io/zone
-      - weight: 50
-        podAffinityTerm:
-          labelSelector:
-            matchExpressions:
-            - key: app.kubernetes.io/name
-              operator: In
-              values:
-              - victoriaMetrics
-          topologyKey: topology.kubernetes.io/zone
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                    - vmstorage
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - victoriaMetricsCluster
+            topologyKey: topology.kubernetes.io/zone
+        - weight: 50
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                    - victoriaMetrics
+            topologyKey: topology.kubernetes.io/zone
     podAntiAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
-      - labelSelector:
-          matchExpressions:
-          - key: app.kubernetes.io/name
-            operator: In
-            values:
-            - victoriaMetricsAuth
-        topologyKey: kubernetes.io/hostname
+        - labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - victoriaMetricsAuth
+          topologyKey: kubernetes.io/hostname
   replicaCount: 2
   deployment:
     spec:
@@ -705,7 +682,6 @@ victoriaMetricsAuth:
     requests:
       memory: "128Mi"
       cpu: "0.1"
-
 kubeStateMetrics:
   # Set to true to install and manage kube-state-metrics from this chart.
   # Set to false to use a pre-existing external kube-state-metrics service.
@@ -721,7 +697,7 @@ kubeStateMetrics:
   nameOverride: kube-state-metrics
   fullnameOverride: kompass-kube-state-metrics
   extraArgs:
-  - --metric-annotations-allowlist=pods=[*]
+    - --metric-annotations-allowlist=pods=[*]
   actionCustomResourceVersion: &actionCustomResourceVersion v1alpha1
   customResourceState:
     enabled: true
@@ -731,55 +707,54 @@ kubeStateMetrics:
       kind: CustomResourceStateMetrics
       spec:
         resources:
-        - groupVersionKind:
-            group: rightsizing.kompass.zesty.co
-            kind: Action
-            version: *actionCustomResourceVersion
-          metricNamePrefix: kompass_rs
-          labelsFromPath:
-            namespace:
-            - metadata
-            - namespace
-            policy:
-            - spec
-            - policy
-            horizontal_scaling_policy:
-            - spec
-            - horizontalScalingPolicy
-            workload_name:
-            - spec
-            - workload
-            - name
-            action_type:
-            - spec
-            - actionType
-            source_apc:
-            - spec
-            - sourceAPC
-            execution_method:
-            - spec
-            - executionMethod
-          errorLogV: 10
-          metrics:
-            - name: action_info
-              help: "Kompass Rightsizing action CRD info"
-              each:
-                type: Gauge
-                gauge:
-                  path: [metadata, generation]
+          - groupVersionKind:
+              group: rightsizing.kompass.zesty.co
+              kind: Action
+              version: *actionCustomResourceVersion
+            metricNamePrefix: kompass_rs
+            labelsFromPath:
+              namespace:
+                - metadata
+                - namespace
+              policy:
+                - spec
+                - policy
+              horizontal_scaling_policy:
+                - spec
+                - horizontalScalingPolicy
+              workload_name:
+                - spec
+                - workload
+                - name
+              action_type:
+                - spec
+                - actionType
+              source_apc:
+                - spec
+                - sourceAPC
+              execution_method:
+                - spec
+                - executionMethod
+            errorLogV: 10
+            metrics:
+              - name: action_info
+                help: "Kompass Rightsizing action CRD info"
+                each:
+                  type: Gauge
+                  gauge:
+                    path: [metadata, generation]
   rbac:
     # Required for Action CRD scraping by kube-state-metrics customResourceState.
     # If kubeStateMetrics.enabled=false, grant this list/watch permission to your
     # external kube-state-metrics for rightsizing.kompass.zesty.co/actions.
     extraRules:
-    - apiGroups:
-      - rightsizing.kompass.zesty.co
-      resources:
-      - actions
-      verbs:
-      - list
-      - watch
-
+      - apiGroups:
+          - rightsizing.kompass.zesty.co
+        resources:
+          - actions
+        verbs:
+          - list
+          - watch
 grafana:
   enabled: true
   annotations:
@@ -825,7 +800,6 @@ grafana:
       label: grafana_dashboard
   adminUser: admin
   adminPassword: password
-
 cert-manager:
   enabled: true
   deploymentAnnotations:
@@ -842,7 +816,6 @@ cert-manager:
   crds:
     enabled: true
   fullnameOverride: "kompass-cert-manager"
-
   # Add post-upgrade hook to make sure we are not getting into a race condition
   startupapicheck:
     jobAnnotations:
@@ -853,7 +826,6 @@ cert-manager:
     serviceAccount:
       annotations:
         helm.sh/hook: post-install,post-upgrade
-
 # -- (map) Kompass Bridge deployment.
 # The Bridge acts as a layer between in-cluster Kompass actors
 # and the Zesty backend. It exposes a gRPC endpoint for
@@ -868,26 +840,18 @@ kompass-bridge:
     # -- (string) Image repository.
     repository: zesty-k8s/kompass-bridge
     # -- (string) Image tag. When empty, falls back to .Chart.AppVersion.
-    tag: "v0.2.0"
+    # This chart requires a Bridge image supporting license-backed Kafka configuration;
+    # main releases pin the newest published RC Bridge release before packaging.
+    tag: "v0.2.2"
     # -- (string) Image pull policy.
     pullPolicy: Always
-  # -- (object) Kompass Bridge kafka configuration
-  kafka:
-    # -- (string) kafka username
-    username: ""
-    # -- (string) kafka password
-    password: ""
-    # -- (string) comma-separated list of bootstrap servers
-    bootstrapServers: "kompass-kafka.zesty.co:9094"
-    # -- (string) kafka tls configuration
-    tls:
-      # -- (string) enables or disables tls functionality
-      enabled: "true"
-      # -- (string) tls certificate
-      certificate: ""
+  # Kafka configuration comes only from the Manager-delivered license Secret at
+  # global.license.secretName/documentKey in the release namespace.
+  # -- (int) Time for manager, Kafka and telemetry shutdown. Keep above the Bridge's
+  # 55-second process watchdog; forced exit can abandon in-flight work.
+  terminationGracePeriodSeconds: 60
   # -- (array) additional Kompass Bridge environment variables
   env: []
-
   # -- (array) Pod imagePullSecrets for the Bridge deployment.
   imagePullSecrets: []
   # -- (map) Pod annotations for the Bridge deployment.
@@ -921,7 +885,6 @@ kompass-bridge:
   automountServiceAccountToken: true
   # -- (string) runtimeClassName for the Bridge pod.
   runtimeClassName: ""
-
   # -- (map) Container resource requests/limits.
   resources:
     requests:
@@ -930,7 +893,6 @@ kompass-bridge:
     limits:
       cpu: 500m
       memory: 512Mi
-
   # -- (map) Container ports exposed by the Bridge.
   ports:
     # -- (map) gRPC endpoint consumed by in-cluster Kompass actors. Also
@@ -949,9 +911,17 @@ kompass-bridge:
       name: healthz
       containerPort: 8081
       protocol: TCP
-
-  # -- (map) Liveness and readiness probes.
+  # -- (map) Startup, liveness and readiness probes.
   probes:
+    # Five-minute total container startup budget; the two-minute application
+    # deadline applies only to the license stage after the unbounded identity wait.
+    # Slow identity/Kafka setup can exhaust this budget; increase it if needed.
+    startup:
+      httpGet:
+        path: /readyz
+        port: healthz
+      periodSeconds: 5
+      failureThreshold: 60
     liveness:
       httpGet:
         path: /readyz
@@ -964,7 +934,6 @@ kompass-bridge:
         port: healthz
       initialDelaySeconds: 0
       periodSeconds: 10
-
   # -- (map) Kubernetes Service routing traffic across Bridge pods.
   service:
     # -- (string) Service type.
@@ -979,29 +948,24 @@ kompass-bridge:
         # Service port is configured through the global
         targetPort: grpc
         protocol: TCP
-
   # -- (map) ServiceAccount controls.
   serviceAccount:
     create: true
-
   # -- (map) RBAC controls.
   # When create=true, a namespace-scoped Role+RoleBinding is rendered granting
   # the Bridge read access to ConfigMaps and Secrets in its own namespace
   rbac:
     create: true
-
   # -- (map) PodDisruptionBudget for the Bridge.
   podDisruptionBudget:
     enabled: true
     minAvailable: 1
-
   # -- (map) HorizontalPodAutoscaler configuration.
   autoscaling:
     enabled: false
     minReplicas: 2
     maxReplicas: 10
     targetCPUUtilizationPercentage: 80
-
 metrics-server:
   enabled: false # enable it to install metrics-server
   deploymentAnnotations:

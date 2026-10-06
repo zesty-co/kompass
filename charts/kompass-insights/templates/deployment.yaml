@@ -1,3 +1,4 @@
+{{- include "zesty-k8s.validate.managerRepository" . -}}
 {{- $globalWorkload := .Values.global | default dict -}}
 {{- $insightsWorkload := .Values.insights | default dict -}}
 {{- $insightsAnnotations := include "zesty-k8s.workload.mergeMaps" (dict
@@ -83,6 +84,7 @@
   "key" "runtimeClassName"
   "fallback" ""
 ) | trim -}}
+{{- $reservedLicenseEnvNames := list "LICENSE_SECRET_NAME" "LICENSE_DOCUMENT_KEY" -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -142,27 +144,6 @@ spec:
       topologySpreadConstraints:
       {{- toYaml . | nindent 8 }}
       {{- end }}
-      initContainers:
-        - image: "{{ .Values.image.migrationRepository }}:{{ include "zesty-k8s.version" . }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          name: migrate
-          {{- with $insightsContainerSecurityContext }}
-          securityContext:
-          {{- toYaml . | nindent 12 }}
-          {{- end }}
-          volumeMounts:
-            - mountPath: {{ .Values.persistence.mountPath }}
-              name: {{ .Values.persistence.volumeName }}
-            - mountPath: /tmp
-              name: migrate-tmp
-            - mountPath: /home/nonroot/.cache
-              name: migrate-cache
-          env:
-            - name: TMPDIR
-              value: /tmp
-            - name: XDG_CACHE_HOME
-              value: /home/nonroot/.cache
-          args: ["schema", "apply", "--url", "sqlite://{{ .Values.persistence.mountPath}}/zesty.db", "--dev-url", "sqlite://dev?mode=memory", "--to",  "file:///bin/pkg/db/schema.sql", "--auto-approve", "--format", "json"]
       containers:
         - image: "{{ .Values.image.repository }}:{{ include "zesty-k8s.version" . }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
@@ -197,7 +178,11 @@ spec:
             periodSeconds: 5
             failureThreshold: 18
             timeoutSeconds: 1
-          {{- with .Values.resources }}
+          {{- $resources := .Values.resources }}
+          {{- if .Values.global.guardian.enabled }}
+          {{- $resources = .Values.guardianProtectedResources }}
+          {{- end }}
+          {{- with $resources }}
           resources:
           {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -205,15 +190,12 @@ spec:
           securityContext:
           {{- toYaml . | nindent 12 }}
           {{- end }}
-          volumeMounts:
-            - mountPath: {{ .Values.persistence.mountPath }}
-              name: {{ .Values.persistence.volumeName }}
           envFrom:
             - configMapRef:
                 name: "{{ include "zesty-k8s.configmap" . }}"
-            - secretRef:
-                name: {{ .Values.secret.name | quote }}
           env:
+            - name: MANAGER_ENABLED
+              value: "true"
             - name: NAMESPACE
               valueFrom:
                 fieldRef:
@@ -228,8 +210,10 @@ spec:
                   fieldPath: metadata.name
             - name: CONTAINER_NAME
               value: {{ include "zesty-k8s.name" . }}
-            {{- with .Values.insights.extraEnv }}
-              {{- toYaml . | nindent 12 }}
+            {{- range .Values.insights.extraEnv }}
+              {{- if not (has .name (append $reservedLicenseEnvNames "MANAGER_ENABLED")) }}
+              {{- toYaml (list .) | nindent 12 }}
+              {{- end }}
             {{- end }}
             {{- include "zesty-k8s.controller.coralogix.envs" . | nindent 12 }}
             - name: KOMPASS_RELEASE
@@ -241,9 +225,12 @@ spec:
                   key: kompass_chart_version
             - name: INSIGHTS_CHART_VERSION
               value: {{ .Chart.Version }}
-        {{- if .Values.manager.enabled }}
+            - name: LICENSE_SECRET_NAME
+              value: {{ .Values.global.license.secretName | quote }}
+            - name: LICENSE_DOCUMENT_KEY
+              value: {{ .Values.global.license.documentKey | quote }}
         - name: "manager"
-          image: "{{ .Values.manager.repository }}:{{ .Values.manager.tag }}"
+          image: "{{ .Values.manager.repository }}:{{ .Values.manager.tag | default (include "zesty-k8s.version" .) }}"
           imagePullPolicy: {{ .Values.manager.pullPolicy }}
           args:
             - "--bridge-advertise-host={{ .Values.manager.service }}"
@@ -266,6 +253,20 @@ spec:
               value: {{ (index .Values.global "kompass-bridge").service.grpc_port | quote }}
             - name: ZESTY_SECRET_NAME
               value: {{ .Values.insights.secret }}
+            - name: LICENSE_SECRET_NAME
+              value: {{ .Values.global.license.secretName | quote }}
+            - name: LICENSE_DOCUMENT_KEY
+              value: {{ .Values.global.license.documentKey | quote }}
+            - name: IMAGE_PREFIX
+              valueFrom:
+                configMapKeyRef:
+                  name: "{{ include "zesty-k8s.configmap" . }}"
+                  key: IMAGE_PREFIX
+            - name: IMAGE_PULL_SECRET_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: "{{ include "zesty-k8s.configmap" . }}"
+                  key: IMAGE_PULL_SECRET_NAME
             - name: KOMPASS_CHART_VERSION
               value: {{ .Chart.Version }}
             - name: NAMESPACE
@@ -319,8 +320,11 @@ spec:
                   key: ZESTY_ROLE_ARN
                   optional: true
             {{- include "zesty-k8s.manager.coralogix.envs" . | nindent 12 }}
-          {{- with .Values.manager.env }}
-            {{- toYaml . | nindent 12 }}
+          {{- $reservedManagerEnvNames := concat $reservedLicenseEnvNames (list "IMAGE_PREFIX" "IMAGE_PULL_SECRET_NAME") }}
+          {{- range .Values.manager.env }}
+            {{- if not (has .name $reservedManagerEnvNames) }}
+            {{- toYaml (list .) | nindent 12 }}
+            {{- end }}
           {{- end }}
           {{- with .Values.manager.envFrom }}
           envFrom:
@@ -350,13 +354,10 @@ spec:
             {{- toYaml .Values.manager.probes.liveness | nindent 12 }}
           resources:
             {{- toYaml .Values.manager.resources | nindent 12 }}
-          volumeMounts:
-            - mountPath: /data
-              name: {{ .Values.persistence.volumeName }}
           {{- with .Values.manager.extraVolumeMounts }}
+          volumeMounts:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-        {{- end }}
       priorityClassName: system-cluster-critical
       {{- with $insightsPodSecurityContext }}
       securityContext:
@@ -364,11 +365,7 @@ spec:
       {{- end }}
       serviceAccountName: "{{ include "zesty-k8s.serviceAccountName" . }}"
       shareProcessNamespace: true
+      {{- with .Values.manager.extraVolumes }}
       volumes:
-        - name: {{ .Values.persistence.volumeName }}
-          persistentVolumeClaim:
-            claimName: "{{ include "zesty-k8s.pvcname" . }}"
-        - name: migrate-tmp
-          emptyDir: {}
-        - name: migrate-cache
-          emptyDir: {}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

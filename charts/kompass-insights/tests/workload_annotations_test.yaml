@@ -5,7 +5,6 @@ templates:
 tests:
   - it: applies component workload annotations to the Deployment
     set:
-      secret.create: false
       insights.annotations:
         example.com/component: component
     asserts:
@@ -16,7 +15,6 @@ tests:
 
   - it: gives component workload annotations precedence over global annotations
     set:
-      secret.create: false
       global.annotations:
         example.com/owner: global
       insights.annotations:
@@ -29,7 +27,6 @@ tests:
 
   - it: serializes Guardian ceilings from global configuration
     set:
-      secret.create: false
       global.guardian.requestCeilings.insights.kompass-insights.cpuRequest: 2250m
       global.guardian.requestCeilings.insights.kompass-insights.memoryRequest: 45Gi
     asserts:
@@ -40,7 +37,6 @@ tests:
 
   - it: uses the overridden Insights container name in Guardian ceilings
     set:
-      secret.create: false
       nameOverride: custom-insights
       global.guardian.requestCeilings.insights.kompass-insights.cpuRequest: 2250m
       global.guardian.requestCeilings.insights.kompass-insights.memoryRequest: 45Gi
@@ -54,10 +50,8 @@ tests:
           value: '{"version":1,"containers":{"custom-insights":{"cpuRequest":"2250m","memoryRequest":"45Gi"}}}'
         template: templates/deployment.yaml
 
-  - it: includes manager ceilings when the manager container is enabled
+  - it: includes manager ceilings alongside Insights
     set:
-      secret.create: false
-      manager.enabled: true
       global.guardian.requestCeilings.insights.kompass-insights.cpuRequest: 2250m
       global.guardian.requestCeilings.insights.kompass-insights.memoryRequest: 45Gi
       global.guardian.requestCeilings.insights.manager.cpuRequest: 100m

@@ -1,0 +1,187 @@
+suite: Custom pricing rates
+templates:
+  - templates/configMap.yaml
+tests:
+  - it: renders exact default rates without an enable flag
+    asserts:
+      - equal:
+          path: data.CUSTOMPRICING_CPU
+          value: "0.031611"
+      - equal:
+          path: data.CUSTOMPRICING_RAM
+          value: "0.004237"
+      - equal:
+          path: data.CUSTOMPRICING_SPOTCPU
+          value: "0.006655"
+      - equal:
+          path: data.CUSTOMPRICING_SPOTRAM
+          value: "0.000892"
+      - notExists:
+          path: data.CUSTOMPRICING_ENABLED
+
+  - it: overrides CPU independently
+    set:
+      customPricing.cpu: 0.05
+    asserts:
+      - equal:
+          path: data.CUSTOMPRICING_CPU
+          value: "0.05"
+      - equal:
+          path: data.CUSTOMPRICING_RAM
+          value: "0.004237"
+      - equal:
+          path: data.CUSTOMPRICING_SPOTCPU
+          value: "0.006655"
+
+  - it: overrides RAM independently
+    set:
+      customPricing.ram: 0.01
+    asserts:
+      - equal:
+          path: data.CUSTOMPRICING_RAM
+          value: "0.01"
+      - equal:
+          path: data.CUSTOMPRICING_CPU
+          value: "0.031611"
+
+  - it: overrides spot CPU independently
+    set:
+      customPricing.spotCpu: 0.02
+    asserts:
+      - equal:
+          path: data.CUSTOMPRICING_SPOTCPU
+          value: "0.02"
+      - equal:
+          path: data.CUSTOMPRICING_CPU
+          value: "0.031611"
+
+  - it: overrides spot RAM independently
+    set:
+      customPricing.spotRam: 0.003
+    asserts:
+      - equal:
+          path: data.CUSTOMPRICING_SPOTRAM
+          value: "0.003"
+      - equal:
+          path: data.CUSTOMPRICING_RAM
+          value: "0.004237"
+
+  - it: uses on-demand rates for explicitly null spot rates
+    set:
+      customPricing.cpu: 0.05
+      customPricing.ram: 0.01
+      customPricing.spotCpu: null
+      customPricing.spotRam: null
+    asserts:
+      - equal:
+          path: data.CUSTOMPRICING_SPOTCPU
+          value: "0.05"
+      - equal:
+          path: data.CUSTOMPRICING_SPOTRAM
+          value: "0.01"
+
+  - it: ignores a legacy enable flag
+    set:
+      customPricing.enabled: true
+    asserts:
+      - notExists:
+          path: data.CUSTOMPRICING_ENABLED
+
+  - it: rejects zero CPU even with a legacy disabled flag
+    set:
+      customPricing.enabled: false
+      customPricing.cpu: 0
+    asserts:
+      - failedTemplate:
+          errorMessage: customPricing.cpu must be greater than 0, got 0
+
+  - it: rejects negative RAM
+    set:
+      customPricing.ram: -1
+    asserts:
+      - failedTemplate:
+          errorMessage: customPricing.ram must be greater than 0, got -1
+
+  - it: rejects zero spot CPU
+    set:
+      customPricing.spotCpu: 0
+    asserts:
+      - failedTemplate:
+          errorMessage: customPricing.spotCpu must be greater than 0, got 0
+
+  - it: rejects negative spot RAM
+    set:
+      customPricing.spotRam: -1
+    asserts:
+      - failedTemplate:
+          errorMessage: customPricing.spotRam must be greater than 0, got -1
+
+  - it: rejects numeric strings
+    set:
+      customPricing.cpu: "0.05"
+    asserts:
+      - failedTemplate:
+          errorMessage: 'customPricing.cpu must be a number, got "0.05"'
+
+  - it: rejects booleans
+    set:
+      customPricing.ram: true
+    asserts:
+      - failedTemplate:
+          errorMessage: 'customPricing.ram must be a number, got "true"'
+
+  - it: rejects null on-demand CPU
+    set:
+      customPricing.cpu: null
+    asserts:
+      - failedTemplate:
+          errorMessage: customPricing.cpu must be a number
+
+  - it: rejects null on-demand RAM
+    set:
+      customPricing.ram: null
+    asserts:
+      - failedTemplate:
+          errorMessage: customPricing.ram must be a number
+
+  - it: rejects blank spot rates
+    set:
+      customPricing.spotCpu: ""
+    asserts:
+      - failedTemplate:
+          errorMessage: 'customPricing.spotCpu must be a number, got ""'
+
+  - it: rejects nonnumeric spot rates
+    set:
+      customPricing.spotRam: cheap
+    asserts:
+      - failedTemplate:
+          errorMessage: 'customPricing.spotRam must be a number, got "cheap"'
+
+  - it: rejects negative CPU
+    set:
+      customPricing.cpu: -1
+    asserts:
+      - failedTemplate:
+          errorMessage: customPricing.cpu must be greater than 0, got -1
+
+  - it: rejects zero RAM
+    set:
+      customPricing.ram: 0
+    asserts:
+      - failedTemplate:
+          errorMessage: customPricing.ram must be greater than 0, got 0
+
+  - it: rejects negative spot CPU
+    set:
+      customPricing.spotCpu: -1
+    asserts:
+      - failedTemplate:
+          errorMessage: customPricing.spotCpu must be greater than 0, got -1
+
+  - it: rejects zero spot RAM
+    set:
+      customPricing.spotRam: 0
+    asserts:
+      - failedTemplate:
+          errorMessage: customPricing.spotRam must be greater than 0, got 0

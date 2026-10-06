@@ -126,6 +126,8 @@ spec:
                 - /bin/metrics
               imagePullPolicy: {{ .Values.image.pullPolicy | default "Always" }}
               env:
+                - name: MANAGER_ENABLED
+                  value: "true"
                 - name: NAMESPACE
                   valueFrom:
                     fieldRef:
@@ -138,8 +140,6 @@ spec:
               envFrom:
                 - configMapRef:
                     name: "{{ include "zesty-k8s.configmap" . }}"
-                - secretRef:
-                    name: {{ .Values.secret.name | quote }}
               {{- with .Values.selfMonitoring.resources }}
               resources:
               {{- toYaml . | nindent 16 }}

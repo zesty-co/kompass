@@ -16,6 +16,11 @@ rules:
   - {{ .Values.kompassInsightSecret }}
   verbs:
   - get
+- apiGroups: [""]
+  resources: [secrets]
+  resourceNames:
+  - {{ .Values.global.license.secretName | quote }}
+  verbs: [list, watch]
 - apiGroups:
     - ""
   resources:

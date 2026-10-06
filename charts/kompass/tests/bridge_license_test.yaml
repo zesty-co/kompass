@@ -1,0 +1,78 @@
+suite: Bridge license Kafka configuration
+templates:
+  - templates/bridge/deployment.yaml
+
+tests:
+  - it: reads the shared license location without legacy Kafka environment or credentials references
+    set:
+      global.kompass-bridge.enabled: true
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LICENSE_SECRET_NAME
+            value: kompass-license
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LICENSE_DOCUMENT_KEY
+            value: kompass_license
+      - lengthEqual:
+          path: spec.template.spec.containers[0].env
+          count: 4
+      - equal:
+          path: spec.template.spec.containers[0].startupProbe
+          value:
+            httpGet:
+              path: /readyz
+              port: healthz
+            periodSeconds: 5
+            failureThreshold: 60
+      - equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 60
+
+  - it: uses the same custom license location as Manager and Insights and ignores obsolete Kafka values
+    set:
+      global.kompass-bridge.enabled: true
+      global.license.secretName: custom-license
+      global.license.documentKey: custom-document
+      kompass-bridge.env:
+        - name: LICENSE_SECRET_NAME
+          value: ignored-license
+        - name: LICENSE_DOCUMENT_KEY
+          value: ignored-document
+      kompass-bridge.kafka:
+        username: obsolete-user
+        password: obsolete-password
+        bootstrapServers: obsolete:9092
+        tls:
+          enabled: true
+          certificate: obsolete-ca
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LICENSE_SECRET_NAME
+            value: custom-license
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LICENSE_DOCUMENT_KEY
+            value: custom-document
+      - lengthEqual:
+          path: spec.template.spec.containers[0].env
+          count: 4
+
+  - it: preserves custom startup and shutdown budgets
+    set:
+      global.kompass-bridge.enabled: true
+      kompass-bridge.probes.startup.failureThreshold: 90
+      kompass-bridge.terminationGracePeriodSeconds: 120
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].startupProbe.failureThreshold
+          value: 90
+      - equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 120

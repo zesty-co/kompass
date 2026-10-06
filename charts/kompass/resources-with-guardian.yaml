@@ -1,0 +1,143 @@
+# Apply this file with the Kompass chart to enable Guardian and rightsizing for
+# Kompass workloads and use the Guardian resource profile for third-party dependencies.
+global:
+  guardian:
+    enabled: true
+
+rightsizing:
+  enabled: true
+  config:
+    kompassWorkloadsRightsizing:
+      enabled: true
+
+victoriaMetrics:
+  server:
+    resources:
+      requests:
+        memory: "688Mi"
+        cpu: "200m"
+      limits:
+        memory: "864Mi"
+        cpu: "300m"
+
+victoriaMetricsCluster:
+  vmselect:
+    resources:
+      requests:
+        memory: "640Mi"
+        cpu: "530m"
+      limits:
+        memory: "896Mi"
+        cpu: "689m"
+  vminsert:
+    resources:
+      requests:
+        memory: "300Mi"
+        cpu: "100m"
+      limits:
+        memory: "420Mi"
+        cpu: "130m"
+  vmstorage:
+    resources:
+      requests:
+        memory: "1000Mi"
+        cpu: "500m"
+      limits:
+        memory: "1400Mi"
+        cpu: "650m"
+  vmauth:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 16Mi
+      limits:
+        cpu: 200m
+        memory: 32Mi
+
+victoriaMetricsAgent:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 160Mi
+    limits:
+      cpu: 200m
+      memory: 208Mi
+
+victoriaMetricsAlert:
+  server:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 96Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
+
+victoriaMetricsAuth:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 16Mi
+    limits:
+      cpu: 200m
+      memory: 32Mi
+
+kubeStateMetrics:
+  resources:
+    requests:
+      cpu: 200m
+      memory: 560Mi
+    limits:
+      cpu: 300m
+      memory: 640Mi
+
+grafana:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 112Mi
+    limits:
+      cpu: 200m
+      memory: 144Mi
+  sidecar:
+    resources:
+      requests:
+        cpu: 200m
+        memory: 144Mi
+      limits:
+        cpu: 300m
+        memory: 192Mi
+
+cert-manager:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 48Mi
+    limits:
+      cpu: 200m
+      memory: 64Mi
+  cainjector:
+    resources:
+      requests:
+        cpu: 0.4
+        memory: 160Mi
+      limits:
+        cpu: 0.5
+        memory: 208Mi
+  webhook:
+    resources:
+      requests:
+        cpu: 0.5
+        memory: 32Mi
+      limits:
+        cpu: 0.7
+        memory: 48Mi
+
+metrics-server:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 160Mi
+    limits:
+      cpu: 200m
+      memory: 208Mi

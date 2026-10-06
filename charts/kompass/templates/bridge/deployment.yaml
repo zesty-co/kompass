@@ -2,7 +2,6 @@
 {{- $bridgeValues := index .Values "kompass-bridge" | default (dict) -}}
 {{- if $bridgeEnabled }}
 {{- $globalValues := .Values.global | default (dict) -}}
-{{- $kompassInsights := index .Values "kompass-insights" | default (dict) -}}
 {{- $legacyPullSecret := (default (dict) $globalValues.imagePullSecret).name | default "" -}}
 {{- $podAnnotations := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $bridgeValues "key" "podAnnotations") | fromYaml -}}
 {{- $podLabels := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $bridgeValues "key" "podLabels") | fromYaml -}}
@@ -20,8 +19,7 @@
 {{- $autoscaling := $bridgeValues.autoscaling | default (dict) -}}
 {{- $ports := $bridgeValues.ports | default (dict) -}}
 {{- $probes := $bridgeValues.probes | default (dict) -}}
-{{- $bridgeKafka := $bridgeValues.kafka | default (dict) -}}
-{{- $kafkaUsername := (index $bridgeKafka "username") | default (printf "bridge-user-%s" ((index $kompassInsights "orgID") | default "")) -}}
+{{- $reservedLicenseEnvNames := list "LICENSE_SECRET_NAME" "LICENSE_DOCUMENT_KEY" -}}
 {{- $bridgeAnnotations := deepCopy ($bridgeValues.annotations | default dict) -}}
 {{- $bridgeCeilings := dig "guardian" "requestCeilings" "bridge" (dict) $globalValues -}}
 {{- if $bridgeCeilings -}}
@@ -58,6 +56,7 @@ spec:
       {{- end }}
     spec:
       serviceAccountName: {{ include "kompass.bridge.fullname" . }}
+      terminationGracePeriodSeconds: {{ $bridgeValues.terminationGracePeriodSeconds }}
       {{- if ne $automountServiceAccountToken "null" }}
       automountServiceAccountToken: {{ $automountServiceAccountToken }}
       {{- end }}
@@ -155,20 +154,21 @@ spec:
               value: {{ $bridgeValues.cxLogging.ingressUrl }}
               {{- end }}
             {{- end }}
-            - name: KAFKA_USERNAME
-              value: {{ $kafkaUsername | quote }}
-            {{- include "kompass.bridge.kafkaPasswordEnv" . | nindent 12 }}
-            - name: KAFKA_BOOTSTRAP_SERVERS
-              value: {{ $bridgeValues.kafka.bootstrapServers | quote }}
-            - name: KAFKA_TLS_ENABLED
-              value: {{ $bridgeValues.kafka.tls.enabled | quote }}
-            - name: KAFKA_TLS_CA
-              value: |-{{ $bridgeValues.kafka.tls.certificate | nindent 16 }}
-          {{- with $bridgeValues.env }}
-            {{- toYaml . | nindent 12 }}
+            - name: LICENSE_SECRET_NAME
+              value: {{ .Values.global.license.secretName | quote }}
+            - name: LICENSE_DOCUMENT_KEY
+              value: {{ .Values.global.license.documentKey | quote }}
+          {{- range $bridgeValues.env }}
+            {{- if not (has .name $reservedLicenseEnvNames) }}
+            {{- toYaml (list .) | nindent 12 }}
+            {{- end }}
           {{- end }}
           {{- with $bridgeValues.envFrom }}
           envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $probes.startup }}
+          startupProbe:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           {{- with $probes.liveness }}
