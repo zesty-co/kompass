@@ -610,10 +610,28 @@ victoriaMetricsAlert:
     extraArgs:
       configCheckInterval: 1m
       rule:
-        - /config/*.yaml
+        - '/config/*.{yaml,yml}' # Keep loading the legacy rules until all products provide their own recording rules.
+        - '/config/recording-rules/*.{yaml,yml}'
       evaluationInterval: 30s
       enableTCP6: true
     configMap: kompass-vm-custom-recording-rules
+    extraVolumes:
+      - name: product-recording-rules
+        projected:
+          sources:
+            - configMap:
+                name: kompass-vm-rightsizing-recording-rules
+                optional: true
+            - configMap:
+                name: kompass-vm-insights-recording-rules
+                optional: true
+            - configMap:
+                name: kompass-vm-pod-placement-recording-rules
+                optional: true
+    extraVolumeMounts:
+      - name: product-recording-rules
+        mountPath: /config/recording-rules
+        readOnly: true
     service:
       clusterIP: ""
   alertmanager:
@@ -842,7 +860,7 @@ kompass-bridge:
     # -- (string) Image tag. When empty, falls back to .Chart.AppVersion.
     # This chart requires a Bridge image supporting license-backed Kafka configuration;
     # main releases pin the newest published RC Bridge release before packaging.
-    tag: "v0.2.2"
+    tag: "v0.3.0"
     # -- (string) Image pull policy.
     pullPolicy: Always
   # Kafka configuration comes only from the Manager-delivered license Secret at

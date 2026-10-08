@@ -458,7 +458,8 @@ To remove in the future.
 {{- end }}
 
 {{/*
-Validate that an insights pricing value is positive and numeric. Optional null values are allowed.
+Validate positive, finite pricing numbers or numeric strings, regardless of Helm's numeric representation.
+Optional null values are allowed.
 */}}
 {{- define "zesty-k8s.validate.pricingNumber" -}}
 {{- $name := .name -}}
@@ -469,10 +470,11 @@ Validate that an insights pricing value is positive and numeric. Optional null v
     {{- fail (printf "%s must be a number" $name) -}}
   {{- end -}}
 {{- else -}}
-  {{- if not (or (kindIs "int" $value) (kindIs "int64" $value) (kindIs "float64" $value)) -}}
-    {{- fail (printf "%s must be a number, got %q" $name (printf "%v" $value)) -}}
+  {{- $text := toString $value -}}
+  {{- if not (regexMatch `^[+-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+-]?[0-9]+)?$` $text) -}}
+    {{- fail (printf "%s must be a number, got %q" $name $text) -}}
   {{- end -}}
-  {{- if le (float64 $value) 0.0 -}}
+  {{- if le (float64 $text) 0.0 -}}
     {{- fail (printf "%s must be greater than 0, got %v" $name $value) -}}
   {{- end -}}
 {{- end -}}

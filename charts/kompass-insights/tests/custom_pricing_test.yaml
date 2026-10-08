@@ -116,12 +116,60 @@ tests:
       - failedTemplate:
           errorMessage: customPricing.spotRam must be greater than 0, got -1
 
-  - it: rejects numeric strings
+  - it: accepts quoted decimal and scientific rates
     set:
       customPricing.cpu: "0.05"
+      customPricing.ram: "1e-2"
+      customPricing.spotCpu: ".02"
+      customPricing.spotRam: "3e-3"
+    asserts:
+      - equal:
+          path: data.CUSTOMPRICING_CPU
+          value: "0.05"
+      - equal:
+          path: data.CUSTOMPRICING_RAM
+          value: "1e-2"
+      - equal:
+          path: data.CUSTOMPRICING_SPOTCPU
+          value: ".02"
+      - equal:
+          path: data.CUSTOMPRICING_SPOTRAM
+          value: "3e-3"
+
+  - it: rejects quoted zero spot CPU
+    set:
+      customPricing.spotCpu: "0"
     asserts:
       - failedTemplate:
-          errorMessage: 'customPricing.cpu must be a number, got "0.05"'
+          errorMessage: customPricing.spotCpu must be greater than 0, got 0
+
+  - it: rejects quoted negative CPU
+    set:
+      customPricing.cpu: "-0.05"
+    asserts:
+      - failedTemplate:
+          errorMessage: customPricing.cpu must be greater than 0, got -0.05
+
+  - it: rejects NaN strings
+    set:
+      customPricing.cpu: "NaN"
+    asserts:
+      - failedTemplate:
+          errorMessage: 'customPricing.cpu must be a number, got "NaN"'
+
+  - it: rejects infinity strings
+    set:
+      customPricing.cpu: "+Inf"
+    asserts:
+      - failedTemplate:
+          errorMessage: 'customPricing.cpu must be a number, got "+Inf"'
+
+  - it: rejects numeric strings that overflow
+    set:
+      customPricing.cpu: "1e999"
+    asserts:
+      - failedTemplate:
+          errorMessage: customPricing.cpu must be greater than 0, got 1e999
 
   - it: rejects booleans
     set:

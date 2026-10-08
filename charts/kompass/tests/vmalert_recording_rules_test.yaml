@@ -1,0 +1,89 @@
+suite: vmalert product recording rules
+templates:
+  - templates/dependencies/vm-configs.yaml
+  - charts/victoriaMetricsAlert/templates/alert-server.yaml
+  - charts/victoriaMetricsAlert/templates/alert-configmap.yaml
+tests:
+  - it: keeps current rightsizing and other product rules in the base ConfigMap
+    template: templates/dependencies/vm-configs.yaml
+    documentSelector:
+      path: metadata.name
+      value: kompass-vm-custom-recording-rules
+    asserts:
+      - matchRegex:
+          path: data["custom-rules.yaml"]
+          pattern: 'record: kompass_container_resource_requests'
+      - matchRegex:
+          path: data["custom-rules.yaml"]
+          pattern: 'record: kompass_pod_placement_pod_info_extended'
+      - matchRegex:
+          path: data["custom-rules.yaml"]
+          pattern: 'record: kompass_container_cpu_usage_max_rate[\s\S]*record: kompass_hpa_workload_cpu_usage_rate[\s\S]*record: kompass_pod_startup_time'
+
+  - it: preserves custom replica aggregation quantiles in the spoke base rules
+    template: templates/dependencies/vm-configs.yaml
+    set:
+      rightsizing:
+        config:
+          customReplicaAggregationMethods:
+            cpu:
+              custom1: 91
+            memory:
+              custom2: 97
+    documentSelector:
+      path: metadata.name
+      value: kompass-vm-custom-recording-rules
+    asserts:
+      - matchRegex:
+          path: data["custom-rules.yaml"]
+          pattern: 'record: kompass_container_cpu_usage_custom1_rate[\s\S]*quantile by[^\n]*\(0\.91,'
+      - matchRegex:
+          path: data["custom-rules.yaml"]
+          pattern: 'record: kompass_container_memory_usage_custom2[\s\S]*quantile by[^\n]*\(0\.97,'
+
+  - it: loads YAML and YML rules from both flat directories and mounts optional product ConfigMaps in single mode
+    template: charts/victoriaMetricsAlert/templates/alert-server.yaml
+    set:
+      victoriaMetricsAuth.useSingle: true
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: '--rule=/config/*.{yaml,yml}'
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: '--rule=/config/recording-rules/*.{yaml,yml}'
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[1].mountPath
+          value: /config/recording-rules
+      - equal:
+          path: spec.template.spec.volumes[1].projected.sources[0].configMap.name
+          value: kompass-vm-rightsizing-recording-rules
+      - equal:
+          path: spec.template.spec.volumes[1].projected.sources[1].configMap.name
+          value: kompass-vm-insights-recording-rules
+      - equal:
+          path: spec.template.spec.volumes[1].projected.sources[2].configMap.name
+          value: kompass-vm-pod-placement-recording-rules
+      - equal:
+          path: spec.template.spec.volumes[1].projected.sources[0].configMap.optional
+          value: true
+
+  - it: uses the same product recording-rules mount and glob in cluster mode
+    template: charts/victoriaMetricsAlert/templates/alert-server.yaml
+    set:
+      victoriaMetrics.enabled: false
+      victoriaMetricsCluster.enabled: true
+      victoriaMetricsAuth.useSingle: false
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: '--rule=/config/*.{yaml,yml}'
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: '--rule=/config/recording-rules/*.{yaml,yml}'
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[1].mountPath
+          value: /config/recording-rules
+      - equal:
+          path: spec.template.spec.volumes[1].projected.sources[0].configMap.name
+          value: kompass-vm-rightsizing-recording-rules
