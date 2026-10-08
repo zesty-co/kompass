@@ -3,6 +3,76 @@ entries:
   kompass:
   - apiVersion: v2
     appVersion: 1.16.0
+    created: "2026-10-08T07:44:15.296430797Z"
+    dependencies:
+    - condition: kompass-insights.enabled
+      name: kompass-insights
+      repository: https://zesty-co.github.io/kompass
+      version: 2.3.27
+    - name: kompass-pod-placement
+      repository: https://zesty-co.github.io/kompass
+      version: 0.1.26
+    - alias: rightsizing
+      name: pod-rightsizing
+      repository: https://zesty-co.github.io/kompass
+      version: v0.9.1
+    - alias: disk
+      condition: disk.enabled
+      name: kompass-storage
+      repository: https://zesty-co.github.io/zesty-helm
+      version: 1.7.4
+    - alias: victoriaMetrics
+      condition: victoriaMetrics.enabled
+      name: victoria-metrics-single
+      repository: https://victoriametrics.github.io/helm-charts
+      version: 0.45.0
+    - alias: victoriaMetricsCluster
+      condition: victoriaMetricsCluster.enabled
+      name: victoria-metrics-cluster
+      repository: https://victoriametrics.github.io/helm-charts
+      version: 0.49.0
+    - alias: victoriaMetricsAgent
+      condition: victoriaMetricsAgent.enabled
+      name: victoria-metrics-agent
+      repository: https://victoriametrics.github.io/helm-charts
+      version: 0.46.0
+    - alias: victoriaMetricsAlert
+      condition: victoriaMetricsAlert.enabled
+      name: victoria-metrics-alert
+      repository: https://victoriametrics.github.io/helm-charts
+      version: 0.47.0
+    - alias: victoriaMetricsAuth
+      condition: victoriaMetricsAuth.enabled
+      name: victoria-metrics-auth
+      repository: https://victoriametrics.github.io/helm-charts
+      version: 0.40.0
+    - alias: kubeStateMetrics
+      condition: kubeStateMetrics.enabled
+      name: kube-state-metrics
+      repository: https://prometheus-community.github.io/helm-charts
+      version: 8.4.1
+    - condition: cert-manager.enabled
+      name: cert-manager
+      repository: https://charts.jetstack.io
+      version: 1.21.1
+    - condition: grafana.enabled
+      name: grafana
+      repository: https://grafana.github.io/helm-charts
+      version: 10.5.15
+    - condition: metrics-server.enabled
+      name: metrics-server
+      repository: https://kubernetes-sigs.github.io/metrics-server/
+      version: 3.14.0
+    description: Zesty Kompass Helm Charts
+    digest: 57c6a30a29d01a584456b6552147dd05368a6f5b3b422294fa025a5d32264d2c
+    icon: https://zesty.co/wp-content/uploads/2024/05/favicon-150x150.png
+    name: kompass
+    type: application
+    urls:
+    - https://github.com/zesty-co/kompass/releases/download/kompass-0.3.37/kompass-0.3.37.tgz
+    version: 0.3.37
+  - apiVersion: v2
+    appVersion: 1.16.0
     created: "2026-10-06T07:10:24.012518441Z"
     dependencies:
     - condition: kompass-insights.enabled
@@ -12745,6 +12815,22 @@ entries:
   kompass-insights:
   - apiVersion: v2
     appVersion: v1.169.3
+    created: "2026-10-08T07:44:15.437267425Z"
+    dependencies:
+    - alias: admission
+      condition: admission.enabled
+      name: kompass-admission-controller
+      repository: https://zesty-co.github.io/kompass-admission-controller
+      version: 0.1.20
+    description: Kompass Insights for Kubernetes
+    digest: e0482f3da81d635e3ab54deed59274894777b632b9eefa047dc03cff5801acfe
+    name: kompass-insights
+    type: application
+    urls:
+    - https://github.com/zesty-co/kompass/releases/download/kompass-insights-2.3.27/kompass-insights-2.3.27.tgz
+    version: 2.3.27
+  - apiVersion: v2
+    appVersion: v1.169.3
     created: "2026-10-06T07:10:24.182599875Z"
     dependencies:
     - alias: admission
@@ -13617,4 +13703,4 @@ entries:
     urls:
     - https://github.com/zesty-co/kompass/releases/download/pod-rightsizing-v0.9.1/pod-rightsizing-v0.9.1.tgz
     version: v0.9.1
-generated: "2026-10-06T07:10:24.334437487Z"
+generated: "2026-10-08T07:44:15.43794613Z"
