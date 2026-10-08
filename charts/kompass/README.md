@@ -1,5 +1,22 @@
 # VictoriaMetrics topology selection
 
+## Product recording rules
+
+The spoke chart mounts the base recording rules ConfigMap at `/config` and
+projects product-owned recording-rules ConfigMaps into the shared
+`/config/recording-rules` directory. `vmalert` uses flat `*.yaml` and `*.yml`
+globs for both directories. Avoid recursive globs: Kubernetes ConfigMap
+projected volumes expose timestamp and `..data` symlinks that recursive globs
+can load more than once. Product ConfigMaps are optional so products can be
+enabled independently. Use distinct YAML/YML data keys and unique rule-group
+names across products.
+
+The rightsizing chart publishes `kompass-vm-rightsizing-recording-rules` when
+its `custom-recording-rules/` files contain rules. Its `rightsizing.yaml` is
+currently empty, so the existing Rightsizing rules continue to come from the
+base ConfigMap. The spoke also reserves `kompass-vm-insights-recording-rules`
+and `kompass-vm-pod-placement-recording-rules` for those product charts.
+
 This chart can run VictoriaMetrics in one of two modes and route all traffic through VMAuth:
 
 - Single-node (vmsingle)
