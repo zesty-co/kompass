@@ -186,6 +186,12 @@ tests:
             - source_labels: \[__name__, pool_generation\]\s+
             regex: 'jvm_memory_pool_collection_\(used_bytes\|bytes_max\);unknown'\s+
             action: drop
+      - matchRegex:
+          path: data["jvm.yaml"]
+          pattern: "replacement: 'jvm_memory_init_bytes'"
+      - matchRegex:
+          path: data["jvm.yaml"]
+          pattern: 'jvm_memory_init_bytes'
 
   - it: renders auto-discovery annotation selector when JVM metrics and auto-discovery are enabled
     set:

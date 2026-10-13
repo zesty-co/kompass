@@ -48,7 +48,7 @@ spec:
       imagePullSecrets:
         {{- toYaml $pullSecrets | nindent 8 }}
       {{- end }}
-      {{- with .Values.podSecurityContext }}
+      {{- with mergeOverwrite (deepCopy (.Values.podSecurityContext | default dict)) (.Values.global.podSecurityContext | default dict) }}
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -56,7 +56,10 @@ spec:
         {{- include "kompass-pod-placement.affinity" . | nindent 8 }}
       containers:
         - name: pod-placement
-          {{- with .Values.securityContext }}
+          {{- with omit
+            (mergeOverwrite (deepCopy (.Values.securityContext | default dict)) (.Values.global.securityContext | default dict))
+            "fsGroup" "fsGroupChangePolicy" "supplementalGroups" "sysctls"
+          }}
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}

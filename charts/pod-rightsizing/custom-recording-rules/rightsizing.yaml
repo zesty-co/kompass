@@ -1,0 +1,166 @@
+{{- if (.Values.jvmRightsizingEnabled | default false) }}
+groups:
+  - name: jvm-rightsizing
+    rules:
+      - record: kompass_container_jvm_heap_usage_max
+        expr: |
+          max by (
+            namespace, resource_id, container,
+            created_by_name, created_by_kind
+          ) (
+            (
+              max by (namespace, pod, container) (
+                jvm_memory_used_bytes{
+                  area="heap", id="", pool="",
+                  pod!="", container!=""
+                }
+              )
+              or on (namespace, pod, container)
+              sum by (namespace, pod, container) (
+                max by (namespace, pod, container, id) (
+                  jvm_memory_used_bytes{
+                    area="heap", id!="",
+                    pod!="", container!=""
+                  }
+                )
+              )
+            )
+            * on (namespace, pod, container)
+              group_left (resource_id, created_by_name, created_by_kind)
+            max by (
+              namespace, pod, container, resource_id,
+              created_by_name, created_by_kind
+            ) (
+              kompass_pod_info{status="running"}
+            )
+          )
+
+      - record: kompass_container_jvm_heap_initial_max
+        expr: |
+          max by (
+            namespace, resource_id, container,
+            created_by_name, created_by_kind
+          ) (
+            max by (namespace, pod, container) (
+              jvm_memory_init_bytes{
+                area="heap", id="", pool="",
+                pod!="", container!=""
+              } >= 0
+            )
+            * on (namespace, pod, container)
+              group_left (resource_id, created_by_name, created_by_kind)
+            max by (
+              namespace, pod, container, resource_id,
+              created_by_name, created_by_kind
+            ) (
+              kompass_pod_info{status="running"}
+            )
+          )
+
+      - record: kompass_container_jvm_gc_time_ratio_max
+        expr: |
+          max by (
+            namespace, resource_id, container,
+            created_by_name, created_by_kind
+          ) (
+            sum by (namespace, pod, container) (
+              max by (namespace, pod, container, gc) (
+                (
+                  increase_prometheus(
+                    jvm_gc_collection_seconds_sum{
+                      pod!="", container!="", gc!=""
+                    }[5m]
+                  ) / 300
+                )
+                and
+                (
+                  min_over_time(
+                    jvm_gc_collection_seconds_sum{
+                      pod!="", container!="", gc!=""
+                    }[5m]
+                  ) >= 0
+                )
+                and
+                (
+                  count_over_time(
+                    jvm_gc_collection_seconds_sum{
+                      pod!="", container!="", gc!=""
+                    }[5m]
+                  ) >= 2
+                )
+              )
+            )
+            * on (namespace, pod, container)
+              group_left (resource_id, created_by_name, created_by_kind)
+            max by (
+              namespace, pod, container, resource_id,
+              created_by_name, created_by_kind
+            ) (
+              kompass_pod_info{status="running"}
+            )
+          )
+
+      - record: kompass_container_jvm_max_heap_max
+        expr: |
+          max by (
+            namespace, resource_id, container,
+            created_by_name, created_by_kind
+          ) (
+            max by (namespace, pod, container) (
+              jvm_memory_bytes_max{
+                area="heap", id="", pool="",
+                pod!="", container!=""
+              } > 0
+            )
+            * on (namespace, pod, container)
+              group_left (resource_id, created_by_name, created_by_kind)
+            max by (
+              namespace, pod, container, resource_id,
+              created_by_name, created_by_kind
+            ) (
+              kompass_pod_info{status="running"}
+            )
+          )
+
+      - record: kompass_container_jvm_memory_minus_heap_usage_max
+        expr: |
+          max by (
+            namespace, resource_id, container,
+            created_by_name, created_by_kind
+          ) (
+            clamp_min(
+              max by (namespace, pod, container) (
+                container_memory_working_set_bytes{
+                  pod!="", container!=""
+                }
+              )
+              - on (namespace, pod, container)
+              (
+                max by (namespace, pod, container) (
+                  jvm_memory_used_bytes{
+                    area="heap", id="", pool="",
+                    pod!="", container!=""
+                  } >= 0
+                )
+                or on (namespace, pod, container)
+                sum by (namespace, pod, container) (
+                  max by (namespace, pod, container, id) (
+                    jvm_memory_used_bytes{
+                      area="heap", id!="",
+                      pod!="", container!=""
+                    } >= 0
+                  )
+                )
+              ),
+              0
+            )
+            * on (namespace, pod, container)
+              group_left (resource_id, created_by_name, created_by_kind)
+            max by (
+              namespace, pod, container, resource_id,
+              created_by_name, created_by_kind
+            ) (
+              kompass_pod_info{status="running"}
+            )
+          )
+{{- end }}

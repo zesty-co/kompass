@@ -1,0 +1,44 @@
+suite: CustomRecordingRulesConfigMap
+release:
+  name: ci
+  namespace: zesty-system
+templates:
+  - templates/config/custom-recording-rules.yaml
+tests:
+  - it: does not render JVM recording rules when rightsizing is disabled, even if JVM metrics are enabled
+    set:
+      jvmRightsizingEnabled: false
+      jvmMetrics:
+        enabled: true
+    asserts:
+      - containsDocument:
+          kind: ConfigMap
+          name: kompass-vm-rightsizing-recording-rules
+        not: true
+
+  - it: renders JVM recording rules when rightsizing is enabled with JVM metrics enabled
+    set:
+      jvmRightsizingEnabled: true
+      jvmMetrics:
+        enabled: true
+    asserts:
+      - isKind:
+          of: ConfigMap
+      - equal:
+          path: metadata.name
+          value: kompass-vm-rightsizing-recording-rules
+      - matchRegex:
+          path: data["rightsizing.yaml"]
+          pattern: 'kompass_container_jvm_heap_usage_max'
+      - matchRegex:
+          path: data["rightsizing.yaml"]
+          pattern: 'kompass_container_jvm_heap_initial_max'
+      - matchRegex:
+          path: data["rightsizing.yaml"]
+          pattern: 'kompass_container_jvm_gc_time_ratio_max'
+      - matchRegex:
+          path: data["rightsizing.yaml"]
+          pattern: 'kompass_container_jvm_max_heap_max'
+      - matchRegex:
+          path: data["rightsizing.yaml"]
+          pattern: 'kompass_container_jvm_memory_minus_heap_usage_max'

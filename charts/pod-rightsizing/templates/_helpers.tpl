@@ -504,6 +504,13 @@ Enforce minimum resource value.
 {{- end -}}
 
 {{/*
+Whether Guardian is enabled for this umbrella installation.
+*/}}
+{{- define "pod-rightsizing.guardian.enabled" -}}
+{{- if .Values.global.guardian.enabled }}true{{ else }}false{{ end -}}
+{{- end -}}
+
+{{/*
 Metrics Exporter resources with minimum values enforced
 */}}
 {{- define "pod-rightsizing.metricsExporter.resources" -}}
@@ -541,7 +548,7 @@ resources:
 Recommendations Maker resources with minimum values enforced
 */}}
 {{- define "pod-rightsizing.recommendationsMaker.resources" -}}
-{{- if .Values.guardian.enabled }}
+{{- if eq (include "pod-rightsizing.guardian.enabled" .) "true" }}
 resources:
   requests:
     cpu: 300m
@@ -568,7 +575,7 @@ resources:
 Action Taker resources with minimum values enforced
 */}}
 {{- define "pod-rightsizing.actionTaker.resources" -}}
-{{- if .Values.guardian.enabled }}
+{{- if eq (include "pod-rightsizing.guardian.enabled" .) "true" }}
 resources:
   requests:
     cpu: 352m

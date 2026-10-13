@@ -7,6 +7,22 @@ templates:
   - templates/config/initial-values-cm.yaml
   - templates/config/pilotConfigmap.yaml
 tests:
+  - it: defaults JVM rightsizing environment flag to false in Action Taker
+    template: templates/action-taker/action-taker.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[?(@.name == 'action-taker')].env[?(@.name == 'JVM_RIGHTSIZING_ENABLED')].value
+          value: "false"
+
+  - it: propagates JVM rightsizing flag to Action Taker
+    template: templates/action-taker/action-taker.yaml
+    set:
+      jvmRightsizingEnabled: true
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[?(@.name == 'action-taker')].env[?(@.name == 'JVM_RIGHTSIZING_ENABLED')].value
+          value: "true"
+
   - it: keeps initial-values ConfigMap after uninstall
     template: templates/config/initial-values-cm.yaml
     values:
@@ -60,6 +76,12 @@ tests:
           path: data.kompassWorkloadsRightsizingEnabled
           value: "false"
       - equal:
+          path: data.actionInformerDebounceDuration
+          value: "500ms"
+      - equal:
+          path: data.clusterActionListReportingEnabled
+          value: "false"
+      - equal:
           path: data.kompassWorkloadsRightsizingPolicyName
           value: stability-focused
       - matchRegex:
@@ -73,14 +95,34 @@ tests:
     template: templates/config/pilotConfigmap.yaml
     set:
       config.kompassWorkloadsRightsizing.enabled: true
+      global.guardian.enabled: true
     asserts:
       - equal:
           path: data.kompassWorkloadsRightsizingEnabled
           value: "true"
 
-  - it: renders JVM auto-discovery config into the rightsizing ConfigMap
+  - it: enables ClusterAction list reporting from values
     template: templates/config/pilotConfigmap.yaml
     set:
+      config.clusterActionListReportingEnabled: true
+    asserts:
+      - equal:
+          path: data.clusterActionListReportingEnabled
+          value: "true"
+
+  - it: configures the Action informer debounce duration from values
+    template: templates/config/pilotConfigmap.yaml
+    set:
+      config.actionInformerDebounceDuration: 500ms
+    asserts:
+      - equal:
+          path: data.actionInformerDebounceDuration
+          value: "500ms"
+
+  - it: renders JVM auto-discovery config independently of the rightsizing gate
+    template: templates/config/pilotConfigmap.yaml
+    set:
+      jvmRightsizingEnabled: true
       jvmMetrics:
         enabled: true
         autoDiscovery:
@@ -89,6 +131,8 @@ tests:
       - equal:
           path: data.jvmAutoDiscoveryEnabled
           value: "true"
+      - notExists:
+          path: data.jvmRightsizingEnabled
       - equal:
           path: data.jvmAutoDiscoveryEnvSignals
           value: "JAVA_HOME,JAVA_OPTS,JAVA_TOOL_OPTIONS,JDK_JAVA_OPTIONS,MAVEN_HOME"
@@ -99,9 +143,24 @@ tests:
           path: data.jvmAutoDiscoveryImageSignals
           value: "openjdk,temurin,corretto,bitnami/java,kafka,jenkins/jenkins"
 
+  - it: enables JVM auto-discovery independently of the JVM rightsizing gate
+    template: templates/config/pilotConfigmap.yaml
+    set:
+      jvmMetrics:
+        enabled: true
+        autoDiscovery:
+          enabled: true
+    asserts:
+      - equal:
+          path: data.jvmAutoDiscoveryEnabled
+          value: "true"
+      - notExists:
+          path: data.jvmRightsizingEnabled
+
   - it: renders custom JVM auto-discovery signals into the rightsizing ConfigMap
     template: templates/config/pilotConfigmap.yaml
     set:
+      jvmRightsizingEnabled: true
       jvmMetrics:
         enabled: true
         autoDiscovery:
@@ -131,6 +190,7 @@ tests:
   - it: appends additional JVM auto-discovery signals to defaults
     template: templates/config/pilotConfigmap.yaml
     set:
+      jvmRightsizingEnabled: true
       jvmMetrics:
         enabled: true
         autoDiscovery:

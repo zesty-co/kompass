@@ -6,7 +6,21 @@ metadata:
 data:
 {{- $jvmMetrics := .Values.jvmMetrics | default dict }}
 {{- $jvmAutoDiscovery := $jvmMetrics.autoDiscovery | default dict }}
+    resourceIdsQueryChunkSize: {{ .Values.config.resourceIdsQueryChunkSize | quote }}
+    chunkProcessingSize: {{ .Values.config.chunkProcessingSize | quote }}
+    maxParallelChunks: {{ .Values.config.maxParallelChunks | quote }}
+    disableMDARecommendations: {{ .Values.config.disableMDARecommendations | quote }}
+    disableMDAActions: {{ .Values.config.disableMDAActions | quote }}
+    useLegacyHpaTargetUtilizationCalculation: {{ .Values.config.useLegacyHpaTargetUtilizationCalculation | quote }}
+    targetUtilizationBuffer: {{ .Values.config.targetUtilizationBuffer | quote }}
+    VARIANTS_LOG_LEVEL: {{ .Values.config.VARIANTS_LOG_LEVEL | quote }}
+    maxConcurrentReconciles: {{ .Values.config.maxConcurrentReconciles | quote }}
+    noiseRateLimit: {{ .Values.config.noiseRateLimit | quote }}
+    noiseRateLimitDurationSeconds: {{ .Values.config.noiseRateLimitDurationSeconds | quote }}
+    syncWorkloadWorkers: {{ .Values.config.syncWorkloadWorkers | quote }}
     kompassWorkloadsRightsizingEnabled: {{ (.Values.config).kompassWorkloadsRightsizing.enabled | quote }}
+    actionInformerDebounceDuration: {{ (.Values.config).actionInformerDebounceDuration | default "500ms" | quote }}
+    clusterActionListReportingEnabled: {{ (.Values.config).clusterActionListReportingEnabled | default false | quote }}
     kompassWorkloadsRightsizingPolicyName: "stability-focused"
     kompassWorkloadsRightsizingExcludedWorkloads: |
       - kind: deployment

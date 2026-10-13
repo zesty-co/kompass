@@ -23,11 +23,12 @@
   "liveNow": false,
   "panels": [
     {
-      "id": 13,
-      "title": "JVM Rightsizing Summary",
+      "id": 17,
+      "title": "JVM Memory, Recommendations and Formula",
       "type": "timeseries",
+      "description": "Current runtime values respect the Replica selector; All shows the per-metric maximum across active JVM replicas. JVM formula candidate, candidate calculated Xmx, and Pod Rightsizing desired remain workload-level values and ignore the Replica selector. The panel compares the selected replica's current Xmx, request, and limit with those workload-level recommendations.",
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 24,
         "x": 0,
         "y": 0
@@ -43,8 +44,8 @@
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
-            "fillOpacity": 6,
-            "gradientMode": "none",
+            "fillOpacity": 45,
+            "gradientMode": "opacity",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
@@ -52,7 +53,7 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
-            "lineWidth": 2,
+            "lineWidth": 1,
             "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
@@ -60,8 +61,8 @@
             "showPoints": "never",
             "spanNulls": true,
             "stacking": {
-              "group": "A",
-              "mode": "none"
+              "group": "observed-memory",
+              "mode": "normal"
             },
             "thresholdsStyle": {
               "mode": "off"
@@ -82,200 +83,150 @@
         "overrides": [
           {
             "matcher": {
-              "id": "byRegexp",
-              "options": ".*request.*"
+              "id": "byFrameRefID",
+              "options": "A"
             },
             "properties": [
               {
-                "id": "custom.lineStyle",
+                "id": "color",
                 "value": {
-                  "dash": [
-                    10,
-                    10
-                  ],
-                  "fill": "dash"
+                  "mode": "fixed",
+                  "fixedColor": "green"
                 }
               }
             ]
           },
           {
             "matcher": {
-              "id": "byRegexp",
-              "options": ".*Kompass desired.*"
+              "id": "byFrameRefID",
+              "options": "B"
             },
             "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "yellow"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "C"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "D"
+            },
+            "properties": [
+              {
+                "id": "custom.stacking",
+                "value": {
+                  "group": "observed-memory",
+                  "mode": "none"
+                }
+              },
               {
                 "id": "custom.lineWidth",
-                "value": 4
+                "value": 2
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
               }
             ]
           },
           {
             "matcher": {
-              "id": "byRegexp",
-              "options": ".*native/other.*"
+              "id": "byFrameRefID",
+              "options": "G"
             },
             "properties": [
               {
-                "id": "custom.fillOpacity",
-                "value": 16
-              }
-            ]
-          }
-        ]
-      },
-      "options": {
-        "legend": {
-          "calcs": [
-            "lastNotNull",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "VictoriaMetrics"
-          },
-          "editorMode": "code",
-          "expr": "kube_pod_container_resource_requests{resource=\"memory\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",container!=\"\",container!=\"POD\"} and on(namespace,pod,container) max by (namespace,pod,container) (jvm_info{namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\"})",
-          "legendFormat": "{{pod}} {{container}} request",
-          "range": true,
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "VictoriaMetrics"
-          },
-          "editorMode": "code",
-          "expr": "container_memory_working_set_bytes{namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",container!=\"\",container!=\"POD\"} and on(namespace,pod,container) max by (namespace,pod,container) (jvm_info{namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\"})",
-          "legendFormat": "{{pod}} {{container}} container usage",
-          "range": true,
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "VictoriaMetrics"
-          },
-          "editorMode": "code",
-          "expr": "(max by (namespace,pod,container) (jvm_memory_used_bytes{area=\"heap\",id!~\".+\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\"})) or (sum by (namespace,pod,container) (jvm_memory_used_bytes{area=\"heap\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\",id=~\".+\"}))",
-          "legendFormat": "{{pod}} {{container}} heap used",
-          "range": true,
-          "refId": "C"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "VictoriaMetrics"
-          },
-          "editorMode": "code",
-          "expr": "(max by (namespace,pod,container) (jvm_memory_used_bytes{area=\"nonheap\",id!~\".+\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\"})) or (sum by (namespace,pod,container) (jvm_memory_used_bytes{area=\"nonheap\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\",id=~\".+\"}))",
-          "legendFormat": "{{pod}} {{container}} non-heap used",
-          "range": true,
-          "refId": "D"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "VictoriaMetrics"
-          },
-          "editorMode": "code",
-          "expr": "clamp_min((container_memory_working_set_bytes{namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",container!=\"\",container!=\"POD\"} and on(namespace,pod,container) max by (namespace,pod,container) (jvm_info{namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\"})) - on(namespace,pod,container) ((max by (namespace,pod,container) (jvm_memory_used_bytes{area=\"heap\",id!~\".+\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\"})) or (sum by (namespace,pod,container) (jvm_memory_used_bytes{area=\"heap\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\",id=~\".+\"}))) - on(namespace,pod,container) ((max by (namespace,pod,container) (jvm_memory_used_bytes{area=\"nonheap\",id!~\".+\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\"})) or (sum by (namespace,pod,container) (jvm_memory_used_bytes{area=\"nonheap\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\",id=~\".+\"}))), 0)",
-          "legendFormat": "{{pod}} {{container}} estimated native/other",
-          "range": true,
-          "refId": "E"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "VictoriaMetrics"
-          },
-          "editorMode": "code",
-          "expr": "(max by (namespace,workload_name,container) (kompass_rs_recommendations{namespace=~\"$namespace\",container=~\"$container\",resource_type=\"memory\",resource_source=\"desired\",mode=\"live\"}) and on(namespace,workload_name,container) max by (namespace,workload_name,container) (jvm_info{namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\"})) or (max by (namespace,workload_name,container) (kompass_rs_recommendations{namespace=~\"$namespace\",container=~\"$container\",workload_kind=\"deployment\",resource_type=\"memory\",resource_source=\"desired\",mode=\"live\"}) and on(namespace,workload_name) max by (namespace,workload_name) (label_replace(kube_replicaset_owner{namespace=~\"$namespace\",owner_kind=\"Deployment\"}, \"workload_name\", \"$1\", \"owner_name\", \"(.+)\") and on(namespace,replicaset) label_replace(kube_pod_owner{namespace=~\"$namespace\",pod=~\"$pod\",owner_kind=\"ReplicaSet\"}, \"replicaset\", \"$1\", \"owner_name\", \"(.+)\")))",
-          "legendFormat": "{{workload_name}} {{container}} Kompass desired",
-          "range": true,
-          "refId": "F"
-        }
-      ],
-      "datasource": {
-        "type": "prometheus",
-        "uid": "VictoriaMetrics"
-      }
-    },
-    {
-      "id": 2,
-      "title": "JVM Heap and Non-Heap Memory",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 8
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": true,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
+                "id": "custom.stacking",
+                "value": {
+                  "group": "recommendations",
+                  "mode": "none"
+                }
+              },
               {
-                "color": "green",
-                "value": null
+                "id": "custom.lineStyle",
+                "value": {
+                  "dash": [
+                    8,
+                    4
+                  ],
+                  "fill": "dash"
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 3
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "semi-dark-blue"
+                }
               }
             ]
           },
-          "unit": "bytes"
-        },
-        "overrides": [
           {
             "matcher": {
-              "id": "byRegexp",
-              "options": ".*heap max.*"
+              "id": "byFrameRefID",
+              "options": "E"
             },
             "properties": [
+              {
+                "id": "custom.stacking",
+                "value": {
+                  "group": "recommendations",
+                  "mode": "none"
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 3
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "I"
+            },
+            "properties": [
+              {
+                "id": "custom.stacking",
+                "value": {
+                  "group": "formula",
+                  "mode": "none"
+                }
+              },
               {
                 "id": "custom.lineStyle",
                 "value": {
@@ -288,24 +239,78 @@
               },
               {
                 "id": "custom.lineWidth",
-                "value": 3
+                "value": 2
               }
             ]
           },
           {
             "matcher": {
-              "id": "byRegexp",
-              "options": ".*committed.*"
+              "id": "byFrameRefID",
+              "options": "K"
             },
             "properties": [
               {
-                "id": "custom.lineStyle",
+                "id": "custom.stacking",
                 "value": {
-                  "dash": [
-                    4,
-                    8
-                  ],
-                  "fill": "dash"
+                  "group": "formula",
+                  "mode": "none"
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 4
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "L"
+            },
+            "properties": [
+              {
+                "id": "custom.stacking",
+                "value": {
+                  "group": "boundaries",
+                  "mode": "none"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              },
+              {
+                "id": "custom.lineInterpolation",
+                "value": "stepAfter"
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 2
+              },
+              {
+                "id": "custom.spanNulls",
+                "value": true
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "dark-red"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "M"
+            },
+            "properties": [
+              {
+                "id": "custom.stacking",
+                "value": {
+                  "group": "boundaries",
+                  "mode": "none"
                 }
               }
             ]
@@ -334,8 +339,8 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "(max by (namespace,pod,container) (jvm_memory_used_bytes{area=\"heap\",id!~\".+\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\"})) or (sum by (namespace,pod,container) (jvm_memory_used_bytes{area=\"heap\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\",id=~\".+\"}))",
-          "legendFormat": "{{namespace}}/{{pod}} {{container}} heap used",
+          "expr": "WITH (\n  identity = max by (namespace, pod, container, resource_id, workload_kind, workload_name) (\n    kompass_pod_info{namespace=\"$namespace\", workload_name=\"$workload\", pod=~\"$replica\", status=\"running\"}\n    and on (namespace, pod, container) max by (namespace, pod, container) (jvm_info{namespace=\"$namespace\"})\n  ),\n  heap = max by (namespace, pod, container) (\n    jvm_memory_used_bytes{area=\"heap\", id=\"\", namespace=\"$namespace\"}\n  )\n)\nmax by (namespace, resource_id, workload_kind, workload_name, container) (\n  heap\n  * on (namespace, pod, container) group_left (resource_id, workload_kind, workload_name) identity\n)",
+          "legendFormat": "{{workload_kind}}/{{workload_name}} {{container}} current heap",
           "range": true,
           "refId": "A"
         },
@@ -345,8 +350,8 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "(max by (namespace,pod,container) (jvm_memory_committed_bytes{area=\"heap\",id!~\".+\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\"})) or (sum by (namespace,pod,container) (jvm_memory_committed_bytes{area=\"heap\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\",id=~\".+\"}))",
-          "legendFormat": "{{namespace}}/{{pod}} {{container}} heap committed",
+          "expr": "WITH (\n  identity = max by (namespace, pod, container, resource_id, workload_kind, workload_name) (\n    kompass_pod_info{namespace=\"$namespace\", workload_name=\"$workload\", pod=~\"$replica\", status=\"running\"}\n    and on (namespace, pod, container) max by (namespace, pod, container) (jvm_info{namespace=\"$namespace\"})\n  ),\n  nonheap = max by (namespace, pod, container) (\n    jvm_memory_used_bytes{area=\"nonheap\", id=\"\", namespace=\"$namespace\"}\n  )\n)\nmax by (namespace, resource_id, workload_kind, workload_name, container) (\n  nonheap\n  * on (namespace, pod, container) group_left (resource_id, workload_kind, workload_name) identity\n)",
+          "legendFormat": "{{workload_kind}}/{{workload_name}} {{container}} current non-heap",
           "range": true,
           "refId": "B"
         },
@@ -356,8 +361,8 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "(max by (namespace,pod,container) (jvm_memory_bytes_max{area=\"heap\",id!~\".+\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\"})) or (sum by (namespace,pod,container) (clamp_min(jvm_memory_bytes_max{area=\"heap\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\",id=~\".+\"}, 0)))",
-          "legendFormat": "{{namespace}}/{{pod}} {{container}} heap max",
+          "expr": "WITH (\n  identity = max by (namespace, pod, container, resource_id, workload_kind, workload_name) (\n    kompass_pod_info{namespace=\"$namespace\", workload_name=\"$workload\", pod=~\"$replica\", status=\"running\"}\n    and on (namespace, pod, container) max by (namespace, pod, container) (jvm_info{namespace=\"$namespace\"})\n  ),\n  heap = max by (namespace, pod, container) (jvm_memory_used_bytes{area=\"heap\", id=\"\", namespace=\"$namespace\"}),\n  nonheap = max by (namespace, pod, container) (jvm_memory_used_bytes{area=\"nonheap\", id=\"\", namespace=\"$namespace\"}),\n  working_set = max by (namespace, pod, container) (\n    container_memory_working_set_bytes{namespace=\"$namespace\", container!=\"\", container!=\"POD\"}\n  )\n)\nmax by (namespace, resource_id, workload_kind, workload_name, container) (\n  clamp_min(\n    working_set\n    - on (namespace, pod, container) heap\n    - on (namespace, pod, container) nonheap,\n    0\n  )\n  * on (namespace, pod, container) group_left (resource_id, workload_kind, workload_name) identity\n)",
+          "legendFormat": "{{workload_kind}}/{{workload_name}} {{container}} current native/other",
           "range": true,
           "refId": "C"
         },
@@ -367,8 +372,8 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "(max by (namespace,pod,container) (jvm_memory_used_bytes{area=\"nonheap\",id!~\".+\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\"})) or (sum by (namespace,pod,container) (jvm_memory_used_bytes{area=\"nonheap\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\",id=~\".+\"}))",
-          "legendFormat": "{{namespace}}/{{pod}} {{container}} non-heap used",
+          "expr": "WITH (\n  identity = max by (namespace, pod, container, resource_id, workload_kind, workload_name) (\n    kompass_pod_info{namespace=\"$namespace\", workload_name=\"$workload\", pod=~\"$replica\", status=\"running\"}\n    and on (namespace, pod, container) max by (namespace, pod, container) (jvm_info{namespace=\"$namespace\"})\n  ),\n  working_set = max by (namespace, pod, container) (\n    container_memory_working_set_bytes{namespace=\"$namespace\", container!=\"\", container!=\"POD\"}\n  )\n)\nmax by (namespace, resource_id, workload_kind, workload_name, container) (\n  working_set\n  * on (namespace, pod, container) group_left (resource_id, workload_kind, workload_name) identity\n)",
+          "legendFormat": "{{workload_kind}}/{{workload_name}} {{container}} current container working set",
           "range": true,
           "refId": "D"
         },
@@ -378,10 +383,68 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "(max by (namespace,pod,container) (jvm_memory_committed_bytes{area=\"nonheap\",id!~\".+\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\"})) or (sum by (namespace,pod,container) (jvm_memory_committed_bytes{area=\"nonheap\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\",id=~\".+\"}))",
-          "legendFormat": "{{namespace}}/{{pod}} {{container}} non-heap committed",
+          "expr": "WITH (\n  identity = max by (namespace, pod, container, resource_id, workload_kind, workload_name) (\n    kompass_pod_info{namespace=\"$namespace\", workload_name=\"$workload\", pod=~\"$replica\", status=\"running\"}\n    and on (namespace, pod, container) max by (namespace, pod, container) (jvm_info{namespace=\"$namespace\"})\n  )\n)\nmax by (namespace, resource_id, workload_kind, workload_name, container) (\n  max by (namespace, pod, container) (\n    kube_pod_container_resource_requests{namespace=\"$namespace\", resource=\"memory\", unit=\"byte\"}\n  )\n  * on (namespace, pod, container) group_left (resource_id, workload_kind, workload_name) identity\n)",
+          "legendFormat": "{{workload_kind}}/{{workload_name}} {{container}} applied container request",
+          "range": true,
+          "refId": "M"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "VictoriaMetrics"
+          },
+          "editorMode": "code",
+          "expr": "max by (namespace, workload_kind, workload_name, container) (\n  kompass_rs_recommendations{\n    namespace=\"$namespace\",\n    workload_name=\"$workload\",\n    resource_type=\"memory\",\n    resource_source=\"desired\",\n    mode=\"live\"\n  }\n)\nand on (namespace, workload_name, container) max by (namespace, workload_name, container) (\n  kompass_pod_info{namespace=\"$namespace\", workload_name=\"$workload\", status=\"running\"}\n  and on (namespace, pod, container) max by (namespace, pod, container) (jvm_info{namespace=\"$namespace\"})\n)",
+          "legendFormat": "{{workload_kind}}/{{workload_name}} {{container}} Pod Rightsizing desired",
+          "range": true,
+          "refId": "G"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "VictoriaMetrics"
+          },
+          "editorMode": "code",
+          "expr": "WITH (\n  identity = max by (namespace, pod, container, resource_id, workload_kind, workload_name) (\n    kompass_pod_info{namespace=\"$namespace\", workload_name=\"$workload\", pod=~\"$replica\", status=\"running\"}\n    and on (namespace, pod, container) max by (namespace, pod, container) (jvm_info{namespace=\"$namespace\"})\n  )\n)\nmax by (namespace, resource_id, workload_kind, workload_name, container) (\n  max by (namespace, pod, container) (\n    kube_pod_container_resource_limits{namespace=\"$namespace\", resource=\"memory\", unit=\"byte\"}\n  )\n  * on (namespace, pod, container) group_left (resource_id, workload_kind, workload_name) identity\n)",
+          "legendFormat": "{{workload_kind}}/{{workload_name}} {{container}} applied container limit",
+          "range": true,
+          "refId": "L"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "VictoriaMetrics"
+          },
+          "editorMode": "code",
+          "expr": "WITH (\n  identity = max by (namespace, pod, container, resource_id, workload_kind, workload_name) (\n    last_over_time(\n      kompass_pod_info{namespace=\"$namespace\", workload_name=\"$workload\", status=\"running\"}[$jvm_formula_lookback]\n    )\n    and on (namespace, pod, container) max by (namespace, pod, container) (last_over_time(jvm_info{namespace=\"$namespace\"}[$jvm_formula_lookback]))\n  ),\n  heap = max by (namespace, pod, container) (jvm_memory_used_bytes{area=\"heap\", id=\"\", namespace=\"$namespace\"}),\n  working_set = max by (namespace, pod, container) (\n    container_memory_working_set_bytes{namespace=\"$namespace\", container!=\"\", container!=\"POD\"}\n  ),\n  heap_p95 = quantile_over_time(0.95, heap[$jvm_formula_lookback:$jvm_formula_step]),\n  outside_heap = clamp_min(working_set - on (namespace, pod, container) heap, 0),\n  outside_heap_percentile = quantile_over_time($jvm_memory_strategy, outside_heap[$jvm_formula_lookback:$jvm_formula_step]),\n  calculated_xmx = clamp_min(\n    ceil((heap_p95 *(100 + $jvm_gc_buffer_percent) / 100) / 1048576)\n    * 1048576,\n    $jvm_xms_bytes\n  ),\n  candidate = calculated_xmx\n  + outside_heap_percentile\n  * (100 + $jvm_memory_buffer_percent)\n  / 100\n)\nceil(\n  max by (namespace, resource_id, workload_kind, workload_name, container) (\n    candidate\n    * on (namespace, pod, container) group_left (resource_id, workload_kind, workload_name) identity\n  )\n  / 1048576\n)\n* 1048576",
+          "instant": false,
+          "legendFormat": "{{workload_kind}}/{{workload_name}} {{container}} JVM formula candidate",
           "range": true,
           "refId": "E"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "VictoriaMetrics"
+          },
+          "editorMode": "code",
+          "expr": "WITH (\n  identity = max by (namespace, pod, container, resource_id, workload_kind, workload_name) (\n    kompass_pod_info{namespace=\"$namespace\", workload_name=\"$workload\", pod=~\"$replica\", status=\"running\"}\n    and on (namespace, pod, container) max by (namespace, pod, container) (jvm_info{namespace=\"$namespace\"})\n  ),\n  xmx = max by (namespace, pod, container) (jvm_memory_bytes_max{area=\"heap\", id=\"\", namespace=\"$namespace\"})\n)\nmax by (namespace, resource_id, workload_kind, workload_name, container) (\n  xmx\n  * on (namespace, pod, container) group_left (resource_id, workload_kind, workload_name) identity\n)",
+          "instant": false,
+          "legendFormat": "{{workload_kind}}/{{workload_name}} {{container}} current Xmx",
+          "range": true,
+          "refId": "I"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "VictoriaMetrics"
+          },
+          "editorMode": "code",
+          "expr": "WITH (\n  identity = max by (namespace, pod, container, resource_id, workload_kind, workload_name) (\n    last_over_time(\n      kompass_pod_info{namespace=\"$namespace\", workload_name=\"$workload\", status=\"running\"}[$jvm_formula_lookback]\n    )\n    and on (namespace, pod, container) max by (namespace, pod, container) (\n      last_over_time(jvm_info{namespace=\"$namespace\"}[$jvm_formula_lookback])\n    )\n  ),\n  heap = max by (namespace, pod, container) (\n    jvm_memory_used_bytes{area=\"heap\", id=\"\", namespace=\"$namespace\"}\n  ),\n  heap_p95 = quantile_over_time(0.95, heap[$jvm_formula_lookback:$jvm_formula_step]),\n  calculated_xmx = clamp_min(\n    ceil((heap_p95 * (100 + $jvm_gc_buffer_percent) / 100) / 1048576) * 1048576,\n    $jvm_xms_bytes\n  )\n)\nmax by (namespace, resource_id, workload_kind, workload_name, container) (\n  calculated_xmx\n  * on (namespace, pod, container) group_left (resource_id, workload_kind, workload_name) identity\n)",
+          "instant": false,
+          "legendFormat": "{{workload_kind}}/{{workload_name}} {{container}} candidate calculated Xmx",
+          "range": true,
+          "refId": "K"
         }
       ],
       "datasource": {
@@ -394,7 +457,7 @@
         "type": "prometheus",
         "uid": "VictoriaMetrics"
       },
-      "description": "Shows the percentage of wall-clock time spent in JVM GC over a fixed 1-minute window. Uses collection time when exposed by JMX Exporter and pause time when exposed by Micrometer.",
+      "description": "GC duration per elapsed second over the selected GC Lookback window, using reset-aware counter rates. ZGC cycle time and GC pause time are shown as separate series; concurrent cycle time is not application pause time. Diagnostic only; neither series feeds the Policy buffer or formula.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -411,7 +474,7 @@
             "lineWidth": 2,
             "pointSize": 5,
             "showPoints": "never",
-            "spanNulls": true,
+            "spanNulls": false,
             "stacking": {
               "group": "A",
               "mode": "none"
@@ -438,17 +501,19 @@
               }
             ]
           },
-          "unit": "percentunit"
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
-        "w": 24,
         "x": 0,
-        "y": 16
+        "y": 10,
+        "w": 24,
+        "h": 7
       },
-      "id": 11,
+      "id": 19,
       "options": {
         "legend": {
           "calcs": [
@@ -471,8 +536,8 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "sum by (namespace,pod,container,gc) (increase(jvm_gc_collection_seconds_sum{namespace=~\"$namespace\",workload_name=~\"$workload\",pod=~\"$pod\",container=~\"$container\"}[1m])) / 60",
-          "legendFormat": "{{pod}} {{container}} {{gc}} collection overhead",
+          "expr": "WITH (\n  identity = max by (namespace, pod, container, resource_id, workload_kind, workload_name) (\n    kompass_pod_info{namespace=\"$namespace\", workload_name=\"$workload\", pod=~\"$replica\", status=\"running\"}\n    and on (namespace, pod, container) max by (namespace, pod, container) (jvm_info{namespace=\"$namespace\"})\n  ),\n  gc_by_pod = (\n    sum by (namespace, pod, container) (\n      max without (job, instance) (\n        rate(\n          jvm_gc_collection_seconds_sum{gc!=\"ZGC Pauses\", namespace=\"$namespace\"}[$jvm_gc_lookback]\n        )\n      )\n    )\n  )\n)\nclamp_max(\n  clamp_min(\n    max by (namespace, resource_id, workload_kind, workload_name, container) (\n      gc_by_pod\n      * on (namespace, pod, container) group_left (resource_id, workload_kind, workload_name) identity\n    ),\n    0\n  ),\n  1\n)",
+          "legendFormat": "{{workload_kind}}/{{workload_name}} {{container}} GC time (${jvm_gc_lookback})",
           "range": true,
           "refId": "A"
         },
@@ -482,13 +547,13 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "sum by (namespace,pod,container,gc) (increase(jvm_gc_pause_seconds_sum{namespace=~\"$namespace\",workload_name=~\"$workload\",pod=~\"$pod\",container=~\"$container\"}[1m])) / 60",
-          "legendFormat": "{{pod}} {{container}} {{gc}} pause overhead",
+          "expr": "WITH (\n  identity = max by (namespace, pod, container, resource_id, workload_kind, workload_name) (\n    kompass_pod_info{namespace=\"$namespace\", workload_name=\"$workload\", pod=~\"$replica\", status=\"running\"}\n    and on (namespace, pod, container) max by (namespace, pod, container) (jvm_info{namespace=\"$namespace\"})\n  ),\n  pause_by_pod = (\n    sum by (namespace, pod, container) (\n      max without (job, instance) (\n        rate(\n          jvm_gc_collection_seconds_sum{gc=\"ZGC Pauses\", namespace=\"$namespace\"}[$jvm_gc_lookback]\n        )\n      )\n    )\n  )\n)\nclamp_max(\n  clamp_min(\n    max by (namespace, resource_id, workload_kind, workload_name, container) (\n      pause_by_pod\n      * on (namespace, pod, container) group_left (resource_id, workload_kind, workload_name) identity\n    ),\n    0\n  ),\n  1\n)",
+          "legendFormat": "{{workload_kind}}/{{workload_name}} {{container}} GC pause (${jvm_gc_lookback})",
           "range": true,
           "refId": "B"
         }
       ],
-      "title": "GC Overhead %",
+      "title": "GC Time",
       "type": "timeseries"
     },
     {
@@ -496,171 +561,7 @@
         "type": "prometheus",
         "uid": "VictoriaMetrics"
       },
-      "description": "Compares actual container/JVM memory with Kubernetes request/limit and Kompass desired memory. Kompass desired memory is emitted at workload/container scope, while Kubernetes request and limit are pod/container scoped.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 8,
-            "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "showPoints": "never",
-            "spanNulls": true,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "bytes"
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": ".*request.*"
-            },
-            "properties": [
-              {
-                "id": "custom.lineStyle",
-                "value": {
-                  "dash": [
-                    10,
-                    10
-                  ],
-                  "fill": "dash"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": ".*limit.*"
-            },
-            "properties": [
-              {
-                "id": "custom.lineStyle",
-                "value": {
-                  "dash": [
-                    4,
-                    10
-                  ],
-                  "fill": "dash"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": ".*Kompass desired.*"
-            },
-            "properties": [
-              {
-                "id": "custom.lineWidth",
-                "value": 4
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 23
-      },
-      "id": 7,
-      "options": {
-        "legend": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "VictoriaMetrics"
-          },
-          "editorMode": "code",
-          "expr": "container_memory_working_set_bytes{namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",container!=\"\",container!=\"POD\"} and on(namespace,pod,container) max by (namespace,pod,container) (jvm_info{namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\"})",
-          "legendFormat": "{{pod}} {{container}} container usage",
-          "range": true,
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "VictoriaMetrics"
-          },
-          "editorMode": "code",
-          "expr": "kube_pod_container_resource_requests{resource=\"memory\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",container!=\"\",container!=\"POD\"} and on(namespace,pod,container) max by (namespace,pod,container) (jvm_info{namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\"})",
-          "legendFormat": "{{pod}} {{container}} request",
-          "range": true,
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "VictoriaMetrics"
-          },
-          "editorMode": "code",
-          "expr": "kube_pod_container_resource_limits{resource=\"memory\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",container!=\"\",container!=\"POD\"} and on(namespace,pod,container) max by (namespace,pod,container) (jvm_info{namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\"})",
-          "legendFormat": "{{pod}} {{container}} limit",
-          "range": true,
-          "refId": "C"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "VictoriaMetrics"
-          },
-          "editorMode": "code",
-          "expr": "(max by (namespace,workload_name,container) (kompass_rs_recommendations{namespace=~\"$namespace\",container=~\"$container\",resource_type=\"memory\",resource_source=\"desired\",mode=\"live\"}) and on(namespace,workload_name,container) max by (namespace,workload_name,container) (jvm_info{namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\"})) or (max by (namespace,workload_name,container) (kompass_rs_recommendations{namespace=~\"$namespace\",container=~\"$container\",workload_kind=\"deployment\",resource_type=\"memory\",resource_source=\"desired\",mode=\"live\"}) and on(namespace,workload_name) max by (namespace,workload_name) (label_replace(kube_replicaset_owner{namespace=~\"$namespace\",owner_kind=\"Deployment\"}, \"workload_name\", \"$1\", \"owner_name\", \"(.+)\") and on(namespace,replicaset) label_replace(kube_pod_owner{namespace=~\"$namespace\",pod=~\"$pod\",owner_kind=\"ReplicaSet\"}, \"replicaset\", \"$1\", \"owner_name\", \"(.+)\")))",
-          "legendFormat": "{{workload_name}} {{container}} Kompass desired",
-          "range": true,
-          "refId": "D"
-        }
-      ],
-      "title": "Memory Request, Limit and Kompass Desired",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "VictoriaMetrics"
-      },
-      "description": "Breaks container memory into JVM heap, JVM non-heap, and estimated non-JVM/native memory. Estimated non-JVM memory is calculated as container working set minus heap used minus non-heap used.",
+      "description": "Shows CPU usage and the configured CPU limit for the selected JVM workload and container.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -696,82 +597,17 @@
               }
             ]
           },
-          "unit": "bytes"
+          "unit": "cores"
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": ".*container total.*"
-            },
-            "properties": [
-              {
-                "id": "custom.lineWidth",
-                "value": 4
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": ".*heap max.*"
-            },
-            "properties": [
-              {
-                "id": "custom.lineStyle",
-                "value": {
-                  "dash": [
-                    10,
-                    10
-                  ],
-                  "fill": "dash"
-                }
-              },
-              {
-                "id": "custom.lineWidth",
-                "value": 3
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": ".*heap committed.*"
-            },
-            "properties": [
-              {
-                "id": "custom.lineStyle",
-                "value": {
-                  "dash": [
-                    4,
-                    8
-                  ],
-                  "fill": "dash"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byRegexp",
-              "options": ".*non-JVM.*"
-            },
-            "properties": [
-              {
-                "id": "custom.fillOpacity",
-                "value": 18
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "gridPos": {
-        "h": 9,
-        "w": 24,
         "x": 0,
-        "y": 31
+        "y": 17,
+        "w": 24,
+        "h": 7
       },
-      "id": 8,
+      "id": 18,
       "options": {
         "legend": {
           "calcs": [
@@ -794,8 +630,8 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "container_memory_working_set_bytes{namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",container!=\"\",container!=\"POD\"} and on(namespace,pod,container) max by (namespace,pod,container) (jvm_info{namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\"})",
-          "legendFormat": "{{pod}} {{container}} container total",
+          "expr": "WITH (\n  identity = max by (namespace, pod, container, resource_id, workload_kind, workload_name) (\n    kompass_pod_info{namespace=\"$namespace\", workload_name=\"$workload\", pod=~\"$replica\", status=\"running\"}\n    and on (namespace, pod, container) max by (namespace, pod, container) (jvm_info{namespace=\"$namespace\"})\n  ),\n  cpu_by_pod = max by (namespace, pod, container) (\n    rate(\n      container_cpu_usage_seconds_total{namespace=\"$namespace\", container!=\"\", container!=\"POD\"}[1m]\n    )\n  ),\n  cpu = cpu_by_pod\n  * on (namespace, pod, container) group_left (resource_id, workload_kind, workload_name) identity\n)\nmax by (namespace, resource_id, workload_kind, workload_name, container) (cpu)",
+          "legendFormat": "{{workload_kind}}/{{workload_name}} {{container}} CPU usage",
           "range": true,
           "refId": "A"
         },
@@ -805,312 +641,14 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "(max by (namespace,pod,container) (jvm_memory_used_bytes{area=\"heap\",id!~\".+\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\"})) or (sum by (namespace,pod,container) (jvm_memory_used_bytes{area=\"heap\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\",id=~\".+\"}))",
-          "legendFormat": "{{pod}} {{container}} heap used",
+          "expr": "WITH (\n  identity = max by (namespace, pod, container, resource_id, workload_kind, workload_name) (\n    kompass_pod_info{namespace=\"$namespace\", workload_name=\"$workload\", pod=~\"$replica\", status=\"running\"}\n    and on (namespace, pod, container) max by (namespace, pod, container) (jvm_info{namespace=\"$namespace\"})\n  ),\n  cpu_limit_by_pod = max by (namespace, pod, container) (\n    kube_pod_container_resource_limits{namespace=\"$namespace\", container!=\"\", container!=\"POD\", resource=\"cpu\", unit=\"core\"}\n  ),\n  cpu_limit = cpu_limit_by_pod\n  * on (namespace, pod, container) group_left (resource_id, workload_kind, workload_name) identity\n)\nmax by (namespace, resource_id, workload_kind, workload_name, container) (cpu_limit)",
+          "legendFormat": "{{workload_kind}}/{{workload_name}} {{container}} CPU limit",
           "range": true,
           "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "VictoriaMetrics"
-          },
-          "editorMode": "code",
-          "expr": "(max by (namespace,pod,container) (jvm_memory_committed_bytes{area=\"heap\",id!~\".+\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\"})) or (sum by (namespace,pod,container) (jvm_memory_committed_bytes{area=\"heap\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\",id=~\".+\"}))",
-          "legendFormat": "{{pod}} {{container}} heap committed",
-          "range": true,
-          "refId": "C"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "VictoriaMetrics"
-          },
-          "editorMode": "code",
-          "expr": "(max by (namespace,pod,container) (jvm_memory_bytes_max{area=\"heap\",id!~\".+\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\"})) or (sum by (namespace,pod,container) (clamp_min(jvm_memory_bytes_max{area=\"heap\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\",id=~\".+\"}, 0)))",
-          "legendFormat": "{{pod}} {{container}} heap max",
-          "range": true,
-          "refId": "D"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "VictoriaMetrics"
-          },
-          "editorMode": "code",
-          "expr": "(max by (namespace,pod,container) (jvm_memory_used_bytes{area=\"nonheap\",id!~\".+\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\"})) or (sum by (namespace,pod,container) (jvm_memory_used_bytes{area=\"nonheap\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\",id=~\".+\"}))",
-          "legendFormat": "{{pod}} {{container}} non-heap used",
-          "range": true,
-          "refId": "E"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "VictoriaMetrics"
-          },
-          "editorMode": "code",
-          "expr": "clamp_min((container_memory_working_set_bytes{namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",container!=\"\",container!=\"POD\"} and on(namespace,pod,container) max by (namespace,pod,container) (jvm_info{namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\"})) - on(namespace,pod,container) ((max by (namespace,pod,container) (jvm_memory_used_bytes{area=\"heap\",id!~\".+\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\"})) or (sum by (namespace,pod,container) (jvm_memory_used_bytes{area=\"heap\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\",id=~\".+\"}))) - on(namespace,pod,container) ((max by (namespace,pod,container) (jvm_memory_used_bytes{area=\"nonheap\",id!~\".+\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\"})) or (sum by (namespace,pod,container) (jvm_memory_used_bytes{area=\"nonheap\",namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\",id=~\".+\"}))), 0)",
-          "legendFormat": "{{pod}} {{container}} estimated non-JVM/native",
-          "range": true,
-          "refId": "F"
         }
       ],
-      "title": "JVM Memory Boundaries vs Container Usage",
+      "title": "CPU Usage",
       "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "VictoriaMetrics"
-      },
-      "description": "Shows JVM workload/container identity and runtime metadata for selected JVM containers.",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "filterable": true,
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 7,
-        "w": 24,
-        "x": 0,
-        "y": 40
-      },
-      "id": 12,
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
-        "showHeader": true
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "VictoriaMetrics"
-          },
-          "editorMode": "code",
-          "expr": "max by (namespace,workload_kind,workload_name,pod,container,version,vendor,runtime) (jvm_info{namespace=~\"$namespace\",workload_name=~\"$workload\",pod=~\"$pod\",container=~\"$container\"})",
-          "format": "table",
-          "instant": true,
-          "legendFormat": "__auto",
-          "range": false,
-          "refId": "A"
-        }
-      ],
-      "title": "JVM Workload Info",
-      "type": "table"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "VictoriaMetrics"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 12,
-            "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 1,
-        "w": 12,
-        "x": 0,
-        "y": 47
-      },
-      "id": 5,
-      "options": {
-        "legend": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "VictoriaMetrics"
-          },
-          "editorMode": "code",
-          "expr": "increase(jvm_gc_collection_seconds_sum{namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\"}[1m])",
-          "legendFormat": "{{pod}} {{gc}} GC seconds",
-          "range": true,
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "VictoriaMetrics"
-          },
-          "editorMode": "code",
-          "expr": "increase(jvm_gc_pause_seconds_sum{namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\"}[1m])",
-          "legendFormat": "{{pod}} {{action}} {{cause}} pause seconds",
-          "range": true,
-          "refId": "B"
-        }
-      ],
-      "title": "GC Time - raw detail",
-      "type": "timeseries",
-      "description": "Shows JVM GC collection and pause time over a fixed 1-minute window.",
-      "collapsed": true
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "VictoriaMetrics"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 12,
-            "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "ops"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 1,
-        "w": 12,
-        "x": 12,
-        "y": 47
-      },
-      "id": 4,
-      "options": {
-        "legend": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "VictoriaMetrics"
-          },
-          "editorMode": "code",
-          "expr": "increase(jvm_gc_collection_seconds_count{namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\"}[1m])",
-          "legendFormat": "{{pod}} {{gc}} collections",
-          "range": true,
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "VictoriaMetrics"
-          },
-          "editorMode": "code",
-          "expr": "increase(jvm_gc_pause_seconds_count{namespace=~\"$namespace\",pod=~\"$pod\",container=~\"$container\",workload_name=~\"$workload\"}[1m])",
-          "legendFormat": "{{pod}} {{action}} {{cause}} pauses",
-          "range": true,
-          "refId": "B"
-        }
-      ],
-      "title": "GC Events - raw detail",
-      "type": "timeseries",
-      "description": "Shows JVM GC collection and pause events over a fixed 1-minute window.",
-      "collapsed": true
     }
   ],
   "refresh": "30s",
@@ -1124,20 +662,15 @@
   "templating": {
     "list": [
       {
-        "allValue": ".*",
-        "current": {
-          "selected": true,
-          "text": "All",
-          "value": "$__all"
-        },
+        "current": {},
         "datasource": {
           "type": "prometheus",
           "uid": "VictoriaMetrics"
         },
         "definition": "label_values(jvm_info, namespace)",
-        "includeAll": true,
+        "includeAll": false,
         "label": "Namespace",
-        "multi": true,
+        "multi": false,
         "name": "namespace",
         "options": [],
         "query": {
@@ -1150,33 +683,27 @@
         "type": "query"
       },
       {
-        "allValue": ".*",
-        "current": {
-          "selected": true,
-          "text": "All",
-          "value": "$__all"
-        },
+        "current": {},
         "datasource": {
           "type": "prometheus",
           "uid": "VictoriaMetrics"
         },
-        "definition": "label_values(jvm_info{namespace=~\"$namespace\"}, workload_name)",
-        "includeAll": true,
+        "definition": "query_result( max by (workload_name) ( kompass_pod_info{namespace=\"$namespace\", status=\"running\"} and on (namespace, pod, container) max by (namespace, pod, container) (jvm_info{namespace=\"$namespace\"}) ) )",
+        "includeAll": false,
         "label": "Workload",
-        "multi": true,
+        "multi": false,
         "name": "workload",
         "options": [],
         "query": {
-          "query": "label_values(jvm_info{namespace=~\"$namespace\"}, workload_name)",
+          "query": "query_result( max by (workload_name) ( kompass_pod_info{namespace=\"$namespace\", status=\"running\"} and on (namespace, pod, container) max by (namespace, pod, container) (jvm_info{namespace=\"$namespace\"}) ) )",
           "refId": "StandardVariableQuery"
         },
         "refresh": 1,
-        "regex": "",
+        "regex": "/workload_name=\"([^\"]+)\"/",
         "sort": 1,
         "type": "query"
       },
       {
-        "allValue": ".*",
         "current": {
           "selected": true,
           "text": "All",
@@ -1186,46 +713,304 @@
           "type": "prometheus",
           "uid": "VictoriaMetrics"
         },
-        "definition": "label_values(jvm_info{namespace=~\"$namespace\",workload_name=~\"$workload\"}, pod)",
+        "definition": "query_result( max by (pod) ( kompass_pod_info{namespace=\"$namespace\", workload_name=\"$workload\", status=\"running\"} and on (namespace, pod, container) max by (namespace, pod, container) (jvm_info{namespace=\"$namespace\"}) ) )",
+        "allValue": ".*",
         "includeAll": true,
-        "label": "Pod",
-        "multi": true,
-        "name": "pod",
+        "label": "Replica",
+        "multi": false,
+        "name": "replica",
         "options": [],
         "query": {
-          "query": "label_values(jvm_info{namespace=~\"$namespace\",workload_name=~\"$workload\"}, pod)",
+          "query": "query_result( max by (pod) ( kompass_pod_info{namespace=\"$namespace\", workload_name=\"$workload\", status=\"running\"} and on (namespace, pod, container) max by (namespace, pod, container) (jvm_info{namespace=\"$namespace\"}) ) )",
           "refId": "StandardVariableQuery"
         },
         "refresh": 1,
-        "regex": "",
+        "regex": "/pod=\"([^\"]+)\"/",
         "sort": 1,
-        "type": "query"
+        "type": "query",
+        "description": "Filters observed runtime values to one running JVM replica. Formula candidates and Pod Rightsizing desired remain workload-level values."
       },
       {
-        "allValue": ".*",
+        "name": "jvm_gc_lookback",
+        "label": "GC Lookback",
+        "type": "custom",
+        "hide": 0,
+        "multi": false,
+        "includeAll": false,
+        "skipUrlSync": false,
+        "query": "1m,5m,10m,15m,30m,1h",
         "current": {
           "selected": true,
-          "text": "All",
-          "value": "$__all"
+          "text": "1m",
+          "value": "1m"
         },
-        "datasource": {
-          "type": "prometheus",
-          "uid": "VictoriaMetrics"
+        "options": [
+          {
+            "selected": true,
+            "text": "1m",
+            "value": "1m"
+          },
+          {
+            "selected": false,
+            "text": "5m",
+            "value": "5m"
+          },
+          {
+            "selected": false,
+            "text": "10m",
+            "value": "10m"
+          },
+          {
+            "selected": false,
+            "text": "15m",
+            "value": "15m"
+          },
+          {
+            "selected": false,
+            "text": "30m",
+            "value": "30m"
+          },
+          {
+            "selected": false,
+            "text": "1h",
+            "value": "1h"
+          }
+        ],
+        "description": "Rolling window for GC counter rates. Longer windows smooth short spikes."
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "20%",
+          "value": "20"
         },
-        "definition": "label_values(jvm_info{namespace=~\"$namespace\",workload_name=~\"$workload\",pod=~\"$pod\"}, container)",
-        "includeAll": true,
-        "label": "Container",
-        "multi": true,
-        "name": "container",
-        "options": [],
-        "query": {
-          "query": "label_values(jvm_info{namespace=~\"$namespace\",workload_name=~\"$workload\",pod=~\"$pod\"}, container)",
-          "refId": "StandardVariableQuery"
+        "description": "Experimental read-only validation assumption for GC-family heap headroom. One selection applies to every displayed workload. Production should select a configured value from the detected GC family; PRD values are still TBD.",
+        "hide": 0,
+        "includeAll": false,
+        "label": "JVM GC Type Buffer % (Experimental)",
+        "multi": false,
+        "name": "jvm_gc_buffer_percent",
+        "options": [
+          {
+            "selected": false,
+            "text": "0%",
+            "value": "0"
+          },
+          {
+            "selected": false,
+            "text": "10%",
+            "value": "10"
+          },
+          {
+            "selected": false,
+            "text": "15%",
+            "value": "15"
+          },
+          {
+            "selected": true,
+            "text": "20%",
+            "value": "20"
+          },
+          {
+            "selected": false,
+            "text": "25%",
+            "value": "25"
+          },
+          {
+            "selected": false,
+            "text": "30%",
+            "value": "30"
+          }
+        ],
+        "query": "0% : 0,10% : 10,15% : 15,20% : 20,25% : 25,30% : 30",
+        "skipUrlSync": false,
+        "type": "custom"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "20%",
+          "value": "20"
         },
-        "refresh": 1,
-        "regex": "",
-        "sort": 1,
-        "type": "query"
+        "description": "Read-only validation input for buffering derived outside-heap memory. Set it to the active rightsizing Policy memory buffer.",
+        "hide": 0,
+        "label": "JVM Policy Memory Buffer %",
+        "name": "jvm_memory_buffer_percent",
+        "options": [
+          {
+            "selected": false,
+            "text": "10%",
+            "value": "10"
+          },
+          {
+            "selected": true,
+            "text": "20%",
+            "value": "20"
+          },
+          {
+            "selected": false,
+            "text": "30%",
+            "value": "30"
+          },
+          {
+            "selected": false,
+            "text": "40%",
+            "value": "40"
+          }
+        ],
+        "query": "10% : 10,20% : 20,30% : 30,40% : 40",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "P95",
+          "value": "0.95"
+        },
+        "description": "Aggregation strategy from the active rightsizing Policy, applied to container memory after heap is excluded. Heap remains P95 for the Xmx formula as required by PRD E.1.",
+        "hide": 0,
+        "includeAll": false,
+        "label": "JVM Policy Memory Strategy",
+        "multi": false,
+        "name": "jvm_memory_strategy",
+        "options": [
+          {
+            "selected": true,
+            "text": "P95",
+            "value": "0.95"
+          },
+          {
+            "selected": false,
+            "text": "P99",
+            "value": "0.99"
+          },
+          {
+            "selected": false,
+            "text": "Maximum",
+            "value": "1"
+          }
+        ],
+        "query": "P95 : 0.95,P99 : 0.99,Maximum : 1",
+        "skipUrlSync": false,
+        "type": "custom"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "10m",
+          "value": "10m"
+        },
+        "description": "Rolling lookback used by historical JVM formula calculations. Set it to the active rightsizing Policy lookback when comparing recommendations.",
+        "hide": 0,
+        "label": "JVM Policy Lookback",
+        "name": "jvm_formula_lookback",
+        "options": [
+          {
+            "selected": false,
+            "text": "5m",
+            "value": "5m"
+          },
+          {
+            "selected": true,
+            "text": "10m",
+            "value": "10m"
+          },
+          {
+            "selected": false,
+            "text": "15m",
+            "value": "15m"
+          },
+          {
+            "selected": false,
+            "text": "30m",
+            "value": "30m"
+          },
+          {
+            "selected": false,
+            "text": "1h",
+            "value": "1h"
+          },
+          {
+            "selected": false,
+            "text": "2h",
+            "value": "2h"
+          },
+          {
+            "selected": false,
+            "text": "6h",
+            "value": "6h"
+          },
+          {
+            "selected": false,
+            "text": "24h",
+            "value": "24h"
+          }
+        ],
+        "query": "5m,10m,15m,30m,1h,2h,6h,24h",
+        "type": "custom"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "30s",
+          "value": "30s"
+        },
+        "description": "Internal subquery resolution for formula estimates. Hidden because it is a query-performance setting, not a recommendation input.",
+        "hide": 2,
+        "label": "JVM Formula Step",
+        "name": "jvm_formula_step",
+        "options": [
+          {
+            "selected": true,
+            "text": "30s",
+            "value": "30s"
+          }
+        ],
+        "query": "30s",
+        "type": "constant"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "128 MiB",
+          "value": "134217728"
+        },
+        "description": "Manual Xms floor for read-only validation. Select the value configured on the single selected workload; production must discover this from runtime telemetry or JVM arguments.",
+        "hide": 0,
+        "includeAll": false,
+        "label": "JVM Xms Floor (Manual)",
+        "multi": false,
+        "name": "jvm_xms_bytes",
+        "options": [
+          {
+            "selected": false,
+            "text": "64 MiB",
+            "value": "67108864"
+          },
+          {
+            "selected": true,
+            "text": "128 MiB",
+            "value": "134217728"
+          },
+          {
+            "selected": false,
+            "text": "256 MiB",
+            "value": "268435456"
+          },
+          {
+            "selected": false,
+            "text": "512 MiB",
+            "value": "536870912"
+          },
+          {
+            "selected": false,
+            "text": "1 GiB",
+            "value": "1073741824"
+          }
+        ],
+        "query": "64 MiB : 67108864,128 MiB : 134217728,256 MiB : 268435456,512 MiB : 536870912,1 GiB : 1073741824",
+        "skipUrlSync": false,
+        "type": "custom"
       }
     ]
   },
@@ -1237,6 +1022,6 @@
   "timezone": "",
   "title": "Kompass JVM Metrics",
   "uid": "kompass-jvm-metrics",
-  "version": 2,
+  "version": 9,
   "weekStart": ""
 }

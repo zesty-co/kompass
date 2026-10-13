@@ -49,12 +49,12 @@ global:
   podAnnotations: {}
   # -- (map) Global pod labels for root-owned workloads.
   podLabels: {}
-  # -- (map) Global pod-level security context for root-owned workloads.
+  # -- (map) Global pod-level security context for supporting Kompass workloads; global keys override component keys.
   # Use pod-only keys here (for example: fsGroup, fsGroupChangePolicy, supplementalGroups).
   podSecurityContext: {}
   # -- (string) Global runtime class name for root-owned workloads.
   runtimeClassName: ""
-  # -- (map) Global container-level security context for root-owned workloads.
+  # -- (map) Global container-level security context for supporting Kompass workloads; global keys override component keys.
   # Use container-only keys here (for example: runAsUser, runAsGroup, capabilities); do not set fsGroup.
   securityContext: {}
   # -- (array) Global topology spread constraints for root-owned workloads.
@@ -233,7 +233,7 @@ kompass-insights:
       # -- (string) ingressUrl: The URL endpoint for Coralogix ingress.
 rightsizing:
   # -- (bool) Enable or disable the Zesty rightsizing feature components.
-  enabled: false
+  enabled: true
   # -- (map) Configuration for sending CX logs.
   cxLogging:
     # -- (bool) Enable or disable sending CX logs to Zesty.

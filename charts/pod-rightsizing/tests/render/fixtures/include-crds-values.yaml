@@ -1,1 +1,4 @@
-enabled: false
+enabled: true
+global:
+  guardian:
+    enabled: true

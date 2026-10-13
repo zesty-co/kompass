@@ -10,7 +10,7 @@ tests:
   - it: uses the pre-Guardian Action Taker resources when Guardian is disabled
     template: templates/action-taker/action-taker.yaml
     set:
-      guardian.enabled: false
+      global.guardian.enabled: false
     asserts:
       - equal:
           path: spec.template.spec.containers[0].resources.requests.cpu
@@ -36,7 +36,7 @@ tests:
   - it: uses the pre-Guardian Recommendations Maker resources when Guardian is disabled
     template: templates/recommendations-maker/recommendations-maker.yaml
     set:
-      guardian.enabled: false
+      global.guardian.enabled: false
     asserts:
       - equal:
           path: spec.template.spec.containers[0].resources.requests.cpu
@@ -50,7 +50,7 @@ tests:
   - it: uses Guardian-enabled Action Taker requests and limits when Guardian is enabled
     template: templates/action-taker/action-taker.yaml
     set:
-      guardian.enabled: true
+      global.guardian.enabled: true
     asserts:
       - equal:
           path: spec.template.spec.containers[0].resources.requests.cpu
@@ -80,7 +80,7 @@ tests:
   - it: uses Guardian-enabled Recommendations Maker requests and limits when Guardian is enabled
     template: templates/recommendations-maker/recommendations-maker.yaml
     set:
-      guardian.enabled: true
+      global.guardian.enabled: true
     asserts:
       - equal:
           path: spec.template.spec.containers[0].resources.requests.cpu

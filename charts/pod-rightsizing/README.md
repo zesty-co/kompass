@@ -131,17 +131,23 @@ Image pull secret behavior:
 
 ### Guardian Configuration
 
-CPU rescue requires both `cpuThrottlingRatio` (default `0.25`) and `cpuThrottlingRate` (default `0.05`) to pass in each of three consecutive qualifying windows. `cpuThrottlingRate` is the increase in `container_cpu_cfs_throttled_seconds_total` divided by elapsed cAdvisor sample seconds, not the configured scrape interval. At the default rate, a 15-second sample window requires at least 0.75 accumulated throttled seconds. Both settings are reloadable through Guardian parameters. The rate must be finite and positive; values above 1 are allowed because throttling can accumulate across CPU run queues. It is not a percentage of application slowdown. A window below either threshold resets the consecutive-window count; repeated or older samples do not advance it.
+For production enablement, observability, GitOps/Argo CD ownership, emergency
+floor overrides, and the required benchmark and real-cluster QA gate, see the
+[Guardian rollout and operator handoff](../../docs/guardian-operator-handoff.md).
 
-Guardian resources render only when `guardian.enabled` is `true`; they are not controlled by the root `enabled` or `config.kompassWorkloadsRightsizing.enabled` values. The chart mounts the shared `kompass-rightsizing-config` and the Helm-owned static `kompass-guardian-config`. Runtime Guardian params and store ConfigMaps are not rendered or owned by Helm.
+CPU rescue requires both `cpuThrottlingRatio` (default `0.3`) and `cpuThrottlingRate` (default `0.1`) to pass in each of four consecutive qualifying windows. `cpuThrottlingRate` is the increase in `container_cpu_cfs_throttled_seconds_total` divided by elapsed cAdvisor sample seconds, not the configured scrape interval. At the default rate, a 15-second sample window requires at least 1.5 accumulated throttled seconds. Both settings are reloadable through Guardian parameters. The rate must be finite and positive; values above 1 are allowed because throttling can accumulate across CPU run queues. It is not a percentage of application slowdown. A window below either threshold resets the consecutive-window count; repeated or older samples do not advance it.
 
-The static `kompass-guardian-config` contains these installation defaults: `cadvisorScrapeInterval=15s`, `cadvisorMaxConcurrentScrapes=4`, `cpuThrottlingRatio=0.25`, `cpuThrottlingConsecutiveWindows=3`, `cpuRequestGrowthFactor=1.25`, `memoryRequestGrowthFactor=1.25`, `cpuRequestToLimitFactor=1.2`, `memoryRequestToLimitFactor=1.2`, `stabilizationWindow=10m`, and `recoveryApplyTimeout=5m`.
+Guardian resources render only when `global.guardian.enabled` is `true`; they are not controlled by the root `enabled` or `config.kompassWorkloadsRightsizing.enabled` values. The chart mounts the shared `kompass-rightsizing-config` and the Helm-owned static `kompass-guardian-config`. Runtime Guardian params and store ConfigMaps are not rendered or owned by Helm.
+
+Enabling `config.kompassWorkloadsRightsizing.enabled` requires `global.guardian.enabled=true`; Helm rejects incompatible values during installation and upgrades.
+
+The static `kompass-guardian-config` contains these installation defaults: `cadvisorScrapeInterval=15s`, `cadvisorMaxConcurrentScrapes=4`, `cpuThrottlingRatio=0.3`, `cpuThrottlingRate=0.1`, `cpuThrottlingConsecutiveWindows=4`, `cpuRequestGrowthFactor=1.5`, `memoryRequestGrowthFactor=1.5`, `cpuRequestToLimitFactor=1.3`, `memoryRequestToLimitFactor=1.4`, `stabilizationWindow=10m`, and `recoveryApplyTimeout=5m`.
 
 | Parameter | Description | Default |
 | --------- | ----------- | ------- |
-| `guardian.enabled` | Render Guardian resources | `false` |
+| `global.guardian.enabled` | Render Guardian resources | `false` |
 | `guardian.image.name` | Guardian image name | `"/pod-rightsizing/guardian"` |
-| `guardian.image.tag` | Guardian image tag | `"latest"` |
+| `guardian.image.tag` | Guardian image tag | `"v0.9.0-rc1"` |
 | `guardian.replicaCount` | Guardian replica count | `1` |
 | `guardian.runtimeClassName` | Component runtime class name (global wins when set) | `""` |
 | `guardian.imagePullSecrets` | Component image pull secrets (global wins when non-empty) | `[]` |
@@ -187,6 +193,27 @@ The static `kompass-guardian-config` contains these installation defaults: `cadv
 | `metricsExporter.affinity` | Component affinity merged with global | `{}` |
 | `metricsExporter.topologySpreadConstraints` | Component topology spread constraints (global wins when non-empty) | `[]` |
 | `metricsExporter.automountServiceAccountToken` | Component automount service account token control (explicit `false` honored) | unset |
+
+### Recording Rules
+
+Non-empty YAML files under `custom-recording-rules/` are packaged into the
+`kompass-vm-rightsizing-recording-rules` ConfigMap. The Kompass spoke chart
+projects this ConfigMap with the other product rule ConfigMaps for `vmalert` to
+load. `rightsizing.yaml` is currently empty; existing Rightsizing rules remain
+in the spoke's base rules ConfigMap. Keep recording-rule group names and output
+metric names unique across products.
+
+`config.customReplicaAggregationMethods` controls the optional CPU and memory
+custom quantile rules. Values are percentiles from 1 to 99; for example:
+
+```yaml
+config:
+  customReplicaAggregationMethods:
+    cpu:
+      custom1: 90
+    memory:
+      custom2: 98
+```
 
 ### Pod Rightsizing ConfigMap
 

@@ -1,0 +1,24 @@
+suite: Metrics exporter role
+release:
+  name: ci
+  namespace: zesty-system
+templates:
+  - templates/metrics-exporter/role.yaml
+tests:
+  - it: grants namespaced list access to Kompass workload controllers
+    values:
+      - ../render/fixtures/cxlogging-on-values.yaml
+    asserts:
+      - isKind:
+          of: ClusterRole
+      - contains:
+          path: rules
+          content:
+            apiGroups:
+              - apps
+            resources:
+              - deployments
+              - statefulsets
+              - daemonsets
+            verbs:
+              - list

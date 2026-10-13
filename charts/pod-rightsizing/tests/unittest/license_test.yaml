@@ -1,0 +1,127 @@
+suite: License
+release:
+  name: ci
+  namespace: zesty-system
+templates:
+  - templates/action-taker/action-taker.yaml
+  - templates/recommendations-maker/recommendations-maker.yaml
+  - templates/config/pilotConfigmap.yaml
+  - templates/action-taker/role.yaml
+tests:
+  - it: configures the default license for action-taker
+    template: templates/action-taker/action-taker.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: LICENSE_SECRET_NAME
+            value: kompass-license
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: LICENSE_DOCUMENT_KEY
+            value: kompass_license
+  - it: configures the default license for recommendations-maker
+    template: templates/recommendations-maker/recommendations-maker.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LICENSE_SECRET_NAME
+            value: kompass-license
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LICENSE_DOCUMENT_KEY
+            value: kompass_license
+  - it: supports a custom license for action-taker
+    template: templates/action-taker/action-taker.yaml
+    set:
+      global.license.secretName: custom-license
+      global.license.documentKey: custom-document
+      actionTaker.env:
+        - name: LICENSE_SECRET_NAME
+          value: ignored-license
+        - name: LICENSE_DOCUMENT_KEY
+          value: ignored-document
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: LICENSE_SECRET_NAME
+            value: custom-license
+      - contains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: LICENSE_DOCUMENT_KEY
+            value: custom-document
+      - notContains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: LICENSE_SECRET_NAME
+            value: ignored-license
+      - notContains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: LICENSE_DOCUMENT_KEY
+            value: ignored-document
+  - it: supports a custom license for recommendations-maker
+    template: templates/recommendations-maker/recommendations-maker.yaml
+    set:
+      global.license.secretName: custom-license
+      global.license.documentKey: custom-document
+      recommendationsMaker.env:
+        - name: LICENSE_SECRET_NAME
+          value: ignored-license
+        - name: LICENSE_DOCUMENT_KEY
+          value: ignored-document
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LICENSE_SECRET_NAME
+            value: custom-license
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LICENSE_DOCUMENT_KEY
+            value: custom-document
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LICENSE_SECRET_NAME
+            value: ignored-license
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: LICENSE_DOCUMENT_KEY
+            value: ignored-document
+  - it: grants namespaced list and watch for only the default license
+    template: templates/action-taker/role.yaml
+    documentIndex: 1
+    asserts:
+      - isKind:
+          of: Role
+      - equal:
+          path: metadata.namespace
+          value: zesty-system
+      - contains:
+          path: rules
+          content:
+            apiGroups: [""]
+            resources: [secrets]
+            resourceNames: [kompass-license]
+            verbs: [list, watch]
+  - it: restricts license list and watch to the configured name
+    template: templates/action-taker/role.yaml
+    documentIndex: 1
+    set:
+      global.license.secretName: custom-license
+    asserts:
+      - contains:
+          path: rules
+          content:
+            apiGroups: [""]
+            resources: [secrets]
+            resourceNames: [custom-license]
+            verbs: [list, watch]

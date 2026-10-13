@@ -1,4 +1,5 @@
 enabled: false
+jvmRightsizingEnabled: false
 accountId: ""
 nameOverride: ""
 fullnameOverride: ""
@@ -20,6 +21,11 @@ cxLogging:
   metricsUrl: "https://ingress.eu2.coralogix.com:443"
   timeDeltaUrl: "https://ingress.eu2.coralogix.com:443/sdk/v1/time"
 global:
+  license:
+    secretName: kompass-license
+    documentKey: kompass_license
+  guardian:
+    enabled: false
   imagePullSecret:
     name: ""
     dockerconfigjson: ""
@@ -83,13 +89,12 @@ actionTaker:
   name: "action-taker"
   image:
     name: "/pod-rightsizing/action-taker"
-    tag: "v0.9.1"
+    tag: "v0.9.2"
   resources:
     requests:
       cpu: 100m
       memory: 128Mi
 guardian:
-  enabled: false
   replicaCount: 1
   priorityClassName: ""
   runtimeClassName: ""
@@ -113,12 +118,24 @@ guardian:
       type: RuntimeDefault
   image:
     name: "/pod-rightsizing/guardian"
-    tag: "v0.9.1"
+    tag: "v0.9.2"
   resources:
     requests:
       cpu: 100m
       memory: 128Mi
 config:
+  resourceIdsQueryChunkSize: 50
+  chunkProcessingSize: 100
+  maxParallelChunks: 5
+  disableMDARecommendations: false
+  disableMDAActions: false
+  useLegacyHpaTargetUtilizationCalculation: false
+  targetUtilizationBuffer: 0
+  VARIANTS_LOG_LEVEL: 1
+  maxConcurrentReconciles: 1
+  noiseRateLimit: 100
+  noiseRateLimitDurationSeconds: 60
+  syncWorkloadWorkers: 32
   matchNamespaces:
   excludeNamespaces:
     - "kube-system"
@@ -133,6 +150,8 @@ config:
     - stability-focused
   kompassWorkloadsRightsizing:
     enabled: false
+  actionInformerDebounceDuration: 500ms
+  clusterActionListReportingEnabled: false
 recommendationsMaker:
   # fullnameOverride: ""
   replicaCount: 1
@@ -168,7 +187,7 @@ recommendationsMaker:
   name: "recommendations-maker"
   image:
     name: "/pod-rightsizing/recommendations-maker"
-    tag: "v0.9.1"
+    tag: "v0.9.2"
     args:
   port: 8088
   resources:
@@ -205,7 +224,7 @@ metricsExporter:
   #     type: RuntimeDefault
   image:
     name: "/pod-rightsizing/metrics-exporter"
-    tag: "v0.9.1"
+    tag: "v0.9.2"
     args:
   resources:
     requests:
@@ -245,7 +264,7 @@ bridgeDataExporter:
   #     type: RuntimeDefault
   image:
     name: "/pod-rightsizing/bridge-data-exporter"
-    tag: "v0.9.1"
+    tag: "v0.9.2"
     args:
   resources:
     requests:
