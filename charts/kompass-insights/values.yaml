@@ -2,7 +2,7 @@ global:
   # Shared license location for Insights and Manager.
   license:
     # Manager provisions the missing license key on startup, including first-time setup,
-    # and supports license/update. Manager always runs with Insights. If the entire
+    # through registry polling. Manager always runs alongside Insights. If the entire
     # Insights chart is disabled, provision it externally in the release namespace.
     # The chart does not create, mount, or populate it.
     secretName: kompass-license
@@ -12,7 +12,7 @@ global:
   affinity: {}
   automountServiceAccountToken: ~
   imagePullSecrets: ~
-  # Workload annotations applied to the Insights Deployment metadata.
+  # Workload annotations applied to the Insights and Manager Deployment metadata.
   annotations: {}
   podAnnotations: {}
   podLabels: {}
@@ -106,7 +106,7 @@ customPricing:
   spotRam: "0.000892"
 insights:
   extraEnv: []
-  # Workload annotations applied to the Insights Deployment metadata.
+  # Pod settings and workload annotations are also inherited by Manager.
   annotations: {}
   affinity: {}
   automountServiceAccountToken: ~
@@ -135,8 +135,9 @@ manager:
   repository: "672188301118.dkr.ecr.eu-west-1.amazonaws.com/zesty-k8s/kompass-manager"
   pullPolicy: Always
   # -- Manager image tag; defaults to image.tag, or Chart.AppVersion when image.tag is unset.
-  tag: v0.0.2
-  service: "kompass-manager"
+  tag: v0.0.3
+  # -- False runs Manager as an Insights sidecar; true runs a separate host-networked Deployment.
+  hostNetwork: false
   # -- (array) additional command-line arguments for the manager container
   extraArgs: []
   # -- (array) additional Kompass manager environment variables
@@ -154,23 +155,6 @@ manager:
     capabilities:
       drop:
         - ALL
-  # -- (map) Container ports exposed by the manager.
-  ports:
-    # -- (map) gRPC endpoint
-    grpc:
-      name: manager-grpc
-      containerPort: 50061
-      protocol: TCP
-    # -- (map) Prometheus metrics endpoint.
-    metrics:
-      name: manager-metrics
-      containerPort: 8090
-      protocol: TCP
-    # -- (map) Health check endpoint.
-    health:
-      name: manager-health
-      containerPort: 8091
-      protocol: TCP
   # -- (map) Container resource requests/limits.
   resources:
     requests:
@@ -179,27 +163,23 @@ manager:
     limits:
       cpu: 100m
       memory: 128Mi
-  # -- (map) Liveness and readiness probes.
+  # -- Probe timing overrides. Exec handlers are fixed; legacy HTTP handlers are ignored.
   probes:
     startup:
-      httpGet:
-        path: /healthz
-        port: manager-health
       initialDelaySeconds: 0
       periodSeconds: 10
-      failureThreshold: 10
+      timeoutSeconds: 5
+      failureThreshold: 12
     liveness:
-      httpGet:
-        path: /healthz
-        port: manager-health
       initialDelaySeconds: 0
-      periodSeconds: 10
+      periodSeconds: 30
+      timeoutSeconds: 5
+      failureThreshold: 3
     readiness:
-      httpGet:
-        path: /readyz
-        port: manager-health
       initialDelaySeconds: 0
       periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
 admission:
   enabled: false
   service:

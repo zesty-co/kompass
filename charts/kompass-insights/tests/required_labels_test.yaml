@@ -1,7 +1,7 @@
 suite: Required resource and pod labels
 templates:
   - templates/secret.yaml
-  - templates/service-manager.yaml
+  - templates/deployment-manager.yaml
   - templates/roleBinding.yaml
   - templates/clusterRoleBinding.yaml
   - templates/monitoring/cluster_role_binding.yaml
@@ -19,6 +19,10 @@ tests:
   - it: labels every rendered native resource
     set:
       global.cxLogging.enabled: true
+    documentSelector:
+      path: kind
+      matchMany: true
+      skipEmptyTemplates: true
     asserts:
       - equal:
           path: metadata.labels["app.kubernetes.io/part-of"]
@@ -40,6 +44,39 @@ tests:
       - notExists:
           path: spec.selector.matchLabels["app.kubernetes.io/part-of"]
         template: templates/deployment.yaml
+      - equal:
+          path: spec.selector.matchLabels
+          value:
+            app.kubernetes.io/instance: kompass-insights
+            app.kubernetes.io/name: kompass-insights
+        template: templates/deployment.yaml
+
+  - it: keeps Manager outside Insights selectors with overridden names and required labels
+    templates:
+      - templates/deployment-manager.yaml
+    set:
+      manager.hostNetwork: true
+      fullnameOverride: custom-insights
+      insights.podLabels:
+        app.kubernetes.io/part-of: other
+    asserts:
+      - equal:
+          path: metadata.name
+          value: custom-insights-manager
+      - equal:
+          path: metadata.labels["app.kubernetes.io/name"]
+          value: custom-insights-manager
+      - equal:
+          path: spec.selector.matchLabels
+          value:
+            app.kubernetes.io/instance: custom-insights
+            app.kubernetes.io/name: custom-insights-manager
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/name"]
+          value: custom-insights-manager
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/part-of"]
+          value: kompass
 
   - it: keeps the deployment pod label when configured labels conflict
     templates:

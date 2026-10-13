@@ -1,14 +1,16 @@
 suite: Insights storage without persistence
 templates:
   - templates/deployment.yaml
+  - templates/deployment-manager.yaml
   - templates/configMap.yaml
 release:
   namespace: insights-test
 tests:
   - it: omits database storage and migration while retaining a read-only root filesystem
     asserts:
-      - notExists:
+      - equal:
           path: spec.template.spec.volumes
+          value: [{name: manager-health, emptyDir: {}}]
         template: templates/deployment.yaml
       - notExists:
           path: spec.template.spec.containers[0].volumeMounts
@@ -29,6 +31,7 @@ tests:
 
   - it: retains manager extra volumes and mounts without database storage
     set:
+      manager.hostNetwork: true
       manager.extraVolumes:
         - name: manager-config
           configMap:
@@ -38,27 +41,30 @@ tests:
           mountPath: /etc/manager
           readOnly: true
     asserts:
-      - equal:
+      - contains:
           path: spec.template.spec.volumes
-          value:
-            - name: manager-config
-              configMap:
-                name: manager-config
+          content:
+            name: manager-config
+            configMap:
+              name: manager-config
+        template: templates/deployment-manager.yaml
+      - notExists:
+          path: spec.template.spec.volumes
         template: templates/deployment.yaml
       - notExists:
           path: spec.template.spec.containers[0].volumeMounts
         template: templates/deployment.yaml
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: manager-config
+            mountPath: /etc/manager
+            readOnly: true
+        template: templates/deployment-manager.yaml
       - equal:
-          path: spec.template.spec.containers[1].volumeMounts
-          value:
-            - name: manager-config
-              mountPath: /etc/manager
-              readOnly: true
-        template: templates/deployment.yaml
-      - equal:
-          path: spec.template.spec.containers[1].securityContext.readOnlyRootFilesystem
+          path: spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem
           value: true
-        template: templates/deployment.yaml
+        template: templates/deployment-manager.yaml
       - notExists:
           path: spec.template.spec.initContainers
         template: templates/deployment.yaml

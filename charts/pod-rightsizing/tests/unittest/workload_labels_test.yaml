@@ -17,12 +17,12 @@ tests:
   - it: applies global and component labels to the Guardian Deployment only
     template: templates/guardian/guardian.yaml
     set:
+      global.guardian.enabled: true
       global:
         workloadLabels:
           globalWorkloadLabel: global
           sharedWorkloadLabel: global
       guardian:
-        enabled: true
         workloadLabels:
           guardianWorkloadLabel: guardian
           sharedWorkloadLabel: component

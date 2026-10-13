@@ -13,8 +13,6 @@ tests:
   - it: renders versioned ceilings for every Action Taker container and preserves annotations
     template: templates/action-taker/action-taker.yaml
     set:
-      guardian:
-        enabled: false
       global:
         podAnnotations:
           global-annotation: preserved
@@ -34,9 +32,6 @@ tests:
 
   - it: renders versioned ceilings for the Recommendations Maker container
     template: templates/recommendations-maker/recommendations-maker.yaml
-    set:
-      guardian:
-        enabled: false
     asserts:
       - equal:
           path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]
@@ -47,8 +42,6 @@ tests:
     set:
       gpuMetrics:
         enabled: true
-      guardian:
-        enabled: false
     asserts:
       - equal:
           path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]
@@ -60,8 +53,7 @@ tests:
   - it: excludes Guardian from request-ceiling annotations
     template: templates/guardian/guardian.yaml
     set:
-      guardian:
-        enabled: true
+      global.guardian.enabled: true
     asserts:
       - notExists:
           path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]
@@ -81,9 +73,6 @@ tests:
 
   - it: renders ceilings when Guardian is disabled
     template: templates/action-taker/action-taker.yaml
-    set:
-      guardian:
-        enabled: false
     asserts:
       - equal:
           path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]

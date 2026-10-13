@@ -1,0 +1,161 @@
+suite: Application configuration sources
+release:
+  name: ci
+  namespace: zesty-system
+templates:
+  - templates/config/pilotConfigmap.yaml
+  - templates/action-taker/action-taker.yaml
+  - templates/recommendations-maker/recommendations-maker.yaml
+tests:
+  - it: supplies registered rightsizing parameters in the base ConfigMap
+    template: templates/config/pilotConfigmap.yaml
+    asserts:
+      - isSubset:
+          path: data
+          content:
+            resourceIdsQueryChunkSize: "50"
+            chunkProcessingSize: "100"
+            maxParallelChunks: "5"
+            disableMDARecommendations: "false"
+            disableMDAActions: "false"
+            useLegacyHpaTargetUtilizationCalculation: "false"
+            targetUtilizationBuffer: "0"
+            VARIANTS_LOG_LEVEL: "1"
+            maxConcurrentReconciles: "1"
+            noiseRateLimit: "100"
+            noiseRateLimitDurationSeconds: "60"
+            syncWorkloadWorkers: "32"
+      - exists:
+          path: data.kompassWorkloadsRightsizingEnabled
+      - exists:
+          path: data.kompassWorkloadsRightsizingPolicyName
+      - exists:
+          path: data.kompassWorkloadsRightsizingExcludedWorkloads
+      - exists:
+          path: data.jvmAutoDiscoveryEnabled
+      - notExists:
+          path: data.jvmRightsizingEnabled
+      - exists:
+          path: data.jvmAutoDiscoveryEnvSignals
+      - exists:
+          path: data.jvmAutoDiscoveryCommandSignals
+      - exists:
+          path: data.jvmAutoDiscoveryImageSignals
+      - notExists:
+          path: data.v
+      - notExists:
+          path: data.LOG_STACKTRACE_ENABLED
+      - notExists:
+          path: data.LOG_STACKTRACE_LEVEL
+  - it: does not promote legacy component environment values to the base ConfigMap
+    template: templates/config/pilotConfigmap.yaml
+    set:
+      actionTaker.env:
+        - name: maxConcurrentReconciles
+          value: "7"
+      recommendationsMaker.env:
+        - name: resourceIdsQueryChunkSize
+          value: "75"
+        - name: disableMDARecommendations
+          value: "true"
+    asserts:
+      - equal:
+          path: data.resourceIdsQueryChunkSize
+          value: "50"
+      - equal:
+          path: data.disableMDARecommendations
+          value: "false"
+      - equal:
+          path: data.maxConcurrentReconciles
+          value: "1"
+  - it: renders explicit config values including false and zero despite conflicting legacy environment values
+    template: templates/config/pilotConfigmap.yaml
+    set:
+      config.resourceIdsQueryChunkSize: 0
+      config.disableMDARecommendations: false
+      config.targetUtilizationBuffer: 0
+      actionTaker.env:
+        - name: resourceIdsQueryChunkSize
+          value: "75"
+        - name: disableMDARecommendations
+          value: "true"
+      recommendationsMaker.env:
+        - name: resourceIdsQueryChunkSize
+          value: "100"
+        - name: disableMDARecommendations
+          value: "true"
+    asserts:
+      - equal:
+          path: data.resourceIdsQueryChunkSize
+          value: "0"
+      - equal:
+          path: data.disableMDARecommendations
+          value: "false"
+      - equal:
+          path: data.targetUtilizationBuffer
+          value: "0"
+  - it: omits retired logging configuration keys even when values are supplied
+    template: templates/config/pilotConfigmap.yaml
+    set:
+      config.LOG_STACKTRACE_ENABLED: true
+      actionTaker.env:
+        - name: LOG_STACKTRACE_ENABLED
+          value: "false"
+      recommendationsMaker.env:
+        - name: LOG_STACKTRACE_ENABLED
+          value: "false"
+    asserts:
+      - notExists:
+          path: data.v
+      - notExists:
+          path: data.LOG_STACKTRACE_ENABLED
+      - notExists:
+          path: data.LOG_STACKTRACE_LEVEL
+  - it: preserves action-taker certificates without mounting application configuration
+    template: templates/action-taker/action-taker.yaml
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.containers[1].volumeMounts
+          count: 1
+      - equal:
+          path: spec.template.spec.containers[1].volumeMounts[0].name
+          value: webhook-certs
+      - lengthEqual:
+          path: spec.template.spec.volumes
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[1].env
+          content:
+            name: APP_CONFIG_MOUNTED_PATH
+          any: true
+  - it: preserves recommendation storage without mounting application configuration
+    template: templates/recommendations-maker/recommendations-maker.yaml
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.containers[0].volumeMounts
+          count: 1
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[0].name
+          value: recommendations-storage
+      - lengthEqual:
+          path: spec.template.spec.volumes
+          count: 1
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: APP_CONFIG_MOUNTED_PATH
+          any: true
+  - it: defaults JVM rightsizing environment flag to false in Recommendation Maker
+    template: templates/recommendations-maker/recommendations-maker.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[?(@.name == 'recommendations-maker')].env[?(@.name == 'JVM_RIGHTSIZING_ENABLED')].value
+          value: "false"
+  - it: propagates JVM rightsizing flag to Recommendation Maker
+    template: templates/recommendations-maker/recommendations-maker.yaml
+    set:
+      jvmRightsizingEnabled: true
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[?(@.name == 'recommendations-maker')].env[?(@.name == 'JVM_RIGHTSIZING_ENABLED')].value
+          value: "true"

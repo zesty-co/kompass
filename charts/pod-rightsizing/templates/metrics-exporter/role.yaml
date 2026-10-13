@@ -18,6 +18,14 @@ rules:
   - get
   - list
 - apiGroups:
+  - apps
+  resources:
+  - deployments
+  - statefulsets
+  - daemonsets
+  verbs:
+  - list
+- apiGroups:
   - ""
   resources:
   - secrets

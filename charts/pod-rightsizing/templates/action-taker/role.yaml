@@ -262,6 +262,15 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - secrets
+  resourceNames:
+  - {{ .Values.global.license.secretName | quote }}
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
   - configmaps
   verbs:
   - create

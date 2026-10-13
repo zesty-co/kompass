@@ -1,4 +1,4 @@
-{{- if .Values.guardian.enabled }}
+{{- if eq (include "pod-rightsizing.guardian.enabled" .) "true" }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -10,13 +10,13 @@ metadata:
 data:
   cadvisorScrapeInterval: "15s"
   cadvisorMaxConcurrentScrapes: "4"
-  cpuThrottlingRatio: "0.5"
+  cpuThrottlingRatio: "0.3"
   cpuThrottlingRate: "0.1"
   cpuThrottlingConsecutiveWindows: "4"
-  cpuRequestGrowthFactor: "1.5"
-  memoryRequestGrowthFactor: "1.5"
-  cpuRequestToLimitFactor: "1.25"
-  memoryRequestToLimitFactor: "1.25"
+  cpuRequestGrowthFactor: "1.75"
+  memoryRequestGrowthFactor: "1.75"
+  cpuRequestToLimitFactor: "1.3"
+  memoryRequestToLimitFactor: "1.4"
   stabilizationWindow: "10m"
   recoveryApplyTimeout: "5m"
 {{- end }}

@@ -1,0 +1,19 @@
+{{- $customRecordingRules := list }}
+{{- range $path, $_ := .Files.Glob "custom-recording-rules/*.{yaml,yml}" }}
+{{- $content := tpl ($.Files.Get $path) $ }}
+{{- if ne (trim $content) "" }}
+{{- $customRecordingRules = append $customRecordingRules (dict "path" $path "content" $content) }}
+{{- end }}
+{{- end }}
+{{- if $customRecordingRules }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kompass-vm-rightsizing-recording-rules
+  namespace: {{ .Release.Namespace }}
+data:
+  {{- range $rules := $customRecordingRules }}
+  {{ base $rules.path }}: |-
+{{ $rules.content | nindent 4 }}
+  {{- end }}
+{{- end }}

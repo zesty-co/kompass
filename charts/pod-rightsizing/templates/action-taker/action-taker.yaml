@@ -83,7 +83,7 @@ spec:
             - containerPort: 8443
               name: https
               protocol: TCP
-          {{- if .Values.guardian.enabled }}
+          {{- if eq (include "pod-rightsizing.guardian.enabled" .) "true" }}
           resources:
             limits:
               cpu: 200m
@@ -135,9 +135,6 @@ spec:
             - mountPath: /tmp/k8s-webhook-server/serving-certs
               name: webhook-certs
               readOnly: true
-            - mountPath: /etc/kompass-rightsizing/config
-              name: rightsizing-config
-              readOnly: true
           command:
             - /action-taker
           env:
@@ -161,12 +158,14 @@ spec:
               value: {{ .Values.actionTaker.name }}
             - name: VM_URL
               value: {{ include "pod-rightsizing.victoriaMetrics.url" . }}
-            - name: APP_CONFIG_MOUNTED_PATH
-              value: /etc/kompass-rightsizing/config
             - name: POD_NAMESPACE
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: LICENSE_SECRET_NAME
+              value: {{ .Values.global.license.secretName | quote }}
+            - name: LICENSE_DOCUMENT_KEY
+              value: {{ .Values.global.license.documentKey | quote }}
             - name: POD_NAME
               valueFrom:
                 fieldRef:
@@ -222,10 +221,14 @@ spec:
                   fieldPath: spec.serviceAccountName
             - name: RIGHTSIZING_SECRET_NAME
               value: {{ .Values.secret }}
+            - name: JVM_RIGHTSIZING_ENABLED
+              value: {{ .Values.jvmRightsizingEnabled | default false | quote }}
             {{- if .Values.actionTaker.env }}
             {{- range .Values.actionTaker.env }}
+            {{- if not (has .name (list "LICENSE_SECRET_NAME" "LICENSE_DOCUMENT_KEY")) }}
             - name: {{ .name }}
               value: {{ .value | quote }}
+            {{- end }}
             {{- end }}
             {{- end }}
           imagePullPolicy: {{ .Values.imagePullPolicy | default "Always" }}
@@ -250,9 +253,6 @@ spec:
         - name: webhook-certs
           secret:
             secretName: kompass-pod-rightsizing-webhook-cert
-        - name: rightsizing-config
-          configMap:
-            name: {{ include "kompass-pod-rightsizing-config.name" . }}
       {{- with $actionTakerPodSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}

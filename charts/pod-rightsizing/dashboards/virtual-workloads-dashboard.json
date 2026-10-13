@@ -256,7 +256,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "last_over_time(kompass_rs_recommendations{mode=\"variants\",namespace=\"$namespace\",workload_name=\"$workload_name\",container=\"$container\",resource_type=\"cpu\",rightsizing_policy=\"$policy\",resource_source=\"desired\"}[1h])",
+          "expr": "max by (namespace,workload_name,container,resource_type,rightsizing_policy) (last_over_time(kompass_rs_recommendations{mode=\"variants\",namespace=\"$namespace\",workload_name=\"$workload_name\",container=\"$container\",resource_type=\"cpu\",rightsizing_policy=\"$policy\",resource_source=\"desired\"}[1h]) and topk by (namespace,workload_name,container,resource_type,rightsizing_policy) (1, tlast_over_time(kompass_rs_recommendations{mode=\"variants\",namespace=\"$namespace\",workload_name=\"$workload_name\",container=\"$container\",resource_type=\"cpu\",rightsizing_policy=\"$policy\",resource_source=\"desired\"}[1h])))",
           "hide": false,
           "instant": false,
           "interval": "",
@@ -270,7 +270,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "(kompass_rs_recommendations{mode=\"live\",type=\"orchestration\",namespace=\"$namespace\",workload_name=\"$workload_name\",container=\"$container\",resource_type=\"cpu\",resource_source=\"desired\"}[7d])",
+          "expr": "max by (namespace,workload_name,container,resource_type) (last_over_time(kompass_rs_recommendations{mode=\"live\",type=\"orchestration\",execution_state=\"scheduled\",namespace=\"$namespace\",workload_name=\"$workload_name\",container=\"$container\",resource_type=\"cpu\",resource_source=\"desired\"}[7d]) and topk by (namespace,workload_name,container,resource_type) (1, tlast_over_time(kompass_rs_recommendations{mode=\"live\",type=\"orchestration\",execution_state=\"scheduled\",namespace=\"$namespace\",workload_name=\"$workload_name\",container=\"$container\",resource_type=\"cpu\",resource_source=\"desired\"}[7d])))",
           "hide": false,
           "instant": false,
           "interval": "",
@@ -769,7 +769,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "last_over_time(kompass_rs_recommendations{mode=\"variants\",namespace=\"$namespace\",workload_name=\"$workload_name\",container=\"$container\",resource_type=\"memory\",rightsizing_policy=\"$policy\",resource_source=\"desired\"}[1h])/$GiB",
+          "expr": "(max by (namespace,workload_name,container,resource_type,rightsizing_policy) (last_over_time(kompass_rs_recommendations{mode=\"variants\",namespace=\"$namespace\",workload_name=\"$workload_name\",container=\"$container\",resource_type=\"memory\",rightsizing_policy=\"$policy\",resource_source=\"desired\"}[1h]) and topk by (namespace,workload_name,container,resource_type,rightsizing_policy) (1, tlast_over_time(kompass_rs_recommendations{mode=\"variants\",namespace=\"$namespace\",workload_name=\"$workload_name\",container=\"$container\",resource_type=\"memory\",rightsizing_policy=\"$policy\",resource_source=\"desired\"}[1h]))))/$GiB",
           "hide": false,
           "instant": false,
           "interval": "",
@@ -783,7 +783,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "(kompass_rs_recommendations{mode=\"live\",type=\"orchestration\",namespace=\"$namespace\",workload_name=\"$workload_name\",container=\"$container\",resource_type=\"memory\",resource_source=\"desired\"}[7d])/$GiB",
+          "expr": "(max by (namespace,workload_name,container,resource_type) (last_over_time(kompass_rs_recommendations{mode=\"live\",type=\"orchestration\",execution_state=\"scheduled\",namespace=\"$namespace\",workload_name=\"$workload_name\",container=\"$container\",resource_type=\"memory\",resource_source=\"desired\"}[7d]) and topk by (namespace,workload_name,container,resource_type) (1, tlast_over_time(kompass_rs_recommendations{mode=\"live\",type=\"orchestration\",execution_state=\"scheduled\",namespace=\"$namespace\",workload_name=\"$workload_name\",container=\"$container\",resource_type=\"memory\",resource_source=\"desired\"}[7d]))))/$GiB",
           "hide": false,
           "instant": false,
           "interval": "",
@@ -1521,7 +1521,7 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Pod-RightSizing Virtual Workloads Dashboard - NEW",
+  "title": "Pod-RightSizing Virtual Workloads Dashboard",
   "uid": "pod-rightSizing-jobs-new",
   "version": 2,
   "weekStart": ""
