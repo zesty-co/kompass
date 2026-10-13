@@ -7,7 +7,10 @@
   "key" "annotations"
   "fallback" (.Values.insights.annotations | default dict)
 ) | fromYaml -}}
-{{- $insightsCeilings := deepCopy (dig "guardian" "requestCeilings" "insights" (dict) .Values.global) -}}
+{{- $insightsCeilings := pick (dig "guardian" "requestCeilings" "insights" (dict) .Values.global) "kompass-insights" "manager" -}}
+{{- if .Values.manager.hostNetwork -}}
+{{- $_ := unset $insightsCeilings "manager" -}}
+{{- end -}}
 {{- $insightsContainerName := include "zesty-k8s.name" . -}}
 {{- if and (hasKey $insightsCeilings "kompass-insights") (ne $insightsContainerName "kompass-insights") -}}
 {{- $insightsPrimaryCeiling := get $insightsCeilings "kompass-insights" -}}
@@ -229,135 +232,9 @@ spec:
               value: {{ .Values.global.license.secretName | quote }}
             - name: LICENSE_DOCUMENT_KEY
               value: {{ .Values.global.license.documentKey | quote }}
-        - name: "manager"
-          image: "{{ .Values.manager.repository }}:{{ .Values.manager.tag | default (include "zesty-k8s.version" .) }}"
-          imagePullPolicy: {{ .Values.manager.pullPolicy }}
-          args:
-            - "--bridge-advertise-host={{ .Values.manager.service }}"
-            - "--grpc-addr=:{{ .Values.manager.ports.grpc.containerPort }}"
-            - "--metrics-addr=:{{ .Values.manager.ports.metrics.containerPort }}"
-            - "--probe-addr=:{{ .Values.manager.ports.health.containerPort }}"
-            {{- range .Values.manager.extraArgs }}
-            - {{ . | quote }}
-            {{- end }}
-          {{- with .Values.manager.securityContext }}
-          securityContext:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
-          env:
-            - name: BRIDGE_ENABLED
-              value: {{ (index .Values.global "kompass-bridge").enabled | quote }}
-            - name: "BRIDGE_HOST"
-              value: {{ (index .Values.global "kompass-bridge").name | quote }}
-            - name: BRIDGE_PORT
-              value: {{ (index .Values.global "kompass-bridge").service.grpc_port | quote }}
-            - name: ZESTY_SECRET_NAME
-              value: {{ .Values.insights.secret }}
-            - name: LICENSE_SECRET_NAME
-              value: {{ .Values.global.license.secretName | quote }}
-            - name: LICENSE_DOCUMENT_KEY
-              value: {{ .Values.global.license.documentKey | quote }}
-            - name: IMAGE_PREFIX
-              valueFrom:
-                configMapKeyRef:
-                  name: "{{ include "zesty-k8s.configmap" . }}"
-                  key: IMAGE_PREFIX
-            - name: IMAGE_PULL_SECRET_NAME
-              valueFrom:
-                configMapKeyRef:
-                  name: "{{ include "zesty-k8s.configmap" . }}"
-                  key: IMAGE_PULL_SECRET_NAME
-            - name: KOMPASS_CHART_VERSION
-              value: {{ .Chart.Version }}
-            - name: NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
-            - name: NODE_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: spec.nodeName
-            - name: ORG_ID
-              valueFrom:
-                configMapKeyRef:
-                  name: "{{ include "zesty-k8s.configmap" . }}"
-                  key: ORG_ID
-                  optional: false
-            - name: METADATA_ENABLED
-              valueFrom:
-                configMapKeyRef:
-                  name: "{{ include "zesty-k8s.configmap" . }}"
-                  key: METADATA_ENABLED
-                  optional: true
-            - name: METADATA_PROVIDER
-              valueFrom:
-                configMapKeyRef:
-                  name: "{{ include "zesty-k8s.configmap" . }}"
-                  key: METADATA_PROVIDER
-                  optional: true
-            - name: METADATA_ACCOUNTID
-              valueFrom:
-                configMapKeyRef:
-                  name: "{{ include "zesty-k8s.configmap" . }}"
-                  key: METADATA_ACCOUNTID
-                  optional: true
-            - name: METADATA_REGION
-              valueFrom:
-                configMapKeyRef:
-                  name: "{{ include "zesty-k8s.configmap" . }}"
-                  key: METADATA_REGION
-                  optional: true
-            - name: METADATA_CLUSTERNAME
-              valueFrom:
-                configMapKeyRef:
-                  name: "{{ include "zesty-k8s.configmap" . }}"
-                  key: METADATA_CLUSTERNAME
-                  optional: true
-            - name: ZESTY_ROLE_ARN
-              valueFrom:
-                configMapKeyRef:
-                  name: "{{ include "zesty-k8s.configmap" . }}"
-                  key: ZESTY_ROLE_ARN
-                  optional: true
-            {{- include "zesty-k8s.manager.coralogix.envs" . | nindent 12 }}
-          {{- $reservedManagerEnvNames := concat $reservedLicenseEnvNames (list "IMAGE_PREFIX" "IMAGE_PULL_SECRET_NAME") }}
-          {{- range .Values.manager.env }}
-            {{- if not (has .name $reservedManagerEnvNames) }}
-            {{- toYaml (list .) | nindent 12 }}
-            {{- end }}
-          {{- end }}
-          {{- with .Values.manager.envFrom }}
-          envFrom:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
-          ports:
-            {{- with .Values.manager.ports.grpc }}
-            - name: {{ .name }}
-              containerPort: {{ .containerPort }}
-              protocol: {{ .protocol | default "TCP" }}
-            {{- end }}
-            {{- with .Values.manager.ports.metrics }}
-            - name: {{ .name }}
-              containerPort: {{ .containerPort }}
-              protocol: {{ .protocol | default "TCP" }}
-            {{- end }}
-            {{- with .Values.manager.ports.health }}
-            - name: {{ .name }}
-              containerPort: {{ .containerPort }}
-              protocol: {{ .protocol | default "TCP" }}
-            {{- end }}
-          startupProbe:
-            {{- toYaml .Values.manager.probes.startup | nindent 12 }}
-          readinessProbe:
-            {{- toYaml .Values.manager.probes.readiness | nindent 12 }}
-          livenessProbe:
-            {{- toYaml .Values.manager.probes.liveness | nindent 12 }}
-          resources:
-            {{- toYaml .Values.manager.resources | nindent 12 }}
-          {{- with .Values.manager.extraVolumeMounts }}
-          volumeMounts:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
+        {{- if not .Values.manager.hostNetwork }}
+        {{- include "zesty-k8s.manager.container" . | nindent 8 }}
+        {{- end }}
       priorityClassName: system-cluster-critical
       {{- with $insightsPodSecurityContext }}
       securityContext:
@@ -365,7 +242,11 @@ spec:
       {{- end }}
       serviceAccountName: "{{ include "zesty-k8s.serviceAccountName" . }}"
       shareProcessNamespace: true
-      {{- with .Values.manager.extraVolumes }}
+      {{- if not .Values.manager.hostNetwork }}
       volumes:
+        - name: manager-health
+          emptyDir: {}
+        {{- with .Values.manager.extraVolumes }}
         {{- toYaml . | nindent 8 }}
+        {{- end }}
       {{- end }}

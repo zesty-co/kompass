@@ -1,6 +1,7 @@
 suite: Insights workload annotations
 templates:
   - templates/deployment.yaml
+  - templates/deployment-manager.yaml
   - templates/configMap.yaml
 tests:
   - it: applies component workload annotations to the Deployment
@@ -25,32 +26,7 @@ tests:
           value: component
         template: templates/deployment.yaml
 
-  - it: serializes Guardian ceilings from global configuration
-    set:
-      global.guardian.requestCeilings.insights.kompass-insights.cpuRequest: 2250m
-      global.guardian.requestCeilings.insights.kompass-insights.memoryRequest: 45Gi
-    asserts:
-      - equal:
-          path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]
-          value: '{"version":1,"containers":{"kompass-insights":{"cpuRequest":"2250m","memoryRequest":"45Gi"}}}'
-        template: templates/deployment.yaml
-
-  - it: uses the overridden Insights container name in Guardian ceilings
-    set:
-      nameOverride: custom-insights
-      global.guardian.requestCeilings.insights.kompass-insights.cpuRequest: 2250m
-      global.guardian.requestCeilings.insights.kompass-insights.memoryRequest: 45Gi
-    asserts:
-      - equal:
-          path: spec.template.spec.containers[0].name
-          value: custom-insights
-        template: templates/deployment.yaml
-      - equal:
-          path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]
-          value: '{"version":1,"containers":{"custom-insights":{"cpuRequest":"2250m","memoryRequest":"45Gi"}}}'
-        template: templates/deployment.yaml
-
-  - it: includes manager ceilings alongside Insights
+  - it: serializes Guardian ceilings for Insights and its Manager sidecar from global configuration
     set:
       global.guardian.requestCeilings.insights.kompass-insights.cpuRequest: 2250m
       global.guardian.requestCeilings.insights.kompass-insights.memoryRequest: 45Gi
@@ -58,10 +34,45 @@ tests:
       global.guardian.requestCeilings.insights.manager.memoryRequest: 128Mi
     asserts:
       - equal:
-          path: spec.template.spec.containers[1].name
-          value: manager
-        template: templates/deployment.yaml
-      - equal:
           path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]
           value: '{"version":1,"containers":{"kompass-insights":{"cpuRequest":"2250m","memoryRequest":"45Gi"},"manager":{"cpuRequest":"100m","memoryRequest":"128Mi"}}}'
         template: templates/deployment.yaml
+
+  - it: uses the overridden Insights container name in Guardian ceilings
+    set:
+      nameOverride: custom-insights
+      global.guardian.requestCeilings.insights.kompass-insights.cpuRequest: 2250m
+      global.guardian.requestCeilings.insights.kompass-insights.memoryRequest: 45Gi
+      global.guardian.requestCeilings.insights.manager.cpuRequest: 100m
+      global.guardian.requestCeilings.insights.manager.memoryRequest: 128Mi
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].name
+          value: custom-insights
+        template: templates/deployment.yaml
+      - equal:
+          path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]
+          value: '{"version":1,"containers":{"custom-insights":{"cpuRequest":"2250m","memoryRequest":"45Gi"},"manager":{"cpuRequest":"100m","memoryRequest":"128Mi"}}}'
+        template: templates/deployment.yaml
+
+  - it: splits ceilings by actual container while retaining the existing values path
+    set:
+      manager.hostNetwork: true
+      nameOverride: custom-insights
+      global.guardian.requestCeilings.insights.kompass-insights.cpuRequest: 2250m
+      global.guardian.requestCeilings.insights.kompass-insights.memoryRequest: 45Gi
+      global.guardian.requestCeilings.insights.manager.cpuRequest: 100m
+      global.guardian.requestCeilings.insights.manager.memoryRequest: 128Mi
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].name
+          value: manager
+        template: templates/deployment-manager.yaml
+      - equal:
+          path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]
+          value: '{"version":1,"containers":{"custom-insights":{"cpuRequest":"2250m","memoryRequest":"45Gi"}}}'
+        template: templates/deployment.yaml
+      - equal:
+          path: metadata.annotations["guardian.kompass.zesty.co/request-ceilings"]
+          value: '{"version":1,"containers":{"manager":{"cpuRequest":"100m","memoryRequest":"128Mi"}}}'
+        template: templates/deployment-manager.yaml

@@ -1,0 +1,124 @@
+{{- include "zesty-k8s.validate.managerRepository" . -}}
+{{- if .Values.manager.hostNetwork -}}
+{{- $globalWorkload := .Values.global | default dict -}}
+{{- $insightsWorkload := .Values.insights | default dict -}}
+{{- $managerName := printf "%s-manager" (include "zesty-k8s.fullname" . | trunc 55 | trimSuffix "-") -}}
+{{- $selectorLabels := dict "app.kubernetes.io/instance" (include "zesty-k8s.fullname" .) "app.kubernetes.io/name" $managerName -}}
+{{/* Manager uses the Insights pod-settings hierarchy. */}}
+{{- $annotations := include "zesty-k8s.workload.mergeMaps" (dict
+  "global" $globalWorkload "component" $insightsWorkload "key" "annotations"
+  "fallback" (.Values.insights.annotations | default dict)
+) | fromYaml -}}
+{{- $managerCeilings := pick (dig "guardian" "requestCeilings" "insights" (dict) .Values.global) "manager" -}}
+{{- if $managerCeilings -}}
+{{- $annotations = mergeOverwrite $annotations (dict "guardian.kompass.zesty.co/request-ceilings" (printf "{\"version\":1,\"containers\":%s}" ($managerCeilings | toJson))) -}}
+{{- end -}}
+{{- $podAnnotations := include "zesty-k8s.workload.mergeMaps" (dict
+  "global" $globalWorkload "component" $insightsWorkload "key" "podAnnotations"
+  "fallback" (.Values.insights.podAnnotations | default dict)
+) | fromYaml -}}
+{{- $podLabels := include "zesty-k8s.workload.mergeMaps" (dict
+  "global" $globalWorkload "component" $insightsWorkload "key" "podLabels"
+  "fallback" (.Values.insights.podLabels | default dict)
+) | fromYaml -}}
+{{- $podLabels = mergeOverwrite ($podLabels | default dict) (include "zesty-k8s.requiredLabels" . | fromYaml) $selectorLabels -}}
+{{- $resolvedPodSecurityContext := mergeOverwrite
+  (deepCopy (.Values.securityContext | default dict))
+  ((get $insightsWorkload "podSecurityContext") | default dict)
+  ((get $globalWorkload "podSecurityContext") | default dict)
+-}}
+{{- $inheritedSecurityContext := mergeOverwrite
+  (deepCopy (.Values.container.securityContext | default dict))
+  ((get $insightsWorkload "securityContext") | default dict)
+  ((get $globalWorkload "securityContext") | default dict)
+-}}
+{{- $legacyPodSecurityContext := include "zesty-k8s.workload.extractPodSecurityContext" (dict
+  "context" $inheritedSecurityContext "path" "insights.securityContext"
+) | fromYaml -}}
+{{- $podSecurityContext := mergeOverwrite (deepCopy ($legacyPodSecurityContext | default dict)) ($resolvedPodSecurityContext | default dict) -}}
+{{- $affinity := include "zesty-k8s.workload.mergeMaps" (dict
+  "global" $globalWorkload "component" $insightsWorkload "key" "affinity"
+) | fromYaml -}}
+{{- $imagePullSecrets := include "zesty-k8s.workload.resolveImagePullSecrets" (dict
+  "root" . "global" $globalWorkload "component" $insightsWorkload
+) | fromYamlArray -}}
+{{- $topologySpreadConstraints := include "zesty-k8s.workload.resolveListWithGlobalPrecedence" (dict
+  "global" $globalWorkload "component" $insightsWorkload "key" "topologySpreadConstraints"
+) | fromYamlArray -}}
+{{- $automountSAToken := include "zesty-k8s.workload.resolveBool" (dict
+  "global" $globalWorkload "component" $insightsWorkload "key" "automountServiceAccountToken" "fallback" true
+) | trim -}}
+{{- $runtimeClassName := include "zesty-k8s.workload.resolveString" (dict
+  "global" $globalWorkload "component" $insightsWorkload "key" "runtimeClassName" "fallback" ""
+) | trim -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $managerName | quote }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    {{- toYaml $selectorLabels | nindent 4 }}
+    {{- include "zesty-k8s.requiredLabels" . | nindent 4 }}
+  {{- with $annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- toYaml $selectorLabels | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configMap.yaml") . | sha256sum }}
+        {{- with $podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- toYaml $podLabels | nindent 8 }}
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      {{- if $imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml $imagePullSecrets | nindent 8 }}
+      {{- end }}
+      automountServiceAccountToken: {{ $automountSAToken }}
+      {{- if $runtimeClassName }}
+      runtimeClassName: {{ $runtimeClassName | quote }}
+      {{- end }}
+      {{- with .Values.global.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        {{- include "zesty-k8s.manager.container" . | nindent 8 }}
+      priorityClassName: system-cluster-critical
+      {{- with $podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: "{{ include "zesty-k8s.serviceAccountName" . }}"
+      shareProcessNamespace: true
+      volumes:
+        - name: manager-health
+          emptyDir: {}
+        {{- with .Values.manager.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+{{- end }}

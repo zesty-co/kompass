@@ -80,8 +80,6 @@ spec:
               value: "{{ .Values.recommendationsMaker.leaderElection.enabled }}"
             - name: VM_URL
               value: {{ include "pod-rightsizing.victoriaMetrics.url" . }}
-            - name: APP_CONFIG_MOUNTED_PATH
-              value: /etc/kompass-rightsizing/config
             - name: SAVE_QUERIES_TO_FILES
               value: "false"
             - name: CONTAINER_NAME
@@ -90,6 +88,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: LICENSE_SECRET_NAME
+              value: {{ .Values.global.license.secretName | quote }}
+            - name: LICENSE_DOCUMENT_KEY
+              value: {{ .Values.global.license.documentKey | quote }}
             - name: POD_NAME
               valueFrom:
                 fieldRef:
@@ -114,6 +116,8 @@ spec:
                   key: CLUSTER_ID
             - name: RIGHTSIZING_SECRET_NAME
               value: {{ .Values.secret }}
+            - name: JVM_RIGHTSIZING_ENABLED
+              value: {{ .Values.jvmRightsizingEnabled | default false | quote }}
             {{- if and .Values.global.cxLogging .Values.global.cxLogging.enabled }}
             - name: CX_API_KEY
               valueFrom:
@@ -147,16 +151,15 @@ spec:
             {{- end }}
             {{- if .Values.recommendationsMaker.env }}
             {{- range .Values.recommendationsMaker.env }}
+            {{- if not (has .name (list "LICENSE_SECRET_NAME" "LICENSE_DOCUMENT_KEY")) }}
             - name: {{ .name }}
               value: {{ .value | quote }}
+            {{- end }}
             {{- end }}
             {{- end }}
           volumeMounts:
             - mountPath: /recommendations-data
               name: recommendations-storage
-            - mountPath: /etc/kompass-rightsizing/config
-              name: rightsizing-config
-              readOnly: true
           {{- with $recommendationsMakerSecurityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
@@ -172,9 +175,6 @@ spec:
       volumes:
         - name: recommendations-storage
           emptyDir: {}
-        - name: rightsizing-config
-          configMap:
-            name: {{ include "kompass-pod-rightsizing-config.name" . }}
       {{- with $recommendationsMakerImagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}

@@ -1,0 +1,77 @@
+suite: Kompass workloads rightsizing Guardian dependency
+templates:
+  - templates/validations.yaml
+values:
+  - ../render/fixtures/guardian-request-ceilings-values.yaml
+tests:
+  - it: accepts both features disabled
+    set:
+      config.kompassWorkloadsRightsizing.enabled: false
+      global.guardian.enabled: false
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: accepts Guardian without Kompass workloads rightsizing
+    set:
+      config.kompassWorkloadsRightsizing.enabled: false
+      global.guardian.enabled: true
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: rejects Kompass workloads rightsizing without Guardian
+    set:
+      enabled: true
+      config.kompassWorkloadsRightsizing.enabled: true
+      global.guardian.enabled: false
+    asserts:
+      - failedTemplate:
+          errorMessage: config.kompassWorkloadsRightsizing.enabled=true requires global.guardian.enabled=true
+
+  - it: accepts both features enabled
+    set:
+      config.kompassWorkloadsRightsizing.enabled: true
+      global.guardian.enabled: true
+    asserts:
+      - notFailedTemplate: {}
+
+  - it: rejects Kompass workloads rightsizing when Guardian defaults to disabled
+    set:
+      config.kompassWorkloadsRightsizing.enabled: true
+    asserts:
+      - failedTemplate:
+          errorMessage: config.kompassWorkloadsRightsizing.enabled=true requires global.guardian.enabled=true
+
+  - it: rejects the invalid combination even when root enabled is false
+    set:
+      enabled: false
+      config.kompassWorkloadsRightsizing.enabled: true
+      global.guardian.enabled: false
+    asserts:
+      - failedTemplate:
+          errorMessage: config.kompassWorkloadsRightsizing.enabled=true requires global.guardian.enabled=true
+
+  - it: rejects disabling Guardian while Kompass workloads rightsizing remains enabled on upgrade
+    release:
+      isUpgrade: true
+    set:
+      enabled: true
+      config.kompassWorkloadsRightsizing.enabled: true
+      global.guardian.enabled: false
+    asserts:
+      - failedTemplate:
+          errorMessage: config.kompassWorkloadsRightsizing.enabled=true requires global.guardian.enabled=true
+
+  - it: rejects JVM rightsizing without JVM metrics
+    set:
+      jvmRightsizingEnabled: true
+      jvmMetrics.enabled: false
+    asserts:
+      - failedTemplate:
+          errorMessage: jvmRightsizingEnabled=true requires jvmMetrics.enabled=true
+
+  - it: accepts JVM rightsizing when JVM metrics are enabled
+    set:
+      jvmRightsizingEnabled: true
+      jvmMetrics.enabled: true
+    asserts:
+      - notFailedTemplate: {}

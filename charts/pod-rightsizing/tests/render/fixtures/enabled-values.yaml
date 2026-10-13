@@ -3,4 +3,6 @@ config:
   kompassWorkloadsRightsizing:
     enabled: true
 global:
+  guardian:
+    enabled: true
   clusterIssuerName: kompass-ci-cluster-issuer

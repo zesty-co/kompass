@@ -3,6 +3,10 @@ global:
   license:
     secretName: kompass-license
     documentKey: kompass_license
+  # Global keys override the corresponding component pod security settings.
+  podSecurityContext: {}
+  # Global keys override the corresponding component container security settings.
+  securityContext: {}
   cxLogging:
     enabled: false
     clusterName: ""

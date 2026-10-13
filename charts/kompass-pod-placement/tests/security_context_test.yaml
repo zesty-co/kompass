@@ -1,0 +1,60 @@
+suite: Pod Placement global security contexts
+templates:
+  - templates/deployment.yaml
+tests:
+  - it: keeps component security settings when globals are unset
+    set:
+      podSecurityContext.runAsUser: 2468
+      securityContext.readOnlyRootFilesystem: false
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext.runAsUser
+          value: 2468
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem
+          value: false
+
+  - it: lets global keys override component keys while filtering legacy pod keys and retaining other settings
+    set:
+      podSecurityContext.fsGroup: 1111
+      podSecurityContext.supplementalGroups: [3333]
+      global.podSecurityContext.fsGroup: 2222
+      securityContext.readOnlyRootFilesystem: true
+      global.securityContext.readOnlyRootFilesystem: false
+      global.securityContext.fsGroup: 1234
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext.fsGroup
+          value: 2222
+      - equal:
+          path: spec.template.spec.securityContext.supplementalGroups
+          value: [3333]
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem
+          value: false
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation
+          value: false
+      - notExists:
+          path: spec.template.spec.containers[0].securityContext.fsGroup
+
+  - it: clears fixed IDs through global nulls for OpenShift
+    set:
+      global.podSecurityContext:
+        runAsUser: null
+        runAsGroup: null
+        fsGroup: null
+        runAsNonRoot: true
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext.runAsUser
+          value: null
+      - equal:
+          path: spec.template.spec.securityContext.runAsGroup
+          value: null
+      - equal:
+          path: spec.template.spec.securityContext.fsGroup
+          value: null
+      - equal:
+          path: spec.template.spec.securityContext.runAsNonRoot
+          value: true

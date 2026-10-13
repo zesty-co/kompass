@@ -1,23 +1,37 @@
 suite: Manager is always present with Insights
 templates:
   - templates/deployment.yaml
+  - templates/deployment-manager.yaml
   - templates/configMap.yaml
-  - templates/service-manager.yaml
+  - templates/serviceAccount.yaml
   - templates/role.yaml
   - templates/monitoring/cronjob.yaml
 tests:
-  - it: renders Manager and its configuration service and license permissions by default
+  - it: renders Manager as a regular sidecar with its configuration and license permissions by default
     set:
       manager.repository: 473301030746.dkr.ecr.us-west-2.amazonaws.com/zesty-k8s/kompass-manager
     asserts: &managerAssertions
       - equal:
+          path: spec.template.spec.containers[0].name
+          value: kompass-insights
+        template: templates/deployment.yaml
+      - equal:
           path: spec.template.spec.containers[1].name
           value: manager
         template: templates/deployment.yaml
-      - equal:
-          path: metadata.name
-          value: kompass-manager
-        template: templates/service-manager.yaml
+      - hasDocuments:
+          count: 1
+        template: templates/deployment.yaml
+      - hasDocuments:
+          count: 0
+        template: templates/deployment-manager.yaml
+      - lengthEqual:
+          path: spec.template.spec.containers
+          count: 2
+        template: templates/deployment.yaml
+      - notExists:
+          path: spec.template.spec.initContainers
+        template: templates/deployment.yaml
       - equal:
           path: data.MANAGER_ENABLED
           value: "true"
@@ -94,3 +108,348 @@ tests:
     asserts:
       - failedTemplate:
           errorMessage: manager.repository must be a qualified registry/repository path
+
+  - it: applies global container settings while filtering legacy pod keys and retaining Manager-specific keys
+    templates:
+      - templates/deployment.yaml
+      - templates/deployment-manager.yaml
+    set:
+      manager.hostNetwork: true
+      manager.securityContext.readOnlyRootFilesystem: true
+      manager.securityContext.runAsNonRoot: true
+      global.securityContext.readOnlyRootFilesystem: false
+      global.securityContext.fsGroup: 1234
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem
+          value: false
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.runAsNonRoot
+          value: true
+        template: templates/deployment-manager.yaml
+      - notExists:
+          path: spec.template.spec.containers[0].securityContext.fsGroup
+
+  - it: uses local exec probes and writable state without listeners or Bridge registration
+    templates:
+      - templates/deployment-manager.yaml
+    set:
+      manager.hostNetwork: true
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 1
+      - equal:
+          path: spec.strategy.type
+          value: Recreate
+      - equal:
+          path: spec.template.spec.hostNetwork
+          value: true
+      - equal:
+          path: spec.template.spec.dnsPolicy
+          value: ClusterFirstWithHostNet
+      - equal:
+          path: spec.template.spec.containers[0].startupProbe
+          value:
+            exec:
+              command: [/bin/kompass-manager, healthcheck, startup]
+            initialDelaySeconds: 0
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 12
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe
+          value:
+            exec:
+              command: [/bin/kompass-manager, healthcheck, readiness]
+            initialDelaySeconds: 0
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe
+          value:
+            exec:
+              command: [/bin/kompass-manager, healthcheck, liveness]
+            initialDelaySeconds: 0
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+      - equal:
+          path: spec.template.spec.containers[0].resources
+          value:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: 100m, memory: 128Mi}
+      - equal:
+          path: spec.template.spec.securityContext.runAsNonRoot
+          value: true
+      - equal:
+          path: spec.template.spec.securityContext.fsGroup
+          value: 65532
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem
+          value: true
+      - contains:
+          path: spec.template.spec.volumes
+          content: {name: manager-health, emptyDir: {}}
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content: {name: manager-health, mountPath: /var/run/kompass-manager}
+      - notExists:
+          path: spec.template.spec.containers[0].ports
+      - notExists:
+          path: spec.template.spec.containers[0].args
+      - notExists:
+          path: spec.template.spec.containers[0].env[?(@.name == "BRIDGE_ENABLED")]
+      - notExists:
+          path: spec.template.spec.containers[0].env[?(@.name == "BRIDGE_HOST")]
+      - notExists:
+          path: spec.template.spec.containers[0].env[?(@.name == "BRIDGE_PORT")]
+
+  - it: preserves the headless sidecar contract and timing overrides when host networking is false
+    template: templates/deployment.yaml
+    set:
+      manager.hostNetwork: false
+      manager.securityContext.runAsNonRoot: true
+      manager.resources:
+        requests: {cpu: 125m, memory: 192Mi}
+        limits: {cpu: 250m, memory: 256Mi}
+      manager.extraVolumes: [{name: manager-config, configMap: {name: manager-config}}]
+      manager.extraVolumeMounts: [{name: manager-config, mountPath: /etc/manager, readOnly: true}]
+      manager.probes.startup.httpGet: {path: /healthz, port: manager-health}
+      manager.probes.startup.failureThreshold: 24
+      manager.probes.readiness.httpGet: {path: /readyz, port: manager-health}
+      manager.probes.readiness.periodSeconds: 20
+      manager.probes.liveness.httpGet: {path: /healthz, port: manager-health}
+      manager.probes.liveness.timeoutSeconds: 8
+    asserts:
+      - notExists:
+          path: spec.template.spec.hostNetwork
+      - notExists:
+          path: spec.template.spec.dnsPolicy
+      - equal:
+          path: spec.template.spec.containers[1].name
+          value: manager
+      - equal:
+          path: spec.template.spec.containers[1].startupProbe.failureThreshold
+          value: 24
+      - equal:
+          path: spec.template.spec.containers[1].readinessProbe.periodSeconds
+          value: 20
+      - equal:
+          path: spec.template.spec.containers[1].livenessProbe.timeoutSeconds
+          value: 8
+      - notExists:
+          path: spec.template.spec.containers[1].startupProbe.httpGet
+      - notExists:
+          path: spec.template.spec.containers[1].readinessProbe.httpGet
+      - notExists:
+          path: spec.template.spec.containers[1].livenessProbe.httpGet
+      - equal:
+          path: spec.template.spec.containers[1].startupProbe.exec.command
+          value: [/bin/kompass-manager, healthcheck, startup]
+      - equal:
+          path: spec.template.spec.containers[1].readinessProbe.exec.command
+          value: [/bin/kompass-manager, healthcheck, readiness]
+      - equal:
+          path: spec.template.spec.containers[1].livenessProbe.exec.command
+          value: [/bin/kompass-manager, healthcheck, liveness]
+      - equal:
+          path: spec.template.spec.containers[1].resources
+          value:
+            requests: {cpu: 125m, memory: 192Mi}
+            limits: {cpu: 250m, memory: 256Mi}
+      - equal:
+          path: spec.template.spec.containers[1].securityContext.readOnlyRootFilesystem
+          value: true
+      - equal:
+          path: spec.template.spec.containers[1].securityContext.runAsNonRoot
+          value: true
+      - contains:
+          path: spec.template.spec.volumes
+          content: {name: manager-health, emptyDir: {}}
+          count: 1
+      - contains:
+          path: spec.template.spec.volumes
+          content: {name: manager-config, configMap: {name: manager-config}}
+      - contains:
+          path: spec.template.spec.containers[1].volumeMounts
+          content: {name: manager-health, mountPath: /var/run/kompass-manager}
+      - contains:
+          path: spec.template.spec.containers[1].volumeMounts
+          content: {name: manager-config, mountPath: /etc/manager, readOnly: true}
+      - equal:
+          path: spec.template.spec.containers[1].env[?(@.name == "LICENSE_SECRET_NAME")]
+          value: {name: LICENSE_SECRET_NAME, value: kompass-license}
+      - equal:
+          path: spec.template.spec.containers[1].env[?(@.name == "LICENSE_DOCUMENT_KEY")]
+          value: {name: LICENSE_DOCUMENT_KEY, value: kompass_license}
+      - notExists:
+          path: spec.template.spec.containers[1].ports
+      - notExists:
+          path: spec.template.spec.containers[1].args
+      - notExists:
+          path: spec.template.spec.containers[1].env[?(@.name == "BRIDGE_ENABLED")]
+      - notExists:
+          path: spec.template.spec.containers[1].env[?(@.name == "BRIDGE_HOST")]
+      - notExists:
+          path: spec.template.spec.containers[1].env[?(@.name == "BRIDGE_PORT")]
+
+  - it: enables host networking only for Manager with cluster DNS
+    templates:
+      - templates/deployment-manager.yaml
+      - templates/deployment.yaml
+    set:
+      manager.hostNetwork: true
+    asserts:
+      - hasDocuments:
+          count: 1
+      - lengthEqual:
+          path: spec.template.spec.containers
+          count: 1
+      - equal:
+          path: spec.template.spec.containers[0].name
+          value: manager
+        template: templates/deployment-manager.yaml
+      - equal:
+          path: metadata.name
+          value: kompass-insights-manager
+        template: templates/deployment-manager.yaml
+      - equal:
+          path: spec.template.spec.containers[0].name
+          value: kompass-insights
+        template: templates/deployment.yaml
+      - notExists:
+          path: spec.template.spec.initContainers
+      - equal:
+          path: spec.template.spec.hostNetwork
+          value: true
+        template: templates/deployment-manager.yaml
+      - equal:
+          path: spec.template.spec.dnsPolicy
+          value: ClusterFirstWithHostNet
+        template: templates/deployment-manager.yaml
+      - notExists:
+          path: spec.template.spec.hostNetwork
+        template: templates/deployment.yaml
+      - notExists:
+          path: spec.template.spec.dnsPolicy
+        template: templates/deployment.yaml
+      - notExists:
+          path: spec.template.spec.volumes
+        template: templates/deployment.yaml
+
+  - it: inherits Insights pod settings and shared service account while preserving Manager env contracts
+    set:
+      manager.hostNetwork: true
+      insights.affinity.nodeAffinity: {requiredDuringSchedulingIgnoredDuringExecution: {nodeSelectorTerms: [{matchExpressions: [{key: pool, operator: In, values: [system]}]}]}}
+      insights.imagePullSecrets: [{name: insights-pull}]
+      insights.podSecurityContext.fsGroup: 2000
+      insights.runtimeClassName: sandbox
+      insights.automountServiceAccountToken: false
+      insights.topologySpreadConstraints: [{maxSkew: 1, topologyKey: topology.kubernetes.io/zone, whenUnsatisfiable: ScheduleAnyway}]
+      insights.podAnnotations: {example.com/pod: inherited}
+      insights.podLabels: {example.com/pod: inherited}
+      insights.annotations: {example.com/workload: inherited}
+      global.nodeSelector: {pool: system}
+      global.tolerations: [{key: system, operator: Exists}]
+      serviceAccount.annotations: {eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/manager}
+      global.license: {secretName: shared-license, documentKey: shared-document}
+      manager.repository: registry.example.com/custom/manager
+      manager.extraArgs: [--log-level=debug]
+      manager.envFrom: [{secretRef: {name: proxy-env}}]
+      manager.env:
+        - {name: HTTPS_PROXY, value: "http://proxy.example.com:3128"}
+        - {name: LICENSE_SECRET_NAME, value: ignored}
+        - {name: LICENSE_DOCUMENT_KEY, value: ignored}
+        - {name: IMAGE_PREFIX, value: ignored}
+        - {name: IMAGE_PULL_SECRET_NAME, value: ignored}
+    asserts:
+      - equal:
+          path: spec.template.spec.imagePullSecrets
+          value: [{name: insights-pull}]
+        template: templates/deployment-manager.yaml
+      - equal:
+          path: spec.template.spec.securityContext.fsGroup
+          value: 2000
+        template: templates/deployment-manager.yaml
+      - equal:
+          path: spec.template.spec.runtimeClassName
+          value: sandbox
+        template: templates/deployment-manager.yaml
+      - equal:
+          path: spec.template.spec.automountServiceAccountToken
+          value: false
+        template: templates/deployment-manager.yaml
+      - equal:
+          path: spec.template.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchExpressions[0].values
+          value: [system]
+        template: templates/deployment-manager.yaml
+      - equal:
+          path: spec.template.spec.topologySpreadConstraints
+          value: [{maxSkew: 1, topologyKey: topology.kubernetes.io/zone, whenUnsatisfiable: ScheduleAnyway}]
+        template: templates/deployment-manager.yaml
+      - equal:
+          path: spec.template.spec.nodeSelector
+          value: {pool: system}
+        template: templates/deployment-manager.yaml
+      - equal:
+          path: spec.template.spec.tolerations
+          value: [{key: system, operator: Exists}]
+        template: templates/deployment-manager.yaml
+      - equal:
+          path: spec.template.metadata.annotations["example.com/pod"]
+          value: inherited
+        template: templates/deployment-manager.yaml
+      - matchRegex:
+          path: spec.template.metadata.annotations["checksum/config"]
+          pattern: ^[a-f0-9]{64}$
+        template: templates/deployment-manager.yaml
+      - equal:
+          path: spec.template.metadata.labels["example.com/pod"]
+          value: inherited
+        template: templates/deployment-manager.yaml
+      - equal:
+          path: metadata.annotations["example.com/workload"]
+          value: inherited
+        template: templates/deployment-manager.yaml
+      - equal:
+          path: spec.template.spec.serviceAccountName
+          value: kompass-insights-sa
+        template: templates/deployment-manager.yaml
+      - equal:
+          path: metadata.annotations["eks.amazonaws.com/role-arn"]
+          value: arn:aws:iam::123456789012:role/manager
+        template: templates/serviceAccount.yaml
+      - equal:
+          path: spec.template.spec.containers[0].args
+          value: [--log-level=debug]
+        template: templates/deployment-manager.yaml
+      - equal:
+          path: spec.template.spec.containers[0].envFrom
+          value: [{secretRef: {name: proxy-env}}]
+        template: templates/deployment-manager.yaml
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: HTTPS_PROXY, value: "http://proxy.example.com:3128"}
+        template: templates/deployment-manager.yaml
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name == "LICENSE_SECRET_NAME")]
+          value: {name: LICENSE_SECRET_NAME, value: shared-license}
+        template: templates/deployment-manager.yaml
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name == "LICENSE_DOCUMENT_KEY")]
+          value: {name: LICENSE_DOCUMENT_KEY, value: shared-document}
+        template: templates/deployment-manager.yaml
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name == "IMAGE_PREFIX")]
+          value: {name: IMAGE_PREFIX, valueFrom: {configMapKeyRef: {name: kompass-insights-cm, key: IMAGE_PREFIX}}}
+        template: templates/deployment-manager.yaml
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name == "IMAGE_PULL_SECRET_NAME")]
+          value: {name: IMAGE_PULL_SECRET_NAME, valueFrom: {configMapKeyRef: {name: kompass-insights-cm, key: IMAGE_PULL_SECRET_NAME}}}
+        template: templates/deployment-manager.yaml
+      - equal:
+          path: data.IMAGE_PREFIX
+          value: registry.example.com/custom
+        template: templates/configMap.yaml

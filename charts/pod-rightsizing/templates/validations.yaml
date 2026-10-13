@@ -1,1 +1,7 @@
+{{- if and .Values.config.kompassWorkloadsRightsizing.enabled (ne (include "pod-rightsizing.guardian.enabled" .) "true") -}}
+{{- fail "config.kompassWorkloadsRightsizing.enabled=true requires global.guardian.enabled=true" -}}
+{{- end -}}
+{{- if and .Values.jvmRightsizingEnabled (not (.Values.jvmMetrics.enabled | default false)) -}}
+{{- fail "jvmRightsizingEnabled=true requires jvmMetrics.enabled=true" -}}
+{{- end -}}
 {{- include "pod-rightsizing.validate.guardianRequestCeilings" . -}}
