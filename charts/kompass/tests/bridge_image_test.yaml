@@ -1,0 +1,60 @@
+suite: Bridge image registry
+templates:
+  - templates/bridge/deployment.yaml
+tests:
+  - it: preserves a relative repository namespace and tag when applying the global registry
+    set:
+      global.zestyImageRegistry: mirror.example.com:5000/
+      kompass-bridge.image.registry: ""
+      kompass-bridge.image.repository: custom/platform/bridge
+      kompass-bridge.image.tag: bridge-tag
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: mirror.example.com:5000/custom/platform/bridge:bridge-tag
+
+  - it: replaces the component registry host while preserving its path prefix and the tag
+    set:
+      global.zestyImageRegistry: mirror.example.com
+      kompass-bridge.image.registry: old.example.com/cache
+      kompass-bridge.image.repository: zesty-k8s/kompass-bridge
+      kompass-bridge.image.tag: bridge-tag
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: mirror.example.com/cache/zesty-k8s/kompass-bridge:bridge-tag
+
+  - it: replaces the host in a fully qualified repository while preserving its path and tag
+    set:
+      global.zestyImageRegistry: mirror.example.com
+      kompass-bridge.image.registry: ""
+      kompass-bridge.image.repository: old.example.com/cache/kompass-bridge
+      kompass-bridge.image.tag: bridge-tag
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: mirror.example.com/cache/kompass-bridge:bridge-tag
+
+  - it: retains the component registry path and appVersion fallback when the global registry is empty
+    chart:
+      appVersion: app-version
+    set:
+      global.zestyImageRegistry: ""
+      kompass-bridge.image.registry: old.example.com/cache
+      kompass-bridge.image.repository: custom/bridge
+      kompass-bridge.image.tag: null
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: old.example.com/cache/custom/bridge:app-version
+
+  - it: retains a fully qualified repository and tag when the global registry is empty
+    set:
+      global.zestyImageRegistry: ""
+      kompass-bridge.image.registry: ""
+      kompass-bridge.image.repository: old.example.com/cache/kompass-bridge
+      kompass-bridge.image.tag: bridge-tag
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: old.example.com/cache/kompass-bridge:bridge-tag

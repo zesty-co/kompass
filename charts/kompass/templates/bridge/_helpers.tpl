@@ -55,10 +55,12 @@ Falls back to .Chart.AppVersion when image.tag is empty.
 {{- $repository := $img.repository | default "" -}}
 {{- $tag := default .Chart.AppVersion $img.tag -}}
 {{- if $registry -}}
-{{ $registry }}/{{ $repository }}:{{ $tag }}
-{{- else -}}
-{{ $repository }}:{{ $tag }}
+{{- $repository = printf "%s/%s" $registry $repository -}}
 {{- end -}}
+{{- with .Values.global.zestyImageRegistry -}}
+{{- $repository = printf "%s/%s" (trimSuffix "/" .) (regexReplaceAll `^([^/]*[.:][^/]*|localhost)/` $repository "") -}}
+{{- end -}}
+{{ $repository }}:{{ $tag }}
 {{- end -}}
 
 {{/*

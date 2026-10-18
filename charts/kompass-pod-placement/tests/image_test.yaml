@@ -1,0 +1,35 @@
+suite: Pod Placement image registry
+templates:
+  - templates/deployment.yaml
+tests:
+  - it: overrides the registry host while preserving the repository path and appVersion fallback
+    chart:
+      appVersion: app-version
+    set:
+      global.zestyImageRegistry: mirror.example.com:5000/
+      image.registry: old.example.com:5443/custom/platform/placement
+      image.tag: null
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: mirror.example.com:5000/custom/platform/placement:app-version
+
+  - it: preserves an unqualified repository path when applying the global registry
+    set:
+      global.zestyImageRegistry: mirror.example.com
+      image.registry: custom/placement
+      image.tag: placement-tag
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: mirror.example.com/custom/placement:placement-tag
+
+  - it: retains the component image when the global registry is empty
+    set:
+      global.zestyImageRegistry: ""
+      image.registry: old.example.com/custom/placement
+      image.tag: placement-tag
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: old.example.com/custom/placement:placement-tag

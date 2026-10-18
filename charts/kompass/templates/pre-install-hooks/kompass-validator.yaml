@@ -3,10 +3,7 @@
 {{- $validatorPodAnnotations := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $validatorValues "key" "podAnnotations") | fromYaml -}}
 {{- $validatorPodLabels := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $validatorValues "key" "podLabels") | fromYaml -}}
 {{- $validatorAffinity := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $validatorValues "key" "affinity") | fromYaml -}}
-{{- $validatorHookImagePullSecretName := "" -}}
-{{- if and .Values.global.imagePullSecret.name .Values.global.imagePullSecret.dockerconfigjson -}}
-{{- $validatorHookImagePullSecretName = printf "%s-validator-hook" .Values.global.imagePullSecret.name | trunc 253 | trimSuffix "-" -}}
-{{- end -}}
+{{- $validatorHookImagePullSecretName := include "kompass.validator.hookImagePullSecretName" . -}}
 {{- $validatorImagePullSecrets := include "kompass.workload.resolveImagePullSecrets" (dict "global" $globalValues "component" $validatorValues "legacySecretName" $validatorHookImagePullSecretName) | fromYamlArray -}}
 {{- $validatorPodSecurityContext := include "kompass.workload.resolveMap" (dict "global" $globalValues "component" $validatorValues "key" "podSecurityContext") | fromYaml -}}
 {{- $validatorSecurityContext := include "kompass.workload.resolveContainerSecurityContext" (dict "global" $globalValues "component" $validatorValues) | fromYaml -}}
@@ -140,7 +137,7 @@ spec:
       {{- end }}
       containers:
       - name: {{ $validatorServiceAccountName }}
-        image: {{ .Values.validator.image.registry }}/{{ .Values.validator.image.repository }}:{{ .Values.validator.image.tag }}
+        image: {{ include "kompass.validator.image" . | quote }}
         imagePullPolicy: {{ .Values.validator.image.pullPolicy | default "IfNotPresent" }}
         {{- if $validatorSecurityContext }}
         securityContext:

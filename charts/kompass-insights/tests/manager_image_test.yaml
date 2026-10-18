@@ -1,11 +1,14 @@
-suite: Manager image tag resolution
+suite: Insights and Manager image resolution
 templates:
   - templates/deployment.yaml
   - templates/deployment-manager.yaml
   - templates/configMap.yaml
+  - templates/monitoring/cronjob.yaml
 tests:
   - it: gives an explicit manager tag precedence over the agent tag
     set:
+      global.zestyImageRegistry: ""
+      cxLogging.enabled: true
       image.tag: a1b2c3d4
       manager.tag: e5f6a7b8
       image.repository: 473301030746.dkr.ecr.us-west-2.amazonaws.com/zesty-k8s/agent
@@ -19,6 +22,14 @@ tests:
           path: spec.template.spec.containers[1].image
           value: 473301030746.dkr.ecr.us-west-2.amazonaws.com/zesty-k8s/kompass-manager:e5f6a7b8
         template: templates/deployment.yaml
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].image
+          value: 473301030746.dkr.ecr.us-west-2.amazonaws.com/zesty-k8s/agent:a1b2c3d4
+        template: templates/monitoring/cronjob.yaml
+      - equal:
+          path: data.IMAGE_PREFIX
+          value: 473301030746.dkr.ecr.us-west-2.amazonaws.com/zesty-k8s
+        template: templates/configMap.yaml
 
   - it: falls back to the custom agent tag when the manager tag is unset
     set:
@@ -54,3 +65,51 @@ tests:
           path: spec.template.spec.containers[1].image
           value: 473301030746.dkr.ecr.us-west-2.amazonaws.com/zesty-k8s/kompass-manager:test-app-version
         template: templates/deployment.yaml
+
+  - it: overrides registry hosts for Insights, sidecar Manager, monitoring, and dynamically launched images
+    set:
+      global.zestyImageRegistry: mirror.example.com:5000/
+      cxLogging.enabled: true
+      image.repository: old.example.com:5443/custom/platform/agent
+      image.tag: agent-tag
+      manager.repository: old.example.com:5443/custom/platform/manager
+      manager.tag: manager-tag
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: mirror.example.com:5000/custom/platform/agent:agent-tag
+        template: templates/deployment.yaml
+      - equal:
+          path: spec.template.spec.containers[1].image
+          value: mirror.example.com:5000/custom/platform/manager:manager-tag
+        template: templates/deployment.yaml
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.containers[0].image
+          value: mirror.example.com:5000/custom/platform/agent:agent-tag
+        template: templates/monitoring/cronjob.yaml
+      - equal:
+          path: data.IMAGE_PREFIX
+          value: mirror.example.com:5000/custom/platform
+        template: templates/configMap.yaml
+
+  - it: qualifies repository paths for Insights and a separate Manager without dropping their namespace
+    set:
+      global.zestyImageRegistry: mirror.example.com
+      image.repository: zesty-k8s/agent
+      image.tag: agent-tag
+      manager.repository: zesty-k8s/manager
+      manager.tag: null
+      manager.hostNetwork: true
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: mirror.example.com/zesty-k8s/agent:agent-tag
+        template: templates/deployment.yaml
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: mirror.example.com/zesty-k8s/manager:agent-tag
+        template: templates/deployment-manager.yaml
+      - equal:
+          path: data.IMAGE_PREFIX
+          value: mirror.example.com/zesty-k8s
+        template: templates/configMap.yaml

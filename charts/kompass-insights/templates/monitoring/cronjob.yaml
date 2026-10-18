@@ -121,7 +121,7 @@ spec:
           {{- end }}
           containers:
             - name: {{ include "zesty-k8s.self-monitoring.fullname" . }}
-              image: {{ .Values.image.repository }}:{{ include "zesty-k8s.version" . }}
+              image: "{{ include "zesty-k8s.imageRepository" (dict "repository" .Values.image.repository "registry" .Values.global.zestyImageRegistry) }}:{{ include "zesty-k8s.version" . }}"
               command:
                 - /bin/metrics
               imagePullPolicy: {{ .Values.image.pullPolicy | default "Always" }}

@@ -69,6 +69,15 @@ Create a version as used by the chart and image tag.
   {{ default .Chart.AppVersion .Values.image.tag  }}
 {{- end }}
 
+{{/* Resolve the registry without removing an unqualified repository's namespace. */}}
+{{- define "zesty-k8s.imageRepository" -}}
+{{- if .registry -}}
+{{- $repository := regexReplaceAll `^([^/]*[.:][^/]*|localhost)/` .repository "" -}}
+{{- printf "%s/%s" (trimSuffix "/" .registry) $repository -}}
+{{- else -}}
+{{- .repository -}}
+{{- end -}}
+{{- end -}}
 
 {{/*
 Create a name for the SA.
@@ -185,7 +194,7 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{- define "zesty-k8s.validate.managerRepository" -}}
-{{- $repository := .Values.manager.repository | default "" -}}
+{{- $repository := include "zesty-k8s.imageRepository" (dict "repository" (.Values.manager.repository | default "") "registry" .Values.global.zestyImageRegistry) -}}
 {{- $parts := splitList "/" $repository -}}
 {{- $registry := first $parts -}}
 {{- $qualifiedRegistry := or (contains "." $registry) (contains ":" $registry) (eq $registry "localhost") -}}

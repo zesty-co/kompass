@@ -12,7 +12,7 @@ metadata:
 data:
   ORG_ID: "{{ .Values.orgID }}"
   MANAGER_ENABLED: "true"
-  {{- $imagePath := splitList "/" .Values.manager.repository }}
+  {{- $imagePath := splitList "/" (include "zesty-k8s.imageRepository" (dict "repository" .Values.manager.repository "registry" .Values.global.zestyImageRegistry)) }}
   IMAGE_PREFIX: {{ initial $imagePath | join "/" | quote }}
   IMAGE_PULL_SECRET_NAME: {{ .Values.global.imagePullSecret.name | quote }}
   PODMINUTEMETRICS_ENABLED: "{{ .Values.podMinuteMetrics.enabled }}"

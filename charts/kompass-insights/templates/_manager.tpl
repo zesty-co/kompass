@@ -1,6 +1,6 @@
 {{- define "zesty-k8s.manager.container" -}}
 - name: manager
-  image: "{{ .Values.manager.repository }}:{{ .Values.manager.tag | default (include "zesty-k8s.version" .) }}"
+  image: "{{ include "zesty-k8s.imageRepository" (dict "repository" .Values.manager.repository "registry" .Values.global.zestyImageRegistry) }}:{{ .Values.manager.tag | default (include "zesty-k8s.version" .) }}"
   imagePullPolicy: {{ .Values.manager.pullPolicy }}
   {{- with .Values.manager.extraArgs }}
   args:

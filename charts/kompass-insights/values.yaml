@@ -1,4 +1,6 @@
 global:
+  # Overrides the registry for Insights, Manager, and self-monitoring images.
+  zestyImageRegistry: ""
   # Shared license location for Insights and Manager.
   license:
     # Manager provisions the missing license key on startup, including first-time setup,
