@@ -3,6 +3,76 @@ entries:
   kompass:
   - apiVersion: v2
     appVersion: 1.16.0
+    created: "2026-10-18T14:23:12.577168147Z"
+    dependencies:
+    - condition: kompass-insights.enabled
+      name: kompass-insights
+      repository: https://zesty-co.github.io/kompass
+      version: 2.3.32
+    - name: kompass-pod-placement
+      repository: https://zesty-co.github.io/kompass
+      version: 0.1.28
+    - alias: rightsizing
+      name: pod-rightsizing
+      repository: https://zesty-co.github.io/kompass
+      version: v0.9.2
+    - alias: disk
+      condition: disk.enabled
+      name: kompass-storage
+      repository: https://zesty-co.github.io/zesty-helm
+      version: 1.7.4
+    - alias: victoriaMetrics
+      condition: victoriaMetrics.enabled
+      name: victoria-metrics-single
+      repository: https://victoriametrics.github.io/helm-charts
+      version: 0.45.0
+    - alias: victoriaMetricsCluster
+      condition: victoriaMetricsCluster.enabled
+      name: victoria-metrics-cluster
+      repository: https://victoriametrics.github.io/helm-charts
+      version: 0.49.0
+    - alias: victoriaMetricsAgent
+      condition: victoriaMetricsAgent.enabled
+      name: victoria-metrics-agent
+      repository: https://victoriametrics.github.io/helm-charts
+      version: 0.46.0
+    - alias: victoriaMetricsAlert
+      condition: victoriaMetricsAlert.enabled
+      name: victoria-metrics-alert
+      repository: https://victoriametrics.github.io/helm-charts
+      version: 0.47.0
+    - alias: victoriaMetricsAuth
+      condition: victoriaMetricsAuth.enabled
+      name: victoria-metrics-auth
+      repository: https://victoriametrics.github.io/helm-charts
+      version: 0.40.0
+    - alias: kubeStateMetrics
+      condition: kubeStateMetrics.enabled
+      name: kube-state-metrics
+      repository: https://prometheus-community.github.io/helm-charts
+      version: 8.4.1
+    - condition: cert-manager.enabled
+      name: cert-manager
+      repository: https://charts.jetstack.io
+      version: 1.21.1
+    - condition: grafana.enabled
+      name: grafana
+      repository: https://grafana.github.io/helm-charts
+      version: 10.5.15
+    - condition: metrics-server.enabled
+      name: metrics-server
+      repository: https://kubernetes-sigs.github.io/metrics-server/
+      version: 3.14.0
+    description: Zesty Kompass Helm Charts
+    digest: a182e253d4925ed9b27621c342b4f816db2cc64fbd027b2faa70531b06e24f89
+    icon: https://zesty.co/wp-content/uploads/2024/05/favicon-150x150.png
+    name: kompass
+    type: application
+    urls:
+    - https://github.com/zesty-co/kompass/releases/download/kompass-0.4.6/kompass-0.4.6.tgz
+    version: 0.4.6
+  - apiVersion: v2
+    appVersion: 1.16.0
     created: "2026-10-13T09:46:06.291415385Z"
     dependencies:
     - condition: kompass-insights.enabled
@@ -12885,6 +12955,22 @@ entries:
   kompass-insights:
   - apiVersion: v2
     appVersion: v1.169.4
+    created: "2026-10-18T14:23:12.757049968Z"
+    dependencies:
+    - alias: admission
+      condition: admission.enabled
+      name: kompass-admission-controller
+      repository: https://zesty-co.github.io/kompass-admission-controller
+      version: 0.1.20
+    description: Kompass Insights for Kubernetes
+    digest: fcc7e2ace216f6ca2b45ac94de7506597f2c162694c03c5f3b1c6c6b6a59dc95
+    name: kompass-insights
+    type: application
+    urls:
+    - https://github.com/zesty-co/kompass/releases/download/kompass-insights-2.3.32/kompass-insights-2.3.32.tgz
+    version: 2.3.32
+  - apiVersion: v2
+    appVersion: v1.169.4
     created: "2026-10-13T09:46:06.449788311Z"
     dependencies:
     - alias: admission
@@ -13570,6 +13656,16 @@ entries:
   kompass-pod-placement:
   - apiVersion: v2
     appVersion: v0.6.2
+    created: "2026-10-18T14:23:13.157033986Z"
+    description: Zesty Kompass Pod Placement for Kubernetes
+    digest: 9a0add5570a15a8b814b37db8d2b0a92f75ab86dbd80ee401e56422c6462a7a4
+    name: kompass-pod-placement
+    type: application
+    urls:
+    - https://github.com/zesty-co/kompass/releases/download/kompass-pod-placement-0.1.28/kompass-pod-placement-0.1.28.tgz
+    version: 0.1.28
+  - apiVersion: v2
+    appVersion: v0.6.2
     created: "2026-10-13T09:46:06.592377838Z"
     description: Zesty Kompass Pod Placement for Kubernetes
     digest: 44eb398a53086882f33c9e20540a098476a2879ff9c520a5a618bffbefed02a8
@@ -13809,4 +13905,4 @@ entries:
     urls:
     - https://github.com/zesty-co/kompass/releases/download/pod-rightsizing-v0.9.1/pod-rightsizing-v0.9.1.tgz
     version: v0.9.1
-generated: "2026-10-13T09:46:06.766208692Z"
+generated: "2026-10-18T14:23:13.158137526Z"
