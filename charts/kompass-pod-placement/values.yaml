@@ -1,4 +1,6 @@
 global:
+  # Overrides the registry host in image.registry, preserving the repository path.
+  zestyImageRegistry: ""
   # Manager or external delivery provisions the license Secret in the release namespace.
   license:
     secretName: kompass-license

@@ -148,7 +148,7 @@ spec:
       {{- toYaml . | nindent 8 }}
       {{- end }}
       containers:
-        - image: "{{ .Values.image.repository }}:{{ include "zesty-k8s.version" . }}"
+        - image: "{{ include "zesty-k8s.imageRepository" (dict "repository" .Values.image.repository "registry" .Values.global.zestyImageRegistry) }}:{{ include "zesty-k8s.version" . }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           name: "{{ include "zesty-k8s.name" . }}"
           ports:
@@ -235,7 +235,6 @@ spec:
         {{- if not .Values.manager.hostNetwork }}
         {{- include "zesty-k8s.manager.container" . | nindent 8 }}
         {{- end }}
-      priorityClassName: system-cluster-critical
       {{- with $insightsPodSecurityContext }}
       securityContext:
       {{- toYaml . | nindent 8 }}

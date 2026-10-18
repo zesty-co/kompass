@@ -1,0 +1,16 @@
+suite: Insights and Manager Pod priority
+templates:
+  - templates/deployment.yaml
+  - templates/deployment-manager.yaml
+  - templates/configMap.yaml
+set:
+  manager.hostNetwork: true
+tests:
+  - it: omits priorityClassName from both Deployments
+    asserts:
+      - notExists:
+          path: spec.template.spec.priorityClassName
+        template: templates/deployment.yaml
+      - notExists:
+          path: spec.template.spec.priorityClassName
+        template: templates/deployment-manager.yaml

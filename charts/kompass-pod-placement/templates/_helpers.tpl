@@ -71,7 +71,11 @@ podAntiAffinity:
 Create image reference
 */}}
 {{- define "kompass-pod-placement.image" -}}
-{{ .Values.image.registry }}:{{ default .Chart.AppVersion .Values.image.tag  }}
+{{- $repository := .Values.image.registry -}}
+{{- with .Values.global.zestyImageRegistry -}}
+{{- $repository = printf "%s/%s" (trimSuffix "/" .) (regexReplaceAll `^([^/]*[.:][^/]*|localhost)/` $repository "") -}}
+{{- end -}}
+{{ $repository }}:{{ default .Chart.AppVersion .Values.image.tag  }}
 {{- end }}
 
 {{- define "kompass-pod-placement.webhook.certificateName" -}}

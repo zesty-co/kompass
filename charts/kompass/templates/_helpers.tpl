@@ -42,6 +42,22 @@ Create chart name and version as used by the chart label.
   {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
+{{/* Image used by the validator and cluster-ID hooks, including mirror path prefixes. */}}
+{{- define "kompass.validator.image" -}}
+{{- $image := .Values.validator.image -}}
+{{- $repository := printf "%s/%s" $image.registry $image.repository -}}
+{{- with .Values.global.zestyImageRegistry -}}
+{{- $repository = printf "%s/%s" (trimSuffix "/" .) (regexReplaceAll `^([^/]*[.:][^/]*|localhost)/` $repository "") -}}
+{{- end -}}
+{{ $repository }}:{{ $image.tag }}
+{{- end -}}
+
+{{- define "kompass.validator.hookImagePullSecretName" -}}
+{{- if and .Values.global.imagePullSecret.name .Values.global.imagePullSecret.dockerconfigjson -}}
+{{- printf "%s-validator-hook" .Values.global.imagePullSecret.name | trunc 253 | trimSuffix "-" -}}
+{{- end -}}
+{{- end -}}
+
 {{- define "kompass.cxLogging.apiKeySecretName" -}}
 {{- $cxLogging := .cxLogging | default dict -}}
 {{- $apiKeySecret := $cxLogging.apiKeySecret | default dict -}}

@@ -1,0 +1,48 @@
+suite: Validator and cluster-ID hook image registry
+templates:
+  - templates/pre-install-hooks/kompass-validator.yaml
+  - templates/pre-install-hooks/insights-cluster-id-hook.yaml
+set:
+  kompass-insights.enabled: false
+tests:
+  - it: uses the shared registry with the default kubectl path when no validator image overrides are provided
+    set:
+      global.zestyImageRegistry: mirror.example.com
+    documentSelector:
+      path: kind
+      value: Job
+      matchMany: true
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: mirror.example.com/docker-hub/bitnami/kubectl:latest
+
+  - it: overrides the registry host while preserving custom path prefixes and the tag
+    set:
+      global.zestyImageRegistry: mirror.example.com:5000/
+      validator.image.registry: old.example.com:5443/cache/bitnami
+      validator.image.repository: tools/kubectl
+      validator.image.tag: "1.32.0"
+    documentSelector:
+      path: kind
+      value: Job
+      matchMany: true
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: mirror.example.com:5000/cache/bitnami/tools/kubectl:1.32.0
+
+  - it: retains the validator image settings when the shared registry is empty
+    set:
+      global.zestyImageRegistry: ""
+      validator.image.registry: old.example.com:5443/cache/bitnami
+      validator.image.repository: tools/kubectl
+      validator.image.tag: "1.32.0"
+    documentSelector:
+      path: kind
+      value: Job
+      matchMany: true
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: old.example.com:5443/cache/bitnami/tools/kubectl:1.32.0

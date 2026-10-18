@@ -3,6 +3,11 @@
 {{- if eq (index $kompassInsights "enabled") false }}
 {{- $secretName := printf "%s-insights-secret" .Release.Name -}}
 {{- $hookServiceAccountName := printf "%s-insights-cluster-id-hook" .Release.Name | trunc 63 | trimSuffix "-" -}}
+{{- $hookImagePullSecrets := include "kompass.workload.resolveImagePullSecrets" (dict
+  "global" .Values.global
+  "component" .Values.validator
+  "legacySecretName" (include "kompass.validator.hookImagePullSecretName" .)
+) | fromYamlArray -}}
 ---
 apiVersion: v1
 kind: Secret
@@ -91,10 +96,14 @@ spec:
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
       serviceAccountName: {{ $hookServiceAccountName }}
+      {{- with $hookImagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       restartPolicy: Never
       containers:
         - name: cluster-id-injector
-          image: {{ .Values.validator.image.registry }}/{{ .Values.validator.image.repository }}:{{ .Values.validator.image.tag }}
+          image: {{ include "kompass.validator.image" . | quote }}
           imagePullPolicy: {{ .Values.validator.image.pullPolicy | default "IfNotPresent" }}
           command:
             - /bin/sh

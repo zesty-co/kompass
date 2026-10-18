@@ -108,7 +108,6 @@ spec:
       {{- end }}
       containers:
         {{- include "zesty-k8s.manager.container" . | nindent 8 }}
-      priorityClassName: system-cluster-critical
       {{- with $podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
