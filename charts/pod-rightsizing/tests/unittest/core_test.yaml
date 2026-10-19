@@ -79,6 +79,9 @@ tests:
           path: data.actionInformerDebounceDuration
           value: "500ms"
       - equal:
+          path: data.reportSnapshotEnabled
+          value: "false"
+      - equal:
           path: data.clusterActionListReportingEnabled
           value: "false"
       - equal:

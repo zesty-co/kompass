@@ -53,6 +53,13 @@
 {{- printf "jvmMetrics.scrapeConfigs[%d].scheme must be either http or https" $index | fail }}
 {{- end }}
 {{- end }}
+{{- $tlsConfig := $scrapeConfig.tlsConfig | default dict }}
+{{- if and (hasKey $scrapeConfig "tlsConfig") (not (kindIs "map" $scrapeConfig.tlsConfig)) }}
+{{- printf "jvmMetrics.scrapeConfigs[%d].tlsConfig must be a map" $index | fail }}
+{{- end }}
+{{- if and (hasKey $tlsConfig "insecureSkipVerify") (not (kindIs "bool" $tlsConfig.insecureSkipVerify)) }}
+{{- printf "jvmMetrics.scrapeConfigs[%d].tlsConfig.insecureSkipVerify must be a boolean" $index | fail }}
+{{- end }}
 {{- $excludedNamespacePatterns := list }}
 {{- range $namespacesToExclude }}
 {{- $excludedNamespacePatterns = append $excludedNamespacePatterns (regexQuoteMeta (toString .)) }}
@@ -75,6 +82,10 @@
   {{- end }}
   {{- with $scrapeConfig.scheme }}
   scheme: {{ . }}
+  {{- end }}
+  {{- if hasKey $tlsConfig "insecureSkipVerify" }}
+  tls_config:
+    insecure_skip_verify: {{ $tlsConfig.insecureSkipVerify }}
   {{- end }}
   kubernetes_sd_configs:
     - role: pod

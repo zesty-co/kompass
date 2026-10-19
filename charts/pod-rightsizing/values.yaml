@@ -1,5 +1,18 @@
 enabled: false
 jvmRightsizingEnabled: false
+jvmConfig:
+  jvmGcLookback: 30m
+  jvmHeapUsagePercentile: 95
+  jvmGcBufferBands:
+    "0": 0
+    "0.2": 0.2
+    "0.4": 0.4
+    "0.6": 0.6
+    "0.8": 1.0
+  jvmXmxIncreaseMinRelative: "0.1"
+  jvmXmxDecreaseMinRelative: "0.2"
+  jvmXmxIncreaseMinAbsolute: 100Mi
+  jvmXmxDecreaseMinAbsolute: 50Mi
 accountId: ""
 nameOverride: ""
 fullnameOverride: ""
@@ -89,7 +102,7 @@ actionTaker:
   name: "action-taker"
   image:
     name: "/pod-rightsizing/action-taker"
-    tag: "v0.9.2"
+    tag: "v0.9.3"
   resources:
     requests:
       cpu: 100m
@@ -118,7 +131,7 @@ guardian:
       type: RuntimeDefault
   image:
     name: "/pod-rightsizing/guardian"
-    tag: "v0.9.2"
+    tag: "v0.9.3"
   resources:
     requests:
       cpu: 100m
@@ -151,6 +164,7 @@ config:
   kompassWorkloadsRightsizing:
     enabled: false
   actionInformerDebounceDuration: 500ms
+  reportSnapshotEnabled: false
   clusterActionListReportingEnabled: false
 recommendationsMaker:
   # fullnameOverride: ""
@@ -187,7 +201,7 @@ recommendationsMaker:
   name: "recommendations-maker"
   image:
     name: "/pod-rightsizing/recommendations-maker"
-    tag: "v0.9.2"
+    tag: "v0.9.3"
     args:
   port: 8088
   resources:
@@ -224,7 +238,7 @@ metricsExporter:
   #     type: RuntimeDefault
   image:
     name: "/pod-rightsizing/metrics-exporter"
-    tag: "v0.9.2"
+    tag: "v0.9.3"
     args:
   resources:
     requests:
@@ -264,7 +278,7 @@ bridgeDataExporter:
   #     type: RuntimeDefault
   image:
     name: "/pod-rightsizing/bridge-data-exporter"
-    tag: "v0.9.2"
+    tag: "v0.9.3"
     args:
   resources:
     requests:
@@ -309,6 +323,10 @@ gpuMetrics:
       cpu: 250m
       memory: 96Mi
 jvmMetrics:
+  # For self-signed HTTPS test endpoints, a scrapeConfigs entry can set:
+  # scheme: https
+  # tlsConfig:
+  #   insecureSkipVerify: true
   enabled: false
   autoDiscovery:
     enabled: false

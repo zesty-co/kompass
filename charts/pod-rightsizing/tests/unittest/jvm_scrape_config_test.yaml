@@ -211,3 +211,64 @@ tests:
       - notMatchRegex:
           path: data["jvm.yaml"]
           pattern: 'source_labels: \[__meta_kubernetes_pod_container_port_number\]'
+
+  - it: renders explicit certificate verification settings for HTTPS
+    set:
+      jvmMetrics:
+        enabled: true
+        scrapeConfigs:
+          - labels:
+              app: self-signed-java
+            scheme: https
+            tlsConfig:
+              insecureSkipVerify: true
+          - labels:
+              app: trusted-java
+            scheme: https
+            tlsConfig:
+              insecureSkipVerify: false
+    asserts:
+      - matchRegex:
+          path: data["jvm.yaml"]
+          pattern: 'tls_config:\n\s+insecure_skip_verify: true'
+      - matchRegex:
+          path: data["jvm.yaml"]
+          pattern: 'tls_config:\n\s+insecure_skip_verify: false'
+
+  - it: keeps certificate verification defaults when TLS settings are omitted
+    set:
+      jvmMetrics:
+        enabled: true
+        scrapeConfigs:
+          - labels:
+              app: java
+            scheme: https
+    asserts:
+      - notMatchRegex:
+          path: data["jvm.yaml"]
+          pattern: 'tls_config:'
+
+  - it: rejects non-boolean certificate verification settings
+    set:
+      jvmMetrics:
+        enabled: true
+        scrapeConfigs:
+          - labels:
+              app: java
+            tlsConfig:
+              insecureSkipVerify: "true"
+    asserts:
+      - failedTemplate:
+          errorMessage: jvmMetrics.scrapeConfigs[0].tlsConfig.insecureSkipVerify must be a boolean
+
+  - it: rejects non-map TLS settings
+    set:
+      jvmMetrics:
+        enabled: true
+        scrapeConfigs:
+          - labels:
+              app: java
+            tlsConfig: invalid
+    asserts:
+      - failedTemplate:
+          errorMessage: jvmMetrics.scrapeConfigs[0].tlsConfig must be a map
