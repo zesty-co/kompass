@@ -20,6 +20,7 @@ data:
     syncWorkloadWorkers: {{ .Values.config.syncWorkloadWorkers | quote }}
     kompassWorkloadsRightsizingEnabled: {{ (.Values.config).kompassWorkloadsRightsizing.enabled | quote }}
     actionInformerDebounceDuration: {{ (.Values.config).actionInformerDebounceDuration | default "500ms" | quote }}
+    reportSnapshotEnabled: {{ (.Values.config).reportSnapshotEnabled | default false | quote }}
     clusterActionListReportingEnabled: {{ (.Values.config).clusterActionListReportingEnabled | default false | quote }}
     kompassWorkloadsRightsizingPolicyName: "stability-focused"
     kompassWorkloadsRightsizingExcludedWorkloads: |

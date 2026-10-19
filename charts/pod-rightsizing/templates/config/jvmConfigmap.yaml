@@ -1,0 +1,15 @@
+{{- if .Values.jvmRightsizingEnabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kompass-rightsizing-jvm-config
+  namespace: {{ .Release.Namespace }}
+data:
+  jvmGcLookback: {{ .Values.jvmConfig.jvmGcLookback | quote }}
+  jvmHeapUsagePercentile: {{ .Values.jvmConfig.jvmHeapUsagePercentile | quote }}
+  jvmGcBufferBands: {{ .Values.jvmConfig.jvmGcBufferBands | toJson | quote }}
+  jvmXmxIncreaseMinRelative: {{ .Values.jvmConfig.jvmXmxIncreaseMinRelative | quote }}
+  jvmXmxDecreaseMinRelative: {{ .Values.jvmConfig.jvmXmxDecreaseMinRelative | quote }}
+  jvmXmxIncreaseMinAbsolute: {{ .Values.jvmConfig.jvmXmxIncreaseMinAbsolute | quote }}
+  jvmXmxDecreaseMinAbsolute: {{ .Values.jvmConfig.jvmXmxDecreaseMinAbsolute | quote }}
+{{- end }}
