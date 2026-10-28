@@ -46,7 +46,7 @@ webhooks:
     - DELETE
     resources:
     - policies
-  sideEffects: None
+  sideEffects: NoneOnDryRun
 - admissionReviewVersions:
   - v1
   clientConfig:

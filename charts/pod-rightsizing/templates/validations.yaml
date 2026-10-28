@@ -5,3 +5,15 @@
 {{- fail "jvmRightsizingEnabled=true requires jvmMetrics.enabled=true" -}}
 {{- end -}}
 {{- include "pod-rightsizing.validate.guardianRequestCeilings" . -}}
+
+{{- range $index, $kind := .Values.additionalSupportedKinds -}}
+{{- $properties := $kind.Properties -}}
+{{- if and (hasKey $kind "Properties") (not (kindIs "invalid" $properties)) (not (kindIs "slice" $properties)) -}}
+{{- fail (printf "additionalSupportedKinds[%d].Properties must be an array" $index) -}}
+{{- end -}}
+{{- range $property := $properties -}}
+{{- if not (has $property (list "Virtual" "Standalone")) -}}
+{{- fail (printf "additionalSupportedKinds[%d].Properties contains unsupported property \"%v\": allowed properties are Virtual and Standalone" $index $property) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}

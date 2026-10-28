@@ -102,7 +102,7 @@ actionTaker:
   name: "action-taker"
   image:
     name: "/pod-rightsizing/action-taker"
-    tag: "v0.9.3"
+    tag: "v0.9.4"
   resources:
     requests:
       cpu: 100m
@@ -131,7 +131,7 @@ guardian:
       type: RuntimeDefault
   image:
     name: "/pod-rightsizing/guardian"
-    tag: "v0.9.3"
+    tag: "v0.9.4"
   resources:
     requests:
       cpu: 100m
@@ -201,7 +201,7 @@ recommendationsMaker:
   name: "recommendations-maker"
   image:
     name: "/pod-rightsizing/recommendations-maker"
-    tag: "v0.9.3"
+    tag: "v0.9.4"
     args:
   port: 8088
   resources:
@@ -238,7 +238,7 @@ metricsExporter:
   #     type: RuntimeDefault
   image:
     name: "/pod-rightsizing/metrics-exporter"
-    tag: "v0.9.3"
+    tag: "v0.9.4"
     args:
   resources:
     requests:
@@ -278,7 +278,7 @@ bridgeDataExporter:
   #     type: RuntimeDefault
   image:
     name: "/pod-rightsizing/bridge-data-exporter"
-    tag: "v0.9.3"
+    tag: "v0.9.4"
     args:
   resources:
     requests:
@@ -361,5 +361,17 @@ hooks:
     repository: kubectl
     tag: latest
   workloadLabels: {}
+# Additional workload kinds, using the same field names as supported_kinds.yaml.
+# Properties is optional and currently accepts only Virtual and Standalone.
+# Virtual is always enabled implicitly, including when Properties is omitted, empty,
+# or contains only Standalone. Set Properties: [Standalone] to also enable standalone support.
+# Entries for an already supported Group/Version/Kind do not override its properties.
+# Example:
+# additionalSupportedKinds:
+#   - Group: example.io
+#     Version: v1
+#     Kind: Application
+#     Alias: exampleapplication
+#     Properties: [Standalone]
 additionalSupportedKinds: []
 secret: kompass-rightsizing-secret

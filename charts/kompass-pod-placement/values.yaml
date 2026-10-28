@@ -65,20 +65,19 @@ ports:
     protocol: TCP
 resources:
   requests:
-    cpu: 100m
-    memory: 128Mi
-  # Suggested 1000m and 5Gi for cluster with 40.000 pods
+    cpu: 250m
+    memory: 512Mi
   limits:
-    cpu: 200m
-    memory: 256Mi
+    cpu: 500m
+    memory: 512Mi
 # Resources applied when Guardian protects this workload.
 guardianProtectedResources:
   requests:
-    cpu: 100m
-    memory: 144Mi
+    cpu: 250m
+    memory: 512Mi
   limits:
-    cpu: 200m
-    memory: 192Mi
+    cpu: 500m
+    memory: 750Mi
 nodeSelector: {}
 tolerations: []
 affinity: {}

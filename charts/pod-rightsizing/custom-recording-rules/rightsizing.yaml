@@ -106,11 +106,22 @@ groups:
             namespace, resource_id, container,
             created_by_name, created_by_kind
           ) (
-            max by (namespace, pod, container) (
-              jvm_memory_bytes_max{
-                area="heap", id="", pool="",
-                pod!="", container!=""
-              } > 0
+            (
+              max by (namespace, pod, container) (
+                jvm_memory_bytes_max{
+                  area="heap", id="", pool="",
+                  pod!="", container!=""
+                } > 0
+              )
+              or on (namespace, pod, container)
+              sum by (namespace, pod, container) (
+                max by (namespace, pod, container, id) (
+                  jvm_memory_bytes_max{
+                    area="heap", id!="",
+                    pod!="", container!=""
+                  } > 0
+                )
+              )
             )
             * on (namespace, pod, container)
               group_left (resource_id, created_by_name, created_by_kind)

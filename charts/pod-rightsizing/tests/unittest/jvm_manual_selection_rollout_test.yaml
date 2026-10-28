@@ -1,0 +1,71 @@
+suite: JVM manual selection rollout
+release:
+  name: ci
+  namespace: zesty-system
+templates:
+  - templates/action-taker/action-taker.yaml
+  - templates/config/pilotConfigmap.yaml
+tests:
+  - it: omits the manual selection checksum when JVM rightsizing is disabled
+    template: templates/action-taker/action-taker.yaml
+    asserts:
+      - notExists:
+          path: spec.template.metadata.annotations["checksum/jvm-manual-selection"]
+  - it: hashes an empty rule list so removing the last selector triggers a rollout
+    template: templates/action-taker/action-taker.yaml
+    set:
+      jvmRightsizingEnabled: true
+    asserts:
+      - equal:
+          path: spec.template.metadata.annotations["checksum/jvm-manual-selection"]
+          value: 4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945
+  - it: hashes the serialized manual selection rules
+    template: templates/action-taker/action-taker.yaml
+    set:
+      jvmRightsizingEnabled: true
+      jvmMetrics.scrapeConfigs:
+        - labels:
+            app: java-a
+    asserts:
+      - equal:
+          path: spec.template.metadata.annotations["checksum/jvm-manual-selection"]
+          value: 99a6bd185228c6efb1b1f7c8eb3114c0a8ffb147130d075f2e04e6352ea1034f
+  - it: changes the checksum when a manual selector changes
+    template: templates/action-taker/action-taker.yaml
+    set:
+      jvmRightsizingEnabled: true
+      jvmMetrics.scrapeConfigs:
+        - labels:
+            app: java-b
+    asserts:
+      - equal:
+          path: spec.template.metadata.annotations["checksum/jvm-manual-selection"]
+          value: 75c41e57ce8fe65cb681a0942a3fa3c0dcdbfd1b1a46dd25f0cab4e1a9ebcbab
+  - it: keeps the checksum unchanged for Recommendation Maker tuning changes
+    template: templates/action-taker/action-taker.yaml
+    set:
+      jvmRightsizingEnabled: true
+      jvmMetrics.scrapeConfigs:
+        - labels:
+            app: java-a
+      jvmConfig.jvmHeapUsagePercentile: 90
+      jvmConfig.jvmGcLookback: 1h
+    asserts:
+      - equal:
+          path: spec.template.metadata.annotations["checksum/jvm-manual-selection"]
+          value: 99a6bd185228c6efb1b1f7c8eb3114c0a8ffb147130d075f2e04e6352ea1034f
+  - it: keeps the checksum unchanged for scrape endpoint changes
+    template: templates/action-taker/action-taker.yaml
+    set:
+      jvmRightsizingEnabled: true
+      jvmMetrics.scrapeConfigs:
+        - labels:
+            app: java-a
+          port: 9090
+          path: /custom-metrics
+          scheme: https
+          scrapeInterval: 45s
+    asserts:
+      - equal:
+          path: spec.template.metadata.annotations["checksum/jvm-manual-selection"]
+          value: 99a6bd185228c6efb1b1f7c8eb3114c0a8ffb147130d075f2e04e6352ea1034f

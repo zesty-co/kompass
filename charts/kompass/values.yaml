@@ -909,10 +909,10 @@ kompass-bridge:
   resources:
     requests:
       cpu: 100m
-      memory: 128Mi
+      memory: 256Mi
     limits:
       cpu: 500m
-      memory: 512Mi
+      memory: 320Mi
   # -- (map) Container ports exposed by the Bridge.
   ports:
     # -- (map) gRPC endpoint consumed by in-cluster Kompass actors. Also

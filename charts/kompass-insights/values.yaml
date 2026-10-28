@@ -59,18 +59,19 @@ securityContext:
     type: RuntimeDefault
 resources:
   limits:
+    cpu: 1000m
     memory: 2Gi
   requests:
-    cpu: 250m
+    cpu: 500m
     memory: 2Gi
 # Resources applied when Guardian protects this workload.
 guardianProtectedResources:
   requests:
-    cpu: 0.4
-    memory: 512Mi
+    cpu: 500m
+    memory: 2Gi
   limits:
-    cpu: 0.5
-    memory: 640Mi
+    cpu: 1000m
+    memory: 2.5Gi
 prometheus:
   url: ~
   username: ~

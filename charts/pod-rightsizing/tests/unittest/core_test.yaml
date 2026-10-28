@@ -6,6 +6,7 @@ templates:
   - templates/action-taker/action-taker.yaml
   - templates/config/initial-values-cm.yaml
   - templates/config/pilotConfigmap.yaml
+  - templates/config/jvmConfigmap.yaml
 tests:
   - it: defaults JVM rightsizing environment flag to false in Action Taker
     template: templates/action-taker/action-taker.yaml
@@ -122,8 +123,8 @@ tests:
           path: data.actionInformerDebounceDuration
           value: "500ms"
 
-  - it: renders JVM auto-discovery config independently of the rightsizing gate
-    template: templates/config/pilotConfigmap.yaml
+  - it: renders JVM auto-discovery settings in the dedicated JVM ConfigMap
+    template: templates/config/jvmConfigmap.yaml
     set:
       jvmRightsizingEnabled: true
       jvmMetrics:
@@ -146,22 +147,19 @@ tests:
           path: data.jvmAutoDiscoveryImageSignals
           value: "openjdk,temurin,corretto,bitnami/java,kafka,jenkins/jenkins"
 
-  - it: enables JVM auto-discovery independently of the JVM rightsizing gate
-    template: templates/config/pilotConfigmap.yaml
+  - it: omits JVM auto-discovery configuration when the JVM rightsizing gate is disabled
+    template: templates/config/jvmConfigmap.yaml
     set:
       jvmMetrics:
         enabled: true
         autoDiscovery:
           enabled: true
     asserts:
-      - equal:
-          path: data.jvmAutoDiscoveryEnabled
-          value: "true"
-      - notExists:
-          path: data.jvmRightsizingEnabled
+      - hasDocuments:
+          count: 0
 
-  - it: renders custom JVM auto-discovery signals into the rightsizing ConfigMap
-    template: templates/config/pilotConfigmap.yaml
+  - it: renders custom JVM auto-discovery signals into the JVM ConfigMap
+    template: templates/config/jvmConfigmap.yaml
     set:
       jvmRightsizingEnabled: true
       jvmMetrics:
@@ -191,7 +189,7 @@ tests:
           value: "jenkins/jenkins,custom-java"
 
   - it: appends additional JVM auto-discovery signals to defaults
-    template: templates/config/pilotConfigmap.yaml
+    template: templates/config/jvmConfigmap.yaml
     set:
       jvmRightsizingEnabled: true
       jvmMetrics:
@@ -215,10 +213,10 @@ tests:
           path: data.jvmAutoDiscoveryImageSignals
           value: "openjdk,temurin,corretto,bitnami/java,kafka,jenkins/jenkins,custom-kotlin"
 
-  - it: does not roll action-taker when the rightsizing ConfigMap changes
+  - it: rolls action-taker when the pilot ConfigMap changes
     template: templates/action-taker/action-taker.yaml
     values:
       - ../render/fixtures/enabled-values.yaml
     asserts:
-      - notExists:
+      - exists:
           path: spec.template.metadata.annotations["checksum/pilot-config"]
