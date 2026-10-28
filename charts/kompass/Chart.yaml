@@ -3,7 +3,7 @@ name: kompass
 description: Zesty Kompass Helm Charts
 icon: https://zesty.co/wp-content/uploads/2024/05/favicon-150x150.png
 type: application
-version: 0.4.7
+version: 0.4.8
 appVersion: 1.16.0
 dependencies:
   # zesty products
@@ -60,8 +60,8 @@ dependencies:
     version: 1.21.1
   - name: grafana
     condition: grafana.enabled
-    repository: https://grafana.github.io/helm-charts
-    version: 10.5.15
+    repository: https://grafana-community.github.io/helm-charts
+    version: 14.2.0
   - name: metrics-server
     condition: metrics-server.enabled
     repository: https://kubernetes-sigs.github.io/metrics-server/
