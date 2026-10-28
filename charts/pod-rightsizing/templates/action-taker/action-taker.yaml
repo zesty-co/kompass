@@ -3,10 +3,6 @@
 {{- $actionTakerKubeRbacProxySecurityContext := include "pod-rightsizing.securityContext.actionTakerKubeRbacProxy" (dict "root" . "actionTakerSecurityContext" .Values.actionTaker.securityContext "kubeRbacProxySecurityContext" .Values.actionTaker.kubeRbacProxy.securityContext) | fromYaml }}
 {{- $actionTakerPodLabels := include "pod-rightsizing.podTemplateLabels" (dict "root" . "componentValues" .Values.actionTaker) | fromYaml }}
 {{- $actionTakerPodAnnotations := include "pod-rightsizing.podTemplateAnnotations" (dict "root" . "componentValues" .Values.actionTaker) | fromYaml }}
-{{- $actionTakerPodAnnotations = mergeOverwrite (deepCopy $actionTakerPodAnnotations) (dict "checksum/pilot-config" (include (print $.Template.BasePath "/config/pilotConfigmap.yaml") . | sha256sum)) }}
-{{- if .Values.jvmRightsizingEnabled }}
-{{- $actionTakerPodAnnotations = mergeOverwrite $actionTakerPodAnnotations (dict "checksum/jvm-manual-selection" (include "pod-rightsizing.jvmManualSelectionRules" . | sha256sum)) }}
-{{- end }}
 {{- $actionTakerWorkloadLabels := include "pod-rightsizing.workloadLabels" (dict "root" . "componentValues" .Values.actionTaker) | fromYaml }}
 {{- $actionTakerDefaultAffinity := include "pod-rightsizing.actionTaker.defaultAffinity" . | fromYaml }}
 {{- $actionTakerAffinity := include "pod-rightsizing.affinity" (dict "root" . "componentValues" .Values.actionTaker "baseAffinity" $actionTakerDefaultAffinity) | fromYaml }}

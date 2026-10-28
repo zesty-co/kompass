@@ -96,9 +96,6 @@ spec:
                       properties:
                         desiredCPU:
                           type: number
-                        desiredJvmMaxHeap:
-                          format: int64
-                          type: integer
                         desiredMemory:
                           format: int64
                           type: integer
@@ -111,9 +108,6 @@ spec:
                           type: string
                         requestCPU:
                           type: number
-                        requestJvmMaxHeap:
-                          format: int64
-                          type: integer
                         requestMemory:
                           format: int64
                           type: integer

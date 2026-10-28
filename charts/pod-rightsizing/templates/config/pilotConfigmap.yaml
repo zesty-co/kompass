@@ -4,6 +4,8 @@ metadata:
   name: {{ include "kompass-pod-rightsizing-config.name" . }}
   namespace: {{ .Release.Namespace }}
 data:
+{{- $jvmMetrics := .Values.jvmMetrics | default dict }}
+{{- $jvmAutoDiscovery := $jvmMetrics.autoDiscovery | default dict }}
     resourceIdsQueryChunkSize: {{ .Values.config.resourceIdsQueryChunkSize | quote }}
     chunkProcessingSize: {{ .Values.config.chunkProcessingSize | quote }}
     maxParallelChunks: {{ .Values.config.maxParallelChunks | quote }}
@@ -40,6 +42,10 @@ data:
     hpaMinValue: {{ (.Values.config).hpaMinValue | default "70" | quote }}
 
     failedActionRetriesAmount: {{ (.Values.config).failedActionRetriesAmount | default "1" | quote }}
+    jvmAutoDiscoveryEnabled: {{ and ($jvmMetrics.enabled | default false) ($jvmAutoDiscovery.enabled | default false) | quote }}
+    jvmAutoDiscoveryEnvSignals: {{ include "pod-rightsizing.jvmAutoDiscovery.envSignals" . | quote }}
+    jvmAutoDiscoveryCommandSignals: {{ include "pod-rightsizing.jvmAutoDiscovery.commandSignals" . | quote }}
+    jvmAutoDiscoveryImageSignals: {{ include "pod-rightsizing.jvmAutoDiscovery.imageSignals" . | quote }}
     
     builtinPolicies: |
 {{ toYaml .Values.config.builtinPolicies | indent 6 }}

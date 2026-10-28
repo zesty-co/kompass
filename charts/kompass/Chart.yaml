@@ -3,21 +3,21 @@ name: kompass
 description: Zesty Kompass Helm Charts
 icon: https://zesty.co/wp-content/uploads/2024/05/favicon-150x150.png
 type: application
-version: 0.4.21
+version: 0.4.8
 appVersion: 1.16.0
 dependencies:
   # zesty products
   - name: kompass-insights
     condition: kompass-insights.enabled
     repository: "https://zesty-co.github.io/kompass"
-    version: 2.3.37
+    version: 2.3.32
   - name: kompass-pod-placement
     repository: "https://zesty-co.github.io/kompass"
-    version: 0.1.29
+    version: 0.1.28
   - name: pod-rightsizing
     alias: rightsizing
     repository: "https://zesty-co.github.io/kompass"
-    version: v0.9.4
+    version: v0.9.3
   - name: kompass-storage
     alias: disk
     condition: disk.enabled
@@ -60,7 +60,7 @@ dependencies:
     version: 1.21.1
   - name: grafana
     condition: grafana.enabled
-    repository: "https://grafana.github.io/helm-charts"
+    repository: https://grafana-community.github.io/helm-charts
     version: 14.2.0
   - name: metrics-server
     condition: metrics-server.enabled
