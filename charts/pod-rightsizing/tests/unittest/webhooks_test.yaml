@@ -28,6 +28,9 @@ tests:
           path: webhooks[1].rules[0].apiGroups[0]
           value: horizontalscaling.kompass.zesty.co
       - equal:
+          path: webhooks[1].sideEffects
+          value: NoneOnDryRun
+      - equal:
           path: webhooks[2].rules[0].resources[0]
           value: virtualworkloads
       - equal:
