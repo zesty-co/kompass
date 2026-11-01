@@ -44,7 +44,7 @@ rules:
       - list
       - watch
   {{- end }}
-  # fullRO=false. Explicit resource coverage instead of wildcard read-only discovery.
+  # Explicit resource permissions, included in both discovery modes.
   - apiGroups:
       - "argoproj.io"
     resources:
@@ -212,3 +212,9 @@ rules:
       - mutatingwebhookconfigurations
       - validatingwebhookconfigurations
     {{- include "zesty-k8s.verbs" . | nindent 4 }}
+  {{- if .Capabilities.APIVersions.Has "config.openshift.io/v1/Infrastructure" }}
+  {{- include "zesty-k8s.rosaDiscoveryRules" . | nindent 2 }}
+  {{- end }}
+  {{- with .Values.insights.clusterRole.extraRules }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}

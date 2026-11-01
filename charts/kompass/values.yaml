@@ -190,6 +190,12 @@ validator:
   # -- (array) Topology spread constraints for validator job.
   topologySpreadConstraints: []
 kompass-insights:
+  insights:
+    clusterRole:
+      # Opt in to wildcard read access, including Secrets.
+      fullRO: false
+      # Additional native Kubernetes PolicyRules for Insights and Manager.
+      extraRules: []
   # -- (bool) Enable or disable the Kompass Insights feature components.
   # This should be disabled only for distinct scenarios and is not recommended for most use-cases.
   # Advise with Zesty support before disabling it.
@@ -909,10 +915,10 @@ kompass-bridge:
   resources:
     requests:
       cpu: 100m
-      memory: 128Mi
+      memory: 256Mi
     limits:
       cpu: 500m
-      memory: 512Mi
+      memory: 320Mi
   # -- (map) Container ports exposed by the Bridge.
   ports:
     # -- (map) gRPC endpoint consumed by in-cluster Kompass actors. Also

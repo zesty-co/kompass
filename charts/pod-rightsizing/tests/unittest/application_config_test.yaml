@@ -19,6 +19,11 @@ tests:
       - isSubset:
           path: data
           content:
+            jvmAutoDiscoveryEnabled: "false"
+            jvmManualSelectionRules: "[]"
+            jvmAutoDiscoveryEnvSignals: "JAVA_HOME,JAVA_OPTS,JAVA_TOOL_OPTIONS,JDK_JAVA_OPTIONS,MAVEN_HOME"
+            jvmAutoDiscoveryCommandSignals: "java,-jar,.jar,.war"
+            jvmAutoDiscoveryImageSignals: "openjdk,temurin,corretto,bitnami/java,kafka,jenkins/jenkins"
             jvmGcLookback: 30m
             jvmHeapUsagePercentile: "95"
             jvmXmxIncreaseMinRelative: "0.1"
@@ -56,15 +61,17 @@ tests:
           path: data.kompassWorkloadsRightsizingPolicyName
       - exists:
           path: data.kompassWorkloadsRightsizingExcludedWorkloads
-      - exists:
+      - notExists:
           path: data.jvmAutoDiscoveryEnabled
       - notExists:
+          path: data.jvmManualSelectionRules
+      - notExists:
           path: data.jvmRightsizingEnabled
-      - exists:
+      - notExists:
           path: data.jvmAutoDiscoveryEnvSignals
-      - exists:
+      - notExists:
           path: data.jvmAutoDiscoveryCommandSignals
-      - exists:
+      - notExists:
           path: data.jvmAutoDiscoveryImageSignals
       - notExists:
           path: data.v

@@ -5,6 +5,13 @@ metadata:
   name: kompass-rightsizing-jvm-config
   namespace: {{ .Release.Namespace }}
 data:
+{{- $jvmMetrics := .Values.jvmMetrics | default dict }}
+{{- $jvmAutoDiscovery := $jvmMetrics.autoDiscovery | default dict }}
+  jvmAutoDiscoveryEnabled: {{ and ($jvmMetrics.enabled | default false) ($jvmAutoDiscovery.enabled | default false) | quote }}
+  jvmManualSelectionRules: {{ include "pod-rightsizing.jvmManualSelectionRules" . | quote }}
+  jvmAutoDiscoveryEnvSignals: {{ include "pod-rightsizing.jvmAutoDiscovery.envSignals" . | quote }}
+  jvmAutoDiscoveryCommandSignals: {{ include "pod-rightsizing.jvmAutoDiscovery.commandSignals" . | quote }}
+  jvmAutoDiscoveryImageSignals: {{ include "pod-rightsizing.jvmAutoDiscovery.imageSignals" . | quote }}
   jvmGcLookback: {{ .Values.jvmConfig.jvmGcLookback | quote }}
   jvmHeapUsagePercentile: {{ .Values.jvmConfig.jvmHeapUsagePercentile | quote }}
   jvmGcBufferBands: {{ .Values.jvmConfig.jvmGcBufferBands | toJson | quote }}

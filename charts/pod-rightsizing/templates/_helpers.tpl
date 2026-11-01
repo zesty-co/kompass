@@ -210,6 +210,67 @@ jvmMetrics.autoDiscovery.additional*Signals append customer-specific signals.
 {{- end -}}
 
 {{/*
+Normalize customer JVM scrape configs once for both vmagent rendering and
+Action Taker selector serialization. sourceIndex is the stable identity within
+the user-provided ordered list; generated auto-discovery jobs are never added.
+*/}}
+{{- define "pod-rightsizing.jvmCustomerScrapeConfigs" -}}
+{{- $jvmMetrics := .Values.jvmMetrics | default dict -}}
+{{- $normalizedConfigs := list -}}
+{{- range $index, $scrapeConfig := ($jvmMetrics.scrapeConfigs | default list) -}}
+{{- $normalized := deepCopy $scrapeConfig -}}
+{{- $_ := set $normalized "sourceIndex" $index -}}
+{{- range $field := list "labels" "annotations" -}}
+{{- if hasKey $normalized $field -}}
+{{- $normalizedValues := dict -}}
+{{- range $key, $value := get $normalized $field -}}
+{{- if kindIs "invalid" $value -}}
+{{- $_ := set $normalizedValues $key $value -}}
+{{- else -}}
+{{- $_ := set $normalizedValues $key (toString $value) -}}
+{{- end -}}
+{{- end -}}
+{{- $_ := set $normalized $field $normalizedValues -}}
+{{- end -}}
+{{- end -}}
+{{- range $field := list "namespaces" "namespacesToExclude" -}}
+{{- if hasKey $normalized $field -}}
+{{- $namespaceValues := get $normalized $field -}}
+{{- if kindIs "slice" $namespaceValues -}}
+{{- $normalizedNamespaces := list -}}
+{{- range $value := $namespaceValues -}}
+{{- if kindIs "invalid" $value -}}
+{{- $normalizedNamespaces = append $normalizedNamespaces $value -}}
+{{- else -}}
+{{- $normalizedNamespaces = append $normalizedNamespaces (toString $value) -}}
+{{- end -}}
+{{- end -}}
+{{- $_ := set $normalized $field $normalizedNamespaces -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- $normalizedConfigs = append $normalizedConfigs $normalized -}}
+{{- end -}}
+{{- toYaml $normalizedConfigs -}}
+{{- end -}}
+
+{{- define "pod-rightsizing.jvmManualSelectionRules" -}}
+{{- $customerConfigs := include "pod-rightsizing.jvmCustomerScrapeConfigs" . | fromYamlArray -}}
+{{- $rules := list -}}
+{{- range $customerConfigs -}}
+{{- $customerConfig := . -}}
+{{- $rule := dict "sourceIndex" $customerConfig.sourceIndex -}}
+{{- range $field := list "labels" "annotations" "namespaces" "namespacesToExclude" -}}
+{{- if hasKey $customerConfig $field -}}
+{{- $_ := set $rule $field (get $customerConfig $field) -}}
+{{- end -}}
+{{- end -}}
+{{- $rules = append $rules $rule -}}
+{{- end -}}
+{{- toJson $rules -}}
+{{- end -}}
+
+{{/*
 Build the effective pod security context for a component.
 Merge order (later wins): component.podSecurityContext -> global.podSecurityContext
 */}}

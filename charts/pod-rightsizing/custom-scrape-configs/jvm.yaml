@@ -1,13 +1,14 @@
-{{- $scrapeConfigs := list }}
 {{- $jvmMetrics := .Values.jvmMetrics | default dict }}
 {{- $autoDiscovery := $jvmMetrics.autoDiscovery | default dict }}
+{{- $customerScrapeConfigs := include "pod-rightsizing.jvmCustomerScrapeConfigs" . | fromYamlArray }}
+{{- $scrapeConfigs := list }}
 {{- if $jvmMetrics.enabled }}
-{{- if not $jvmMetrics.scrapeConfigs }}
+{{- if not $customerScrapeConfigs }}
 {{- if not ($autoDiscovery.enabled | default false) }}
 {{- fail "jvmMetrics.scrapeConfigs must be defined when jvmMetrics.autoDiscovery.enabled is false" }}
 {{- end }}
 {{- else }}
-{{- range $jvmMetrics.scrapeConfigs }}
+{{- range $customerScrapeConfigs }}
 {{- $scrapeConfigs = append $scrapeConfigs . }}
 {{- end }}
 {{- end }}
