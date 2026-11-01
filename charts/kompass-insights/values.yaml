@@ -59,18 +59,19 @@ securityContext:
     type: RuntimeDefault
 resources:
   limits:
+    cpu: 1000m
     memory: 2Gi
   requests:
-    cpu: 250m
+    cpu: 500m
     memory: 2Gi
 # Resources applied when Guardian protects this workload.
 guardianProtectedResources:
   requests:
-    cpu: 0.4
-    memory: 512Mi
+    cpu: 500m
+    memory: 2Gi
   limits:
-    cpu: 0.5
-    memory: 640Mi
+    cpu: 1000m
+    memory: 2.5Gi
 prometheus:
   url: ~
   username: ~
@@ -113,7 +114,10 @@ insights:
   affinity: {}
   automountServiceAccountToken: ~
   clusterRole:
-    fullRO: true
+    # Opt in to wildcard get/list/watch across all API groups, including Secrets.
+    fullRO: false
+    # Additional native Kubernetes PolicyRules appended to the built-in rules.
+    extraRules: []
   imagePullSecrets: ~
   podAnnotations: {}
   podLabels: {}
@@ -137,7 +141,7 @@ manager:
   repository: "672188301118.dkr.ecr.eu-west-1.amazonaws.com/zesty-k8s/kompass-manager"
   pullPolicy: Always
   # -- Manager image tag; defaults to image.tag, or Chart.AppVersion when image.tag is unset.
-  tag: v0.0.3
+  tag: v0.0.4
   # -- False runs Manager as an Insights sidecar; true runs a separate host-networked Deployment.
   hostNetwork: false
   # -- (array) additional command-line arguments for the manager container
