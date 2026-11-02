@@ -114,10 +114,7 @@ insights:
   affinity: {}
   automountServiceAccountToken: ~
   clusterRole:
-    # Opt in to wildcard get/list/watch across all API groups, including Secrets.
-    fullRO: false
-    # Additional native Kubernetes PolicyRules appended to the built-in rules.
-    extraRules: []
+    fullRO: true
   imagePullSecrets: ~
   podAnnotations: {}
   podLabels: {}
