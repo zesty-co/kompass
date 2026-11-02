@@ -72,7 +72,7 @@ kubeStateMetrics:
   serviceNamespace: monitoring
 ```
 
-`kompass_rs_action_info` is produced by KSM `customResourceState` (not by vmagent), so your external KSM must include the Action CRD metric config:
+`kompass_rs_action_info` is produced by KSM `customResourceState`. External KSM must export both resource kinds with this configuration (the labels mirror this chart's values):
 
 ```yaml
 customResourceState:
@@ -86,25 +86,52 @@ customResourceState:
             kind: Action
             version: v1alpha1
           metricNamePrefix: kompass_rs
+          commonLabels:
+            cr_kind: Action
           labelsFromPath:
             namespace: [metadata, namespace]
-            policy: [spec, policy]
-            horizontal_scaling_policy: [spec, horizontalScalingPolicy]
+            policy: [status, activations, rightsizing, policyName]
+            horizontal_scaling_policy: [status, activations, horizontalScaling, policyName]
+            rightsizing_policy: [status, activations, rightsizing, policyName]
+            phase: [status, phase]
             workload_name: [spec, workload, name]
+            workload_kind: [spec, workload, kind]
             action_type: [spec, actionType]
-            source_apc: [spec, sourceAPC]
-            execution_method: [spec, executionMethod]
           errorLogV: 10
           metrics:
             - name: action_info
-              help: "Kompass Rightsizing action CRD info"
+              help: "Current Kompass Action activation and workload identity; gauge is CR generation"
+              each:
+                type: Gauge
+                gauge:
+                  path: [metadata, generation]
+        - groupVersionKind:
+            group: rightsizing.kompass.zesty.co
+            kind: ClusterAction
+            version: v1alpha1
+          metricNamePrefix: kompass_rs
+          commonLabels:
+            cr_kind: ClusterAction
+            namespace: ""
+          labelsFromPath:
+            policy: [status, activations, rightsizing, policyName]
+            horizontal_scaling_policy: [status, activations, horizontalScaling, policyName]
+            rightsizing_policy: [status, activations, rightsizing, policyName]
+            phase: [status, phase]
+            workload_name: [spec, workload, name]
+            workload_kind: [spec, workload, kind]
+            action_type: [spec, actionType]
+          errorLogV: 10
+          metrics:
+            - name: action_info
+              help: "Current Kompass Action activation and workload identity; gauge is CR generation"
               each:
                 type: Gauge
                 gauge:
                   path: [metadata, generation]
 ```
 
-Your external KSM also needs RBAC to list/watch the Action CRD:
+Grant the external KSM service account this ClusterRole through your existing ClusterRoleBinding:
 
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -113,6 +140,8 @@ metadata:
   name: kube-state-metrics-kompass-actions
 rules:
   - apiGroups: ["rightsizing.kompass.zesty.co"]
-    resources: ["actions"]
+    resources: ["actions", "clusteractions"]
     verbs: ["list", "watch"]
 ```
+
+One gauge per current CR uses `metadata.generation`; its numeric value is not an activation flag. `cr_kind` distinguishes Action from ClusterAction. `namespace` is explicitly empty for ClusterAction. `workload_kind`/`workload_name` identify the target; `phase`, `rightsizing_policy`, and `horizontal_scaling_policy` describe current status activations. The compatibility `policy` label also reads the rightsizing activation. Missing activation paths become empty labels. The intended Grafana consumer constructs `namespace;name;lowercase-kind` for Action and `name;lowercase-kind` for ClusterAction. Its intended activation precedence is: a `Completed` or `Failed` CR is Inactive, even if `rightsizing_policy` is nonempty; otherwise, a nonempty `rightsizing_policy` means Active; otherwise, an unactivated `Pending`/`InProgress` CR means Pending. An absent CR is Inactive. The Grafana consumer implementation is outside this repository, so its behavior has not been verified against this precedence. Deleted CRs cease to indicate management after ordinary scrape staleness.
