@@ -1,0 +1,52 @@
+name: Release Notes review gate
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+  workflow_run:
+    workflows: [Release Notes review event]
+    types: [completed]
+
+permissions: {}
+
+# Serialize every event source so an older approval cannot overwrite a dismissal.
+concurrency:
+  group: release-notes-review
+  cancel-in-progress: false
+
+jobs:
+  review:
+    if: vars.RELEASE_NOTES_ENABLED == 'true' && (github.event_name == 'pull_request_target' || github.event.workflow_run.event == 'pull_request_review')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      statuses: write
+    steps:
+      - name: Check out trusted default-branch code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+      - name: Set up trusted chart tools
+        uses: ./.github/actions/setup-chart-tools
+      - name: Validate current PR head without executing PR code
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_NOTES_ENABLED: ${{ vars.RELEASE_NOTES_ENABLED }}
+          RELEASE_NOTES_PRODUCT_IDS: ${{ vars.RELEASE_NOTES_PRODUCT_IDS }}
+        run: |
+          python3 - <<'PY'
+          import json, os, subprocess
+          event = json.load(open(os.environ['GITHUB_EVENT_PATH']))
+          if 'pull_request' in event:
+              numbers = [event['pull_request']['number']]
+          else:
+              run = event['workflow_run']
+              numbers = [pr['number'] for pr in run['pull_requests']]
+              if not numbers:
+                  raise SystemExit('Review event has no associated PR; rerun the PR review gate')
+          for number in numbers:
+              subprocess.run(['python3', 'scripts/ci/release_notes_github.py', 'review',
+                              '--pr', str(int(number))], check=True)
+          PY

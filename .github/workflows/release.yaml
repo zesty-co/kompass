@@ -4,6 +4,18 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      promotion_id:
+        description: Exact promotion ID to recover or cancel
+        required: true
+        type: string
+      operation:
+        description: Recovery or cancellation (uses the publication lock)
+        required: true
+        default: recover
+        type: choice
+        options: [recover, cancel]
 
 # Release runs share the gh-pages index; let each publication finish before the next.
 concurrency:
@@ -12,7 +24,7 @@ concurrency:
 
 jobs:
   release:
-    if: "!startsWith(github.event.head_commit.message, 'chore:') && !startsWith(github.event.head_commit.message, 'docs:')"
+    if: vars.RELEASE_NOTES_ENABLED != 'true' && github.event_name == 'push' && !startsWith(github.event.head_commit.message, 'chore:') && !startsWith(github.event.head_commit.message, 'docs:')
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -98,3 +110,47 @@ jobs:
           cr index --push
         env:
           CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  reviewed-release:
+    if: vars.RELEASE_NOTES_ENABLED == 'true'
+    permissions:
+      contents: write
+      pull-requests: read
+    runs-on: ubuntu-latest
+    env:
+      CR_GIT_REPO: ${{ github.event.repository.name }}
+      CR_OWNER: ${{ github.repository_owner }}
+      CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      RELEASE_NOTES_ENABLED: ${{ vars.RELEASE_NOTES_ENABLED }}
+      RELEASE_NOTES_PRODUCT_IDS: ${{ vars.RELEASE_NOTES_PRODUCT_IDS }}
+      RELEASE_NOTES_RECOVERY_PROJECT: ${{ vars.RELEASE_NOTES_RECOVERY_PROJECT }}
+      RELEASE_NOTES_RECOVERY_TOKEN: ${{ secrets.RELEASE_NOTES_RECOVERY_TOKEN }}
+      RELEASE_NOTES_INDEX_URL: ${{ vars.RELEASE_NOTES_INDEX_URL }}
+      CI_API_V4_URL: ${{ vars.RELEASE_NOTES_GITLAB_API_URL || 'https://gitlab.com/api/v4' }}
+    steps:
+      - name: Checkout trusted publication code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.repository.default_branch || github.sha }}
+      - name: Configure Git identity
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+      - name: Set up chart tools
+        uses: ./.github/actions/setup-chart-tools
+      - name: Install chart releaser for index repair
+        uses: helm/chart-releaser-action@v1.5.0
+        with:
+          install_only: true
+      - name: Publish fixed reviewed manifest or recover exact stored bytes
+        env:
+          PROMOTION_ID: ${{ inputs.promotion_id }}
+          OPERATION: ${{ inputs.operation }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            python3 scripts/ci/release_notes_github.py "$OPERATION" --promotion "$PROMOTION_ID"
+          else
+            python3 scripts/ci/release_notes_github.py publish
+          fi
