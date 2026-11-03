@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   release:
-    if: "!startsWith(github.event.head_commit.message, 'chore:') && !startsWith(github.event.head_commit.message, 'docs:')"
+    if: "vars.PRIVATE_RELEASE_PUBLISHER != 'true' && !startsWith(github.event.head_commit.message, 'chore:') && !startsWith(github.event.head_commit.message, 'docs:')"
     permissions:
       contents: write
     runs-on: ubuntu-latest
