@@ -32,7 +32,9 @@ Copy this prompt into an AI agent that can run Helm and kubectl on your machine:
 Read https://raw.githubusercontent.com/zesty-co/kompass/main/docs/install.md
 and install Kompass using my Zesty-provided values file.
 Ask for the file path and target Kubernetes context.
-Check prerequisites, install the chart, and verify deployment health.
+Validate required settings, including my Zesty organization ID.
+Ask me for missing onboarding values before installing.
+Install the chart and verify cluster identity, licensing, and deployment health.
 ```
 
 The [installation guide](docs/install.md) contains the procedure that the agent follows.

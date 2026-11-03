@@ -47,7 +47,127 @@ Stop this fresh-install procedure; an existing release needs a separate upgrade 
 Check that any cluster identity in the supplied values matches the selected context.
 Use `--context` or `--kube-context` on every cluster command, as shown in this guide.
 
-## 2. Check cluster prerequisites
+## 2. Select a chart version and validate the values
+
+Add the public Helm repository and list the available Kompass chart versions:
+
+```sh
+helm repo add kompass https://zesty-co.github.io/kompass
+helm repo update kompass
+helm search repo kompass/kompass --versions
+```
+
+If the local `kompass` repository name points to another URL, resolve that conflict first.
+Use rows whose `NAME` is exactly `kompass/kompass`; the results also include component charts.
+Select the version supplied by Zesty.
+If none was supplied, select the latest stable Kompass version.
+Set the exact chart version below, then inspect its metadata and umbrella defaults:
+
+```sh
+CHART_VERSION='replace-with-selected-version'
+helm show chart kompass/kompass --version "$CHART_VERSION"
+helm show values kompass/kompass --version "$CHART_VERSION"
+```
+
+Inspect the selected chart's packaged dependency defaults for settings absent from the umbrella
+defaults. Parse the customer values file and resolve overrides with Helm's value precedence.
+Include global values and any configured environment overrides or Secret references.
+Use the requirements for the selected chart and image versions.
+
+### Required configuration
+
+Validate these inputs for a fresh installation with Insights and Manager enabled:
+
+| Setting | Required check |
+| --- | --- |
+| `kompass-insights.orgID` | A positive integer or integer string identifying the customer's Zesty organization. Reject missing, blank, zero, negative, or placeholder values. |
+| `kompass-insights.metadata.*` | When `enabled: true`, resolve a supported `provider`; an omitted provider defaults to AWS. Cloud identity requires nonblank `accountID`, `region`, and `clusterName` matching the target cluster. |
+| `kompass-insights.assumeRole.*` | Resolve the intended AWS authentication mode. For role assumption, require `enabled: true`, `roleArn`, `zestyExternalID`, and usable source credentials. Otherwise, explicitly set `enabled: false`. |
+| `global.imagePullSecret.name` | Required for Manager license retrieval from a non-ECR registry. For ECR, configure this Secret or a working AWS identity for Manager. |
+| Organization license | Confirm that Zesty has provisioned the organization's signed license artifact in the registry used by Manager. Check the configured license Secret name and document key. |
+
+When explicit metadata is disabled, Manager discovers the cluster identity from Kubernetes.
+Check that node metadata and discovery permissions are available. If discovery cannot work, obtain
+the explicit metadata from onboarding. For `OnPremise`, Manager uses the `kube-system` namespace UID
+as the cluster ID; cloud account, region, and cluster name are not required.
+
+Manager populates `kompass-insights.insights.secret` with runtime identity. Its default name is
+`kompass-insights-secret`. It downloads the license into `global.license.secretName`, using
+`global.license.documentKey`; the defaults are `kompass-license` and `kompass_license`.
+Keep valid defaults. These generated Secrets do not need to exist before a fresh installation.
+If Insights is disabled, establish external identity and license provisioning for enabled consumers.
+
+The chart declares the organization and role inputs in
+[`charts/kompass/values.yaml:192`](https://github.com/zesty-co/kompass/blob/main/charts/kompass/values.yaml#L192).
+Runtime identity rules are in the `kompass-agent` repository:
+`manager/pkg/metadata/metadata.go:53` and `insights-agent/pkg/secret/secret.go:79`.
+
+### Cloud authentication
+
+Resolve the target provider, enabled AWS integrations, and intended authentication mode first.
+The umbrella chart enables role assumption by default, even when no role values are supplied.
+For direct SDK access or an installation without AWS integrations, set
+`kompass-insights.assumeRole.enabled: false`. Ask the user when the intended mode is unclear.
+Require AWS role inputs only when that authentication mode is intended.
+
+AWS observation requires usable source SDK credentials, such as IRSA or EKS Pod Identity.
+Verify the service-account identity, permissions, and trust for each configured role assumption.
+A role ARN and external ID alone do not provide source credentials.
+With role assumption disabled, verify the intended direct source identity and its permissions.
+For other providers, verify the workload identity or credentials selected during onboarding.
+
+The current Insights Agent uses the AWS SDK credential chain instead of legacy encrypted AWS
+credentials. See `kompass-agent/insights-agent/pkg/aws/session_manager.go:169`.
+Check the authentication requirements of the selected image version before using an older file.
+
+### Registry access and license delivery
+
+Resolve the Manager repository from `kompass-insights.manager.repository` and
+`global.zestyImageRegistry`. Its parent repository path becomes `IMAGE_PREFIX`.
+Manager downloads `<IMAGE_PREFIX>/license/<orgID>:<LICENSE_TAG>`.
+The default license tag is `latest`.
+
+Manager reads registry credentials from the singular `global.imagePullSecret.name` setting.
+The plural `global.imagePullSecrets` and component Pod pull-secret lists configure Pod image
+pulls; they do not set Manager's license credential Secret.
+
+If `global.imagePullSecret.dockerconfigjson` is supplied with the name, the chart creates the
+Secret.
+Validate this value as base64-encoded Docker configuration JSON without displaying it.
+Otherwise, check the existing named Secret in the installation namespace.
+It must have type `kubernetes.io/dockerconfigjson`.
+Its credentials must match the exact registry host.
+
+With no named Secret, Manager uses its own AWS SDK identity for ECR authentication.
+Verify ECR token access and read access to the organization license repository from that identity.
+The Insights role-assumption settings do not configure this ECR credential path.
+Confirm network access to the registry and required authentication endpoints.
+
+Chart mappings are in
+[`charts/kompass-insights/templates/configMap.yaml:15`](https://github.com/zesty-co/kompass/blob/main/charts/kompass-insights/templates/configMap.yaml#L15)
+and
+[`charts/kompass/templates/image-pull-secret.yaml:1`](https://github.com/zesty-co/kompass/blob/main/charts/kompass/templates/image-pull-secret.yaml#L1).
+Manager's authentication implementation is in
+`kompass-agent/manager/pkg/license/delivery.go:154`.
+
+### Enabled integrations and missing values
+
+Validate additional settings only for enabled integrations:
+
+- With `kompass-insights.awsAthena.enabled: true`, resolve the database, table, region, query-result
+  bucket, catalog, and workgroup. Verify the effective billing identity and its permissions,
+  including any linked-role fallback or configured `masterRoleArn` and `masterExternalID`.
+- With CX logging enabled, check the effective `global.cxLogging` or `kompass-insights.cxLogging`
+  configuration. Verify the cluster name, endpoint settings, and API-key Secret or supplied key.
+
+List missing or invalid value paths and explain which requirement each fails.
+Ask the user for the missing onboarding values, including the organization ID when absent.
+Preserve existing settings and apply supplied corrections to the customer values file.
+Validate the resulting configuration again before installation.
+Stop while required values or provisioning prerequisites remain unresolved.
+A successful Helm render does not verify these runtime requirements.
+
+## 3. Check cluster prerequisites
 
 The Kubernetes credentials must permit the chart's namespaced resources, cluster-scoped resources,
 and installation hooks. These include CRDs and cluster roles.
@@ -78,26 +198,7 @@ If the supplied settings conflict with the cluster, report the affected value pa
 changes. Resolve the conflict before installation. A permission error does not establish that a
 resource is absent.
 
-## 3. Select a chart version and install
-
-Add the public Helm repository and list the available Kompass chart versions:
-
-```sh
-helm repo add kompass https://zesty-co.github.io/kompass
-helm repo update kompass
-helm search repo kompass/kompass --versions
-```
-
-If the local `kompass` repository name points to another URL, resolve that conflict first.
-Use rows whose `NAME` is exactly `kompass/kompass`; the results also include component charts.
-Select the version supplied by Zesty.
-If none was supplied, select the latest stable Kompass version.
-Set the exact chart version below, then inspect its metadata:
-
-```sh
-CHART_VERSION='replace-with-selected-version'
-helm show chart kompass/kompass --version "$CHART_VERSION"
-```
+## 4. Install
 
 Report the target context, release name, namespace, chart version, and enabled Kompass components.
 Install with the supplied values file:
@@ -122,7 +223,7 @@ and
 The chart runs prerequisite checks before installation. If installation fails, collect the
 diagnostics below before you attempt recovery. A failed installation can leave resources behind.
 
-## 4. Verify the deployment
+## 5. Verify the deployment
 
 Check the Helm release and Kubernetes resources:
 
@@ -158,13 +259,45 @@ For resources that belong to this installation, check that:
 - Long-running Pods have ready containers. Completed installation Jobs are expected.
 - PersistentVolumeClaims are `Bound`.
 
+### Verify runtime identity and licensing
+
+Set the runtime and license Secret names from the resolved values. The defaults are shown below:
+
+```sh
+RUNTIME_SECRET='kompass-insights-secret'
+LICENSE_SECRET='kompass-license'
+kubectl --context "$KUBE_CONTEXT" --namespace "$NAMESPACE" \
+  get secret "$RUNTIME_SECRET" "$LICENSE_SECRET"
+```
+
+Secret existence is the first check. Inspect identity fields locally without displaying other
+Secret data. Confirm that `ORG_ID` is positive and matches the supplied organization ID.
+Check that `CLUSTER_ID` and `PROVIDER` are populated. For cloud identity, also check `ACCOUNT_ID`,
+`REGION`, and `CLUSTER_NAME` against the target cluster. On-premises identity uses the
+`kube-system` namespace UID as `CLUSTER_ID`.
+
+Check that the configured license document key is populated without displaying the document.
+When Manager supplies the license, confirm successful delivery in its logs.
+Manager readiness and a `License sync succeeded` message do not prove that the license is valid.
+When Insights is enabled, confirm that it accepts the organization-matching license and reaches
+readiness. Otherwise, verify license acceptance through the enabled consumers.
+Verify readiness and connectivity for enabled Bridge components.
+Treat missing identity, failed license delivery, or rejected licensing as an incomplete
+installation.
+
+Runtime checks are implemented in `kompass-agent/manager/pkg/license/sync.go:50` and
+`kompass-agent/insights-agent/cmd/main.go:64`.
+
+### Confirm the Zesty connection
+
 Confirm that the cluster appears as connected in the Zesty platform.
 If the agent cannot access the platform, report that this check requires the user's confirmation.
 Kubernetes readiness alone does not confirm that Zesty receives cluster data.
 Recommendations can take up to 24 hours to appear; see the provider installation guide above.
 
-Finish with a summary of the context, release, namespace, chart version, resource health, and
-Zesty connection status. Include any failed or incomplete checks and the next required action.
+Finish with a summary of the context, release, namespace, chart version, resource health,
+identity verification, license acceptance, and Zesty connection status.
+Include any failed or incomplete checks and the next required action.
 
 ## Troubleshooting
 
