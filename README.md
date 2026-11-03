@@ -2,8 +2,7 @@
 
 > Redefining the boundaries of Kubernetes optimization
 
-This is the Helm chart used to installing Kompass and its
-various subsystems.
+This Helm chart installs Kompass and its subsystems.
 
 ## Subsystems
 
@@ -14,34 +13,40 @@ of them separately:
 2. [Pod Rightsizing](https://github.com/zesty-co/kompass-pod-rightsizing)
 3. [Disk](https://github.com/zesty-co/zesty-helm)
 
-## Prerequisuites
+## Prerequisites
 
-1. Follow the guidelines to onboard with Zesty in the [docs](https://docs.zesty.co/docs/home-page).
-2. Have the following tools:
-    - [Helm](https://helm.sh/docs/intro/install/)
-    - [Kubectl](https://kubernetes.io/docs/tasks/tools/)
-3. Make sure your context is set to the appropriate cluster
+1. Complete [Zesty onboarding](https://docs.zesty.co/docs/get-started-with-zesty).
+   Download the values file for your cluster from the Zesty installation wizard.
+2. Install the following tools:
+     - [Helm](https://helm.sh/docs/intro/install/)
+     - [Kubectl](https://kubernetes.io/docs/tasks/tools/)
+3. Authenticate to the target cluster and identify its Kubernetes context.
 
 ## Installation
 
-1. Add the Kompass helm chart repo to your client configuration
-```sh
-helm repo add kompass https://zesty-co.github.io/kompass
-helm repo update
+### Install with an AI agent
+
+Copy this prompt into an AI agent that can run Helm and kubectl on your machine:
+
+```text
+Read https://raw.githubusercontent.com/zesty-co/kompass/main/docs/install.md
+and install Kompass using my Zesty-provided values file.
+Ask for the file path and target Kubernetes context.
+Check prerequisites, install the chart, and verify deployment health.
 ```
-2. Search the repo to make sure it's set up
-```
-$ helm search repo kompass
-NAME                    CHART VERSION   APP VERSION     DESCRIPTION
-kompass/kompass         0.1.8           1.16.0          Helm chart for Kompass
-```
-3. Install the chart
-```sh
-helm install kompass kompass/kompass --namespace zesty-system --create-namespace -f values.yaml
-```
+
+The [installation guide](docs/install.md) contains the procedure that the agent follows.
+
+### Install manually
+
+Follow the [installation guide](docs/install.md) for the Helm commands, cluster checks,
+verification, and troubleshooting.
 
 ## Uninstalling
-```sh
-helm delete kompass
-```
 
+Replace `YOUR_CONTEXT` with the context used for installation.
+Use your release name and namespace if they differ from the defaults.
+
+```sh
+helm uninstall kompass --namespace zesty-system --kube-context YOUR_CONTEXT
+```
