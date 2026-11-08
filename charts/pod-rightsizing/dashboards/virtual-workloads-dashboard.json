@@ -429,7 +429,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "WITH (\n  baseline = max(last_over_time(\n    kompass_rs_recommendations{\n      mode=\"active\",\n      namespace=\"$namespace\",\n      resource_id=\"$namespace;$workload_name;virtualworkload\",\n      resource_source=\"current\",\n      resource_type=\"cpu\",\n      container=\"$container\"\n    }[7d]\n  )),\n  pod_count = count(count by (pod) (\n    kompass_pod_info{\n      namespace=\"$namespace\",\n      resource_id=\"$namespace;$workload_name;virtualworkload\",\n      container=\"$container\",\n      status=\"running\"\n    }\n  ))\n)\nbaseline * clamp_max(pod_count, 1)",
+          "expr": "WITH (\n  original_requests = kompass_rs_recommendations{\n    mode=\"active\",\n    namespace=\"$namespace\",\n    resource_id=\"$namespace;$workload_name;virtualworkload\",\n    resource_source=\"current\",\n    resource_type=\"cpu\",\n    container=\"$container\"\n  },\n  baseline = max(\n    last_over_time(original_requests[7d])\n    and topk by (resource_id, container) (1, tlast_over_time(original_requests[7d]))\n  ),\n  pod_count = count(count by (pod) (\n    kompass_pod_info{\n      namespace=\"$namespace\",\n      resource_id=\"$namespace;$workload_name;virtualworkload\",\n      container=\"$container\",\n      status=\"running\"\n    }\n  ))\n)\nbaseline * clamp_max(pod_count, 1)",
           "hide": false,
           "instant": false,
           "legendFormat": "without rs",
@@ -943,7 +943,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "WITH (\n  baseline_mem = max(\n    last_over_time(\n      kompass_rs_recommendations{\n        mode=\"active\",\n        namespace=\"$namespace\",\n        resource_id=\"$namespace;$workload_name;virtualworkload\",\n        resource_source=\"current\",\n        resource_type=\"memory\",\n        container=\"$container\"\n      }[7d]\n    )\n  ),\n\n  pod_count = count(\n    count by (pod) (\n      kompass_pod_info{\n        namespace=\"$namespace\",\n        resource_id=\"$namespace;$workload_name;virtualworkload\",\n        container=\"$container\",\n        status=\"running\"\n      }\n    )\n  )\n)\nbaseline_mem * clamp_max(pod_count, 1)/$GiB",
+          "expr": "WITH (\n  original_requests = kompass_rs_recommendations{\n    mode=\"active\",\n    namespace=\"$namespace\",\n    resource_id=\"$namespace;$workload_name;virtualworkload\",\n    resource_source=\"current\",\n    resource_type=\"memory\",\n    container=\"$container\"\n  },\n  baseline_mem = max(\n    last_over_time(original_requests[7d])\n    and topk by (resource_id, container) (1, tlast_over_time(original_requests[7d]))\n  ),\n  pod_count = count(\n    count by (pod) (\n      kompass_pod_info{\n        namespace=\"$namespace\",\n        resource_id=\"$namespace;$workload_name;virtualworkload\",\n        container=\"$container\",\n        status=\"running\"\n      }\n    )\n  )\n)\nbaseline_mem * clamp_max(pod_count, 1)/$GiB",
           "hide": false,
           "instant": false,
           "legendFormat": "without rs",

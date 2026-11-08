@@ -14,7 +14,7 @@
 {{- end }}
 {{- end }}
 {{- if and ($jvmMetrics.enabled | default false) ($autoDiscovery.enabled | default false) }}
-{{- $autoDiscoveryScrapeConfig := dict "annotations" (dict "kompass.zesty.co/jvm-auto-discovered" "true") }}
+{{- $autoDiscoveryScrapeConfig := dict "scrapeInterval" "30s" "annotations" (dict "kompass.zesty.co/jvm-auto-discovered" "true") }}
 {{- $scrapeConfigs = append $scrapeConfigs $autoDiscoveryScrapeConfig }}
 {{- end }}
 {{- if $scrapeConfigs }}

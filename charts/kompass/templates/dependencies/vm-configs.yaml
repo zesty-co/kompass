@@ -35,6 +35,8 @@ data:
         - source_labels: [__name__]
           regex: '(container_memory_usage_bytes|container_memory_working_set_bytes|container_cpu_usage_seconds_total|container_cpu_cfs_throttled_seconds_total)'
           action: keep
+        - action: labeldrop
+          regex: '^(id|name|image)$'
 
     - job_name: 'kubelet-resource'
       scrape_interval: {{ include "kompass.scrapeInterval" . }}
@@ -142,6 +144,8 @@ data:
         - source_labels: [__name__]
           regex: '(container_memory_usage_bytes|container_memory_working_set_bytes|container_cpu_usage_seconds_total|container_cpu_cfs_throttled_seconds_total)'
           action: keep
+        - action: labeldrop
+          regex: '^(id|name|image)$'
 
     - job_name: 'kwok-resource'
       scrape_interval: {{ include "kompass.scrapeInterval" . }}

@@ -5,17 +5,16 @@ release:
 templates:
   - templates/config/custom-recording-rules.yaml
 tests:
-  - it: does not render JVM recording rules when rightsizing is disabled, even if JVM metrics are enabled
+  - it: does not add an exporter presence recording rule
     set:
       jvmRightsizingEnabled: false
       jvmMetrics:
         enabled: true
     asserts:
-      - containsDocument:
-          kind: ConfigMap
-          name: kompass-vm-rightsizing-recording-rules
-        not: true
-
+      - isNull:
+          path: data["rightsizing.yaml"]
+      - isNull:
+          path: data["jvm-exporter-presence.yaml"]
   - it: renders JVM recording rules when rightsizing is enabled with JVM metrics enabled
     set:
       jvmRightsizingEnabled: true
