@@ -1,0 +1,84 @@
+suite: WorkloadsDashboardConfigMap
+release:
+  name: ci
+  namespace: zesty-system
+templates:
+  - templates/config/dashboards-configmaps.yaml
+tests:
+  - it: keeps the main dashboard and adds JVM fields to the workloads table
+    asserts:
+      - matchRegex:
+          path: data["workloads-table.json"]
+          pattern: '"title": "CPU Capacity & Usage \(History\)"'
+      - matchRegex:
+          path: data["workloads-table.json"]
+          pattern: '"title": "Memory Capacity & Usage \(History\)"'
+      - matchRegex:
+          path: data["workloads-table.json"]
+          pattern: '"Current vCPU"'
+      - matchRegex:
+          path: data["workloads-table.json"]
+          pattern: '"Rec\. vCPU"'
+      - matchRegex:
+          path: data["workloads-table.json"]
+          pattern: '"Saved vCPU"'
+      - matchRegex:
+          path: data["workloads-table.json"]
+          pattern: '"Current Memory"'
+      - matchRegex:
+          path: data["workloads-table.json"]
+          pattern: '"Rec\. Memory"'
+      - matchRegex:
+          path: data["workloads-table.json"]
+          pattern: '"Saved Memory"'
+      - matchRegex:
+          path: data["workloads-table.json"]
+          pattern: '"detection": "JVM Detection"'
+      - matchRegex:
+          path: data["workloads-table.json"]
+          pattern: '"exporter_active": "JVM Exporter"'
+      - matchRegex:
+          path: data["workloads-table.json"]
+          pattern: '"rightsizing_policy": "Rightsizing Policy"'
+      - matchRegex:
+          path: data["workloads-table.json"]
+          pattern: '"horizontal_policy": "Horizontal Policy"'
+      - matchRegex:
+          path: data["workloads-table.json"]
+          pattern: '"detection": 4'
+      - matchRegex:
+          path: data["workloads-table.json"]
+          pattern: '"exporter_active": 5'
+      - matchRegex:
+          path: data["workloads-table.json"]
+          pattern: '"rightsizing_policy": 6'
+      - matchRegex:
+          path: data["workloads-table.json"]
+          pattern: '"horizontal_policy": 7'
+      - matchRegex:
+          path: data["workloads-table.json"]
+          pattern: 'jvm_indication_source'
+      - matchRegex:
+          path: data["workloads-table.json"]
+          pattern: 'count_over_time\(jvm_memory_used_bytes'
+      - matchRegex:
+          path: data["workloads-table.json"]
+          pattern: 'last_over_time\(kompass_pod_info.*\[3h\]'
+      - matchRegex:
+          path: data["workloads-table.json"]
+          pattern: 'tlast_over_time\(kompass_rs_audit_event'
+      - matchRegex:
+          path: data["workloads-table.json"]
+          pattern: 'execution_state.*removed'
+      - matchRegex:
+          path: data["workloads-table.json"]
+          pattern: 'kompass_container_jvm_max_heap_max'
+      - matchRegex:
+          path: data["workloads-table.json"]
+          pattern: '"id": "groupingToMatrix"'
+      - matchRegex:
+          path: data["workloads-table.json"]
+          pattern: '"valueField": "Value #Q"'
+      - notMatchRegex:
+          path: data["workloads-table.json"]
+          pattern: 'kompass_container_jvm_exporter_present'

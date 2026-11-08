@@ -26,7 +26,7 @@
       "id": 17,
       "title": "JVM Memory, Recommendations and Formula",
       "type": "timeseries",
-      "description": "Current runtime values respect the Replica selector; All shows the per-metric maximum across active JVM replicas. JVM formula candidate, candidate calculated Xmx, and Pod Rightsizing desired remain workload-level values and ignore the Replica selector. The panel compares the selected replica's current Xmx, request, and limit with those workload-level recommendations.",
+      "description": "Current runtime values respect the Replica selector; All shows the per-metric maximum across active JVM replicas. JVM formula candidate, candidate calculated Xmx, and Pod Rightsizing desired remain workload-level values and ignore the Replica selector. The panel compares the selected replica's current Xmx, request, and limit with those workload-level recommendations. Pod Rightsizing desired shows the latest successful memory recommendation per workload/container within the previous day, filtered to running JVM containers.",
       "gridPos": {
         "h": 10,
         "w": 24,
@@ -394,7 +394,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "max by (namespace, workload_kind, workload_name, container) (\n  kompass_rs_recommendations{\n    namespace=\"$namespace\",\n    workload_name=\"$workload\",\n    resource_type=\"memory\",\n    resource_source=\"desired\",\n    mode=\"live\"\n  }\n)\nand on (namespace, workload_name, container) max by (namespace, workload_name, container) (\n  kompass_pod_info{namespace=\"$namespace\", workload_name=\"$workload\", status=\"running\"}\n  and on (namespace, pod, container) max by (namespace, pod, container) (jvm_info{namespace=\"$namespace\"})\n)",
+          "expr": "WITH (\n  recommendations = kompass_rs_recommendations{\n    namespace=\"$namespace\",\n    workload_name=\"$workload\",\n    resource_type=\"memory\",\n    resource_source=\"desired\",\n    mode=\"live\",\n    execution_state=\"successful\"\n  },\n  latest = last_over_time(recommendations[1d])\n    and topk by (namespace, resource_id, container) (\n      1, tlast_over_time(recommendations[1d])\n    ),\n  running = max by (namespace, resource_id, container) (\n    kompass_pod_info{namespace=\"$namespace\", workload_name=\"$workload\", status=\"running\"}\n    and on (namespace, pod, container) max by (namespace, pod, container) (jvm_info{namespace=\"$namespace\"})\n  )\n)\nmax by (namespace, resource_id, workload_kind, workload_name, container) (latest)\nand on (namespace, resource_id, container) running",
           "legendFormat": "{{workload_kind}}/{{workload_name}} {{container}} Pod Rightsizing desired",
           "range": true,
           "refId": "G"

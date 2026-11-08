@@ -2,6 +2,7 @@ suite: kube-state-metrics Action CRS configuration
 templates:
   - templates/dependencies/global-config.yaml
   - charts/kubeStateMetrics/templates/crs-configmap.yaml
+  - charts/kubeStateMetrics/templates/role.yaml
 
 tests:
   - it: renders Action customResourceState metadata in global-config
@@ -44,19 +45,73 @@ tests:
     asserts:
       - matchRegex:
           path: data["config.yaml"]
-          pattern: "labelsFromPath:[\\s\\S]*policy:[\\s\\S]*- spec[\\s\\S]*- policy"
+          pattern: "labelsFromPath:[\\s\\S]*rightsizing_policy:[\\s\\S]*- status[\\s\\S]*- activations[\\s\\S]*- rightsizing[\\s\\S]*- policyName"
       - matchRegex:
           path: data["config.yaml"]
           pattern: "labelsFromPath:[\\s\\S]*action_type:[\\s\\S]*- spec[\\s\\S]*- actionType"
-      - matchRegex:
-          path: data["config.yaml"]
-          pattern: "labelsFromPath:[\\s\\S]*execution_method:[\\s\\S]*- spec[\\s\\S]*- executionMethod"
-      - matchRegex:
-          path: data["config.yaml"]
-          pattern: "labelsFromPath:[\\s\\S]*source_apc:[\\s\\S]*- spec[\\s\\S]*- sourceAPC"
       - matchRegex:
           path: data["config.yaml"]
           pattern: "metrics:[\\s\\S]*name: action_info"
       - matchRegex:
           path: data["config.yaml"]
           pattern: "errorLogV: 10"
+
+  - it: exports activation, phase and identity labels in each CR stanza
+    template: charts/kubeStateMetrics/templates/crs-configmap.yaml
+    documentSelector:
+      path: metadata.name
+      value: kompass-kube-state-metrics-customresourcestate-config
+    asserts:
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: 'cr_kind: Action[\s\S]*rightsizing_policy:[\s\S]*- status[\s\S]*- activations[\s\S]*- rightsizing[\s\S]*- policyName[\s\S]*cr_kind: ClusterAction[\s\S]*rightsizing_policy:[\s\S]*- status[\s\S]*- activations[\s\S]*- rightsizing[\s\S]*- policyName'
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: 'cr_kind: Action[\s\S]*horizontal_scaling_policy:[\s\S]*- status[\s\S]*- activations[\s\S]*- horizontalScaling[\s\S]*- policyName[\s\S]*cr_kind: ClusterAction[\s\S]*horizontal_scaling_policy:[\s\S]*- status[\s\S]*- activations[\s\S]*- horizontalScaling[\s\S]*- policyName'
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: 'cr_kind: Action[\s\S]*workload_kind:[\s\S]*- spec[\s\S]*- workload[\s\S]*- kind[\s\S]*cr_kind: ClusterAction[\s\S]*workload_kind:[\s\S]*- spec[\s\S]*- workload[\s\S]*- kind'
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: 'cr_kind: Action[\s\S]*phase:[\s\S]*- status[\s\S]*- phase[\s\S]*cr_kind: ClusterAction[\s\S]*phase:[\s\S]*- status[\s\S]*- phase'
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: 'cr_kind: Action[\s\S]*gauge:[\s\S]*path:[\s\S]*- metadata[\s\S]*- generation[\s\S]*cr_kind: ClusterAction[\s\S]*gauge:[\s\S]*path:[\s\S]*- metadata[\s\S]*- generation'
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: 'cr_kind: ClusterAction[\s\S]*namespace: ""'
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: 'cr_kind: ClusterAction[\s\S]*rightsizing_policy:[\s\S]*- status[\s\S]*- activations[\s\S]*- rightsizing[\s\S]*- policyName'
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: 'cr_kind: ClusterAction[\s\S]*horizontal_scaling_policy:[\s\S]*- status[\s\S]*- activations[\s\S]*- horizontalScaling[\s\S]*- policyName'
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: 'cr_kind: ClusterAction[\s\S]*workload_kind:[\s\S]*- spec[\s\S]*- workload[\s\S]*- kind'
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: 'cr_kind: ClusterAction[\s\S]*phase:[\s\S]*- status[\s\S]*- phase'
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: 'cr_kind: ClusterAction[\s\S]*gauge:[\s\S]*path:[\s\S]*- metadata[\s\S]*- generation'
+
+  - it: grants list and watch on both CR kinds to the bundled KSM
+    template: templates/dependencies/global-config.yaml
+    documentSelector:
+      path: metadata.name
+      value: global-config
+    asserts:
+      - matchRegex:
+          path: data["monitoring_config"]
+          pattern: 'rbac_extra_rules:[\s\S]*- actions[\s\S]*- clusteractions[\s\S]*- list[\s\S]*- watch'
+
+  - it: renders read-only cluster RBAC for Action and ClusterAction
+    template: charts/kubeStateMetrics/templates/role.yaml
+    asserts:
+      - contains:
+          path: rules
+          content:
+            apiGroups: [rightsizing.kompass.zesty.co]
+            resources: [actions, clusteractions]
+            verbs: [list, watch]

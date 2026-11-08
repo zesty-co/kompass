@@ -200,6 +200,9 @@ tests:
         autoDiscovery:
           enabled: true
     asserts:
+      - matchRegex:
+          path: data["jvm.yaml"]
+          pattern: 'scrape_interval: 30s'
       - isKind:
           of: ConfigMap
       - matchRegex:

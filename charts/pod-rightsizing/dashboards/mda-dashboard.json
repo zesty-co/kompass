@@ -173,6 +173,13 @@
               {
                 "id": "custom.fillOpacity",
                 "value": 11
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#ff7b00",
+                  "mode": "fixed"
+                }
               }
             ]
           },
@@ -251,7 +258,7 @@
         "h": 6,
         "w": 12,
         "x": 0,
-        "y": 0
+        "y": 2
       },
       "id": 5,
       "options": {
@@ -288,7 +295,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "sum(avg(kompass_rs_recommendations{workload_name=\"$workload_name\", container=~\"$container\", namespace=\"$namespace\", resource_type=\"cpu\", mode=\"live\",resource_source=\"desired\", workload_kind=\"$workload_kind\"}[15s:15s])[1d])",
+          "expr": "WITH (\n  recommendations = kompass_rs_recommendations{\n    namespace=\"$namespace\",\n    workload_name=\"$workload_name\",\n    workload_kind=\"$workload_kind\",\n    container=~\"$container\",\n    resource_type=\"cpu\",\n    resource_source=\"desired\",\n    mode=\"live\",\n    execution_state=\"successful\"\n  },\n  latest = max by(resource_id,container) (\n    last_over_time(recommendations[1d])\n    and topk by(resource_id,container) (1, tlast_over_time(recommendations[1d]))\n  )\n)\nsum(latest)",
           "hide": false,
           "instant": false,
           "legendFormat": "Desired",
@@ -451,7 +458,7 @@
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "light-orange",
+                  "fixedColor": "yellow",
                   "mode": "fixed"
                 }
               },
@@ -470,7 +477,7 @@
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "super-light-red",
+                  "fixedColor": "super-light-blue",
                   "mode": "fixed"
                 }
               }
@@ -505,6 +512,31 @@
                 }
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Heap desired"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "blue",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "dash": [
+                    10,
+                    10
+                  ],
+                  "fill": "dash"
+                }
+              }
+            ]
           }
         ]
       },
@@ -512,7 +544,7 @@
         "h": 6,
         "w": 12,
         "x": 12,
-        "y": 0
+        "y": 2
       },
       "id": 4,
       "options": {
@@ -552,7 +584,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(avg(kompass_rs_recommendations{namespace=\"$namespace\", container=~\"$container\", resource_type=\"memory\", mode=\"live\", resource_source=\"desired\", workload_name=\"$workload_name\", workload_kind=\"$workload_kind\"}[15s:15s])[1d] / 1024 / 1024)",
+          "expr": "WITH (\n  recommendations = kompass_rs_recommendations{\n    namespace=\"$namespace\",\n    workload_name=\"$workload_name\",\n    workload_kind=\"$workload_kind\",\n    container=~\"$container\",\n    resource_type=\"memory\",\n    resource_source=\"desired\",\n    mode=\"live\",\n    execution_state=\"successful\"\n  },\n  latest = max by(resource_id,container) (\n    last_over_time(recommendations[1d])\n    and topk by(resource_id,container) (1, tlast_over_time(recommendations[1d]))\n  )\n)\nsum(latest) / 1024 / 1024",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -573,6 +605,45 @@
           "legendFormat": "Requests",
           "range": true,
           "refId": "Requests"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "VictoriaMetrics"
+          },
+          "editorMode": "code",
+          "expr": "sum by(resource_id) (max by(resource_id,container) (kompass_container_jvm_heap_usage_max{namespace=\"$namespace\",created_by_name=\"$workload_name\",created_by_kind=\"$workload_kind\",container=~\"$container\"})) / 1024 / 1024",
+          "format": "time_series",
+          "hide": false,
+          "instant": false,
+          "interval": "1m",
+          "legendFormat": "Heap Usage",
+          "range": true,
+          "refId": "HeapUsage"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "VictoriaMetrics"
+          },
+          "editorMode": "code",
+          "expr": "WITH (\n  recommendations = kompass_rs_recommendations{\n    namespace=\"$namespace\",\n    workload_name=\"$workload_name\",\n    workload_kind=\"$workload_kind\",\n    container=~\"$container\",\n    resource_type=\"jvm_max_heap\",\n    resource_source=\"desired\",\n    mode=\"live\",\n    execution_state=\"successful\"\n  },\n  latest = max by(resource_id,container) (\n    last_over_time(recommendations[1d])\n    and topk by(resource_id,container) (1, tlast_over_time(recommendations[1d]))\n  ),\n  running = max by(resource_id,container) (\n    kompass_pod_info{\n      namespace=\"$namespace\",workload_name=\"$workload_name\",workload_kind=\"$workload_kind\",\n      container=~\"$container\",status=\"running\"\n    }\n  )\n)\nsum by(resource_id) ((latest / 1024 / 1024) and on(resource_id,container) running)",
+          "legendFormat": "Max Heap Desired",
+          "range": true,
+          "refId": "HeapDesired",
+          "interval": "1m"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "VictoriaMetrics"
+          },
+          "editorMode": "code",
+          "expr": "sum by(resource_id) (max by(resource_id,container) (kompass_container_jvm_max_heap_max{namespace=\"$namespace\",created_by_name=\"$workload_name\",created_by_kind=\"$workload_kind\",container=~\"$container\"})) / 1024 / 1024",
+          "legendFormat": "Max Heap",
+          "range": true,
+          "refId": "HeapRuntime",
+          "interval": "1m"
         },
         {
           "datasource": {
@@ -643,8 +714,141 @@
                 "value": null
               },
               {
-                "color": "red",
-                "value": 80
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "VictoriaMetrics"
+                },
+                "fieldConfig": {
+                  "defaults": {
+                    "color": {
+                      "mode": "palette-classic"
+                    },
+                    "custom": {
+                      "axisBorderShow": false,
+                      "axisCenteredZero": false,
+                      "axisColorMode": "text",
+                      "axisLabel": "",
+                      "axisPlacement": "auto",
+                      "barAlignment": 0,
+                      "barWidthFactor": 0.6,
+                      "drawStyle": "line",
+                      "fillOpacity": 0,
+                      "gradientMode": "none",
+                      "hideFrom": {
+                        "legend": false,
+                        "tooltip": false,
+                        "viz": false
+                      },
+                      "insertNulls": 3600000,
+                      "lineInterpolation": "stepBefore",
+                      "lineWidth": 1,
+                      "pointSize": 5,
+                      "scaleDistribution": {
+                        "type": "linear"
+                      },
+                      "showPoints": "never",
+                      "spanNulls": false,
+                      "stacking": {
+                        "group": "A",
+                        "mode": "none"
+                      },
+                      "thresholdsStyle": {
+                        "mode": "off"
+                      }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "green",
+                          "value": null
+                        },
+                        {
+                          "color": "red",
+                          "value": 80
+                        }
+                      ]
+                    }
+                  },
+                  "overrides": []
+                },
+                "gridPos": {
+                  "h": 6,
+                  "w": 6,
+                  "x": 0,
+                  "y": 15
+                },
+                "id": 3,
+                "options": {
+                  "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                  },
+                  "tooltip": {
+                    "hideZeros": false,
+                    "mode": "single",
+                    "sort": "none"
+                  }
+                },
+                "pluginVersion": "11.5.2",
+                "targets": [
+                  {
+                    "datasource": {
+                      "type": "prometheus",
+                      "uid": "VictoriaMetrics"
+                    },
+                    "editorMode": "code",
+                    "expr": "count(kube_pod_container_info{container=\"$container\", namespace=\"$namespace\"} * on (namespace, pod, container) group_left(workload_name) kompass_pod_info{workload_name=\"$workload_name\"})",
+                    "instant": false,
+                    "legendFormat": "Current Replica Count",
+                    "range": true,
+                    "refId": "A"
+                  },
+                  {
+                    "datasource": {
+                      "type": "prometheus",
+                      "uid": "P4169E866C3094E38"
+                    },
+                    "editorMode": "code",
+                    "expr": "kube_horizontalpodautoscaler_spec_min_replicas{namespace=\"$namespace\"}\n  * on (namespace, horizontalpodautoscaler)\n    group_left(scaletargetref_kind, scaletargetref_name)\n    kube_horizontalpodautoscaler_info{\n      namespace=\"$namespace\",\n      scaletargetref_kind=\"Deployment\",\n      scaletargetref_name=\"$workload_name\"\n    }",
+                    "hide": false,
+                    "instant": false,
+                    "legendFormat": "Min Replica Count",
+                    "range": true,
+                    "refId": "B"
+                  },
+                  {
+                    "datasource": {
+                      "type": "prometheus",
+                      "uid": "P4169E866C3094E38"
+                    },
+                    "editorMode": "code",
+                    "expr": "WITH (\n  recommendations = kompass_rs_recommendations{\n    namespace=\"$namespace\",\n    workload_name=\"$workload_name\",\n    workload_kind=\"$workload_kind\",\n    resource_type=\"hpa_min_replica\",\n    resource_source=\"desired\",\n    mode=\"live\",\n    execution_state=\"successful\"\n  },\n  latest = max by(resource_id) (\n    last_over_time(recommendations[1d])\n    and topk by(resource_id) (1, tlast_over_time(recommendations[1d]))\n  )\n)\nlatest",
+                    "hide": false,
+                    "instant": false,
+                    "legendFormat": "Desired Min Replica Count",
+                    "range": true,
+                    "refId": "C"
+                  },
+                  {
+                    "datasource": {
+                      "type": "prometheus",
+                      "uid": "P4169E866C3094E38"
+                    },
+                    "editorMode": "code",
+                    "expr": "kompass_rs_recommendations{workload_name=\"$workload_name\", namespace=\"$namespace\", resource_type=\"hpa_min_replica\", mode=\"variants\",resource_source=\"desired\", rightsizing_policy=\"$rs_policy\", horizontal_policy=\"$h_policy\"}[1d]",
+                    "hide": false,
+                    "instant": false,
+                    "legendFormat": "{{horizontal_policy}}",
+                    "range": true,
+                    "refId": "Selected Policy"
+                  }
+                ],
+                "title": "Replicas Count",
+                "type": "timeseries"
               }
             ]
           }
@@ -655,7 +859,7 @@
         "h": 6,
         "w": 6,
         "x": 0,
-        "y": 6
+        "y": 14
       },
       "id": 3,
       "options": {
@@ -704,7 +908,7 @@
             "uid": "P4169E866C3094E38"
           },
           "editorMode": "code",
-          "expr": "kompass_rs_recommendations{\n  resource_type=\"hpa_min_replica\",\n  workload_name=\"$workload_name\",\n  namespace=\"$namespace\",\n  resource_source=\"desired\",\n  mode=\"live\",\n}",
+          "expr": "WITH (\n  recommendations = kompass_rs_recommendations{\n    namespace=\"$namespace\",\n    workload_name=\"$workload_name\",\n    workload_kind=\"$workload_kind\",\n    resource_type=\"hpa_min_replica\",\n    resource_source=\"desired\",\n    mode=\"live\",\n    execution_state=\"successful\"\n  },\n  latest = max by(resource_id) (\n    last_over_time(recommendations[1d])\n    and topk by(resource_id) (1, tlast_over_time(recommendations[1d]))\n  )\n)\nlatest",
           "hide": false,
           "instant": false,
           "legendFormat": "Desired Min Replica Count",
@@ -825,11 +1029,162 @@
                 "value": 2
               },
               {
-                "id": "color",
-                "value": {
-                  "fixedColor": "dark-red",
-                  "mode": "fixed"
-                }
+                "datasource": {
+                  "type": "prometheus",
+                  "uid": "VictoriaMetrics"
+                },
+                "fieldConfig": {
+                  "defaults": {
+                    "color": {
+                      "mode": "palette-classic"
+                    },
+                    "custom": {
+                      "axisBorderShow": false,
+                      "axisCenteredZero": false,
+                      "axisColorMode": "text",
+                      "axisLabel": "",
+                      "axisPlacement": "auto",
+                      "barAlignment": 0,
+                      "barWidthFactor": 0.6,
+                      "drawStyle": "line",
+                      "fillOpacity": 0,
+                      "gradientMode": "none",
+                      "hideFrom": {
+                        "legend": false,
+                        "tooltip": false,
+                        "viz": false
+                      },
+                      "insertNulls": false,
+                      "lineInterpolation": "linear",
+                      "lineWidth": 1,
+                      "pointSize": 5,
+                      "scaleDistribution": {
+                        "type": "linear"
+                      },
+                      "showPoints": "auto",
+                      "spanNulls": false,
+                      "stacking": {
+                        "group": "A",
+                        "mode": "none"
+                      },
+                      "thresholdsStyle": {
+                        "mode": "off"
+                      }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "green",
+                          "value": null
+                        },
+                        {
+                          "color": "red",
+                          "value": 80
+                        }
+                      ]
+                    }
+                  },
+                  "overrides": [
+                    {
+                      "matcher": {
+                        "id": "byName",
+                        "options": "Throttling"
+                      },
+                      "properties": [
+                        {
+                          "id": "custom.fillOpacity",
+                          "value": 62
+                        },
+                        {
+                          "id": "custom.lineWidth",
+                          "value": 0
+                        },
+                        {
+                          "id": "color",
+                          "value": {
+                            "fixedColor": "dark-red",
+                            "mode": "fixed"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "matcher": {
+                        "id": "byName",
+                        "options": "OOM"
+                      },
+                      "properties": [
+                        {
+                          "id": "custom.fillOpacity",
+                          "value": 36
+                        },
+                        {
+                          "id": "custom.lineWidth",
+                          "value": 2
+                        },
+                        {
+                          "id": "color",
+                          "value": {
+                            "fixedColor": "dark-red",
+                            "mode": "fixed"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                "gridPos": {
+                  "h": 6,
+                  "w": 6,
+                  "x": 6,
+                  "y": 15
+                },
+                "id": 9,
+                "options": {
+                  "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                  },
+                  "tooltip": {
+                    "hideZeros": false,
+                    "mode": "single",
+                    "sort": "none"
+                  }
+                },
+                "pluginVersion": "11.5.2",
+                "targets": [
+                  {
+                    "datasource": {
+                      "type": "prometheus",
+                      "uid": "VictoriaMetrics"
+                    },
+                    "editorMode": "code",
+                    "expr": "sum(increase(container_cpu_cfs_throttled_seconds_total{container=~\"$container\", namespace=\"$namespace\"}[5m]) * on (container, pod, namespace) group_left (created_by_name, created_by_kind) max(max_over_time(kompass_pod_info{workload_name=\"$workload_name\", workload_kind=\"$workload_kind\", container=~\"$container\", namespace=\"$namespace\"}[5m])) by (container, pod, created_by_name, created_by_kind, namespace)) by (namespace, created_by_name, created_by_kind)",
+                    "hide": false,
+                    "legendFormat": "Throttling",
+                    "range": true,
+                    "refId": "CPU Throttling time"
+                  },
+                  {
+                    "datasource": {
+                      "type": "prometheus",
+                      "uid": "VictoriaMetrics"
+                    },
+                    "editorMode": "code",
+                    "expr": "sum((delta(kube_pod_container_status_restarts_total{container=~\"$container\", namespace=\"$namespace\"}[1m])  > 0) * on (pod, container, namespace) (kube_pod_container_status_last_terminated_reason{reason=\"OOMKilled\", container=~\"$container\", namespace=\"$namespace\"}  > 0) * on (container, pod, namespace) group_left (created_by_name, created_by_kind) max(kompass_pod_info{workload_name=\"$workload_name\", workload_kind=\"$workload_kind\", container=~\"$container\", namespace=\"$namespace\"}) by (container, pod, namespace, created_by_name, created_by_kind)) by (created_by_name, created_by_kind, namespace)",
+                    "hide": false,
+                    "instant": false,
+                    "legendFormat": "OOM",
+                    "range": true,
+                    "refId": "OOM Events"
+                  }
+                ],
+                "title": "Events (Throttling/OOM)",
+                "type": "timeseries"
               }
             ]
           }
@@ -839,7 +1194,7 @@
         "h": 6,
         "w": 6,
         "x": 6,
-        "y": 6
+        "y": 14
       },
       "id": 9,
       "options": {
@@ -1009,9 +1364,9 @@
       },
       "gridPos": {
         "h": 6,
-        "w": 12,
-        "x": 12,
-        "y": 6
+        "w": 6,
+        "x": 18,
+        "y": 14
       },
       "id": 6,
       "options": {
@@ -1058,7 +1413,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "kompass_rs_recommendations{workload_name=\"$workload_name\", workload_kind=\"$workload_kind\", resource_type=\"hpa_cpu\", mode=\"live\", workload_name=\"$workload_name\", resource_source=\"desired\", namespace=\"$namespace\"}",
+          "expr": "WITH (\n  recommendations = kompass_rs_recommendations{\n    namespace=\"$namespace\",\n    workload_name=\"$workload_name\",\n    workload_kind=\"$workload_kind\",\n    resource_type=\"hpa_cpu\",\n    resource_source=\"desired\",\n    mode=\"live\"\n  },\n  latest = max by(resource_id) (\n    last_over_time(recommendations[1d])\n    and topk by(resource_id) (1, tlast_over_time(recommendations[1d]))\n  )\n)\nlatest",
           "hide": false,
           "instant": false,
           "legendFormat": "Desired Hpa CPU",
@@ -1071,7 +1426,7 @@
             "uid": "VictoriaMetrics"
           },
           "editorMode": "code",
-          "expr": "kompass_rs_recommendations{workload_name=\"$workload_name\", workload_kind=\"$workload_kind\", resource_type=\"hpa_memory\", mode=\"live\", workload_name=\"$workload_name\", resource_source=\"desired\", namespace=\"$namespace\"}",
+          "expr": "WITH (\n  recommendations = kompass_rs_recommendations{\n    namespace=\"$namespace\",\n    workload_name=\"$workload_name\",\n    workload_kind=\"$workload_kind\",\n    resource_type=\"hpa_memory\",\n    resource_source=\"desired\",\n    mode=\"live\"\n  },\n  latest = max by(resource_id) (\n    last_over_time(recommendations[1d])\n    and topk by(resource_id) (1, tlast_over_time(recommendations[1d]))\n  )\n)\nlatest",
           "hide": false,
           "instant": false,
           "legendFormat": "Desired Hpa Memory",
@@ -1161,7 +1516,7 @@
         "h": 11,
         "w": 24,
         "x": 0,
-        "y": 12
+        "y": 20
       },
       "id": 7,
       "options": {
@@ -1236,7 +1591,7 @@
         "h": 6,
         "w": 24,
         "x": 0,
-        "y": 23
+        "y": 31
       },
       "id": 8,
       "options": {
@@ -1270,6 +1625,516 @@
       ],
       "title": "Errors",
       "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "VictoriaMetrics"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#e5a146",
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "axisSoftMax": 1,
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "pointSize": 2,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "fieldMinMax": false,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "current"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "orange",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 10,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "VictoriaMetrics"
+          },
+          "editorMode": "code",
+          "expr": "WITH (\n  inventory = max by(resource_id,pod) (kompass_pod_info{namespace=\"$namespace\",workload_name=\"$workload_name\",workload_kind=\"$workload_kind\",status=\"running\"}),\n  initial = max by(resource_id,pod) (kompass_rs_initial_requests{resource_type=\"cpu\"}),\n  actual = max by(resource_id,pod) (kompass_rs_actual_requests{resource_type=\"cpu\"}),\n  savings = 100 * (initial - actual) / initial\n    and on(resource_id,pod) inventory\n    and on(resource_id,pod) (initial > 0),\n  complete = count by(resource_id) (savings) == count by(resource_id) (inventory)\n)\navg by(resource_id) (savings) and on(resource_id) complete",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "Savings",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "VictoriaMetrics"
+          },
+          "editorMode": "code",
+          "expr": "WITH (\n  inventory = max by(resource_id,namespace,created_by_name,created_by_kind) (\n    kompass_pod_info{namespace=\"$namespace\",namespace!~\"kube[-_]system\",created_by_name=\"$workload_name\",created_by_kind=\"$workload_kind\",status=\"running\"}\n  ),\n  actions = max by(resource_id,cr_kind,phase,rightsizing_policy_name) (\n    kompass_rs_action_info{management_schema=\"1\",cr_kind=~\"Action|ClusterAction\",resource_id!=\"\"}\n  ),\n  scoped_actions = (label_match(actions,\"cr_kind\",\"Action\") and on(resource_id) label_mismatch(inventory,\"created_by_kind\",\"clustervirtualworkload\"))\n    or (label_match(actions,\"cr_kind\",\"ClusterAction\") and on(resource_id) label_match(inventory,\"created_by_kind\",\"clustervirtualworkload\")),\n  schema_action = inventory and on(resource_id) scoped_actions,\n  legacy_active = label_replace(\n    kompass_rs_action_info{management_schema!=\"1\",namespace=\"$namespace\",workload_name=\"$workload_name\",action_type=~\".+\"},\n    \"created_by_name\",\"$1\",\"workload_name\",\"(.+)\"\n  ),\n  active = (inventory and on(resource_id) label_mismatch(scoped_actions,\"rightsizing_policy_name\",\"\"))\n    or ((inventory and on(namespace,created_by_name) legacy_active) unless on(resource_id) schema_action),\n  owners = max by(namespace,pod,container,resource_id) (\n    kompass_pod_info{namespace=\"$namespace\",workload_name=\"$workload_name\",workload_kind=\"$workload_kind\",status=\"running\"}\n  ),\n  requests = max by(namespace,pod,container,resource_id) (\n    kube_pod_container_resource_requests{resource=\"cpu\",namespace=\"$namespace\",container!=\"\"}\n    * on(namespace,pod,container) group_left(resource_id) owners\n  ),\n  selected_variant = max by(resource_id,container) (\n    avg_over_time(kompass_rs_recommendations{namespace=\"$namespace\",workload_name=\"$workload_name\",workload_kind=\"$workload_kind\",resource_type=\"cpu\",resource_source=\"desired\",mode=\"variants\",rightsizing_policy=\"$rs_policy\",horizontal_policy=\"$h_policy\"}[1d])\n  ),\n  default_variant = max by(resource_id,container) (\n    avg_over_time(kompass_rs_recommendations{namespace=\"$namespace\",workload_name=\"$workload_name\",workload_kind=\"$workload_kind\",resource_type=\"cpu\",resource_source=\"desired\",mode=\"variants\",rightsizing_policy=\"$rs_policy\",horizontal_policy=\"\"}[1d])\n  ) unless on(resource_id,container) selected_variant,\n  variant = selected_variant or default_variant,\n  with_variant = (requests * 0) + on(resource_id,container) group_left variant,\n  without_variant = requests unless on(resource_id,container) variant,\n  policy_requests = with_variant or without_variant,\n  expected = count by(resource_id) (owners),\n  complete = count by(resource_id) (requests) == expected,\n  has_variant = count by(resource_id) (variant) > 0,\n  current_total = sum by(resource_id) (requests),\n  policy_total = sum by(resource_id) (policy_requests)\n)\n(100 * (current_total - policy_total) / current_total\n  and on(resource_id) complete\n  and on(resource_id) has_variant\n  and on(resource_id) (current_total > 0)\n\n) unless on(resource_id) active",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "Potential savings ($rs_policy)",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "CPU Savings (%)",
+      "transformations": [
+        {
+          "disabled": true,
+          "id": "seriesToRows",
+          "options": {}
+        },
+        {
+          "disabled": true,
+          "id": "groupBy",
+          "options": {
+            "fields": {
+              "Metric": {
+                "aggregations": [],
+                "operation": "groupby"
+              },
+              "Value": {
+                "aggregations": [
+                  "sum"
+                ],
+                "operation": "aggregate"
+              }
+            }
+          }
+        },
+        {
+          "disabled": true,
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {},
+            "renameByName": {
+              "Metric": "Workload | Container",
+              "Time": "",
+              "Value (sum)": "Sum"
+            }
+          }
+        }
+      ],
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "VictoriaMetrics"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#e5a146",
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "axisSoftMax": 1,
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 1,
+            "pointSize": 2,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "fieldMinMax": false,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "current"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "orange",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 11,
+      "options": {
+        "legend": {
+          "calcs": [
+            "mean"
+          ],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "VictoriaMetrics"
+          },
+          "editorMode": "code",
+          "expr": "WITH (\n  inventory = max by(resource_id,pod) (kompass_pod_info{namespace=\"$namespace\",workload_name=\"$workload_name\",workload_kind=\"$workload_kind\",status=\"running\"}),\n  initial = max by(resource_id,pod) (kompass_rs_initial_requests{resource_type=\"memory\"}),\n  actual = max by(resource_id,pod) (kompass_rs_actual_requests{resource_type=\"memory\"}),\n  savings = 100 * (initial - actual) / initial\n    and on(resource_id,pod) inventory\n    and on(resource_id,pod) (initial > 0),\n  complete = count by(resource_id) (savings) == count by(resource_id) (inventory)\n)\navg by(resource_id) (savings) and on(resource_id) complete",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "Savings",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "VictoriaMetrics"
+          },
+          "editorMode": "code",
+          "expr": "WITH (\n  inventory = max by(resource_id,namespace,created_by_name,created_by_kind) (\n    kompass_pod_info{namespace=\"$namespace\",namespace!~\"kube[-_]system\",created_by_name=\"$workload_name\",created_by_kind=\"$workload_kind\",status=\"running\"}\n  ),\n  actions = max by(resource_id,cr_kind,phase,rightsizing_policy_name) (\n    kompass_rs_action_info{management_schema=\"1\",cr_kind=~\"Action|ClusterAction\",resource_id!=\"\"}\n  ),\n  scoped_actions = (label_match(actions,\"cr_kind\",\"Action\") and on(resource_id) label_mismatch(inventory,\"created_by_kind\",\"clustervirtualworkload\"))\n    or (label_match(actions,\"cr_kind\",\"ClusterAction\") and on(resource_id) label_match(inventory,\"created_by_kind\",\"clustervirtualworkload\")),\n  schema_action = inventory and on(resource_id) scoped_actions,\n  legacy_active = label_replace(\n    kompass_rs_action_info{management_schema!=\"1\",namespace=\"$namespace\",workload_name=\"$workload_name\",action_type=~\".+\"},\n    \"created_by_name\",\"$1\",\"workload_name\",\"(.+)\"\n  ),\n  active = (inventory and on(resource_id) label_mismatch(scoped_actions,\"rightsizing_policy_name\",\"\"))\n    or ((inventory and on(namespace,created_by_name) legacy_active) unless on(resource_id) schema_action),\n  owners = max by(namespace,pod,container,resource_id) (\n    kompass_pod_info{namespace=\"$namespace\",workload_name=\"$workload_name\",workload_kind=\"$workload_kind\",status=\"running\"}\n  ),\n  requests = max by(namespace,pod,container,resource_id) (\n    kube_pod_container_resource_requests{resource=\"memory\",namespace=\"$namespace\",container!=\"\"}\n    * on(namespace,pod,container) group_left(resource_id) owners\n  ),\n  selected_variant = max by(resource_id,container) (\n    avg_over_time(kompass_rs_recommendations{namespace=\"$namespace\",workload_name=\"$workload_name\",workload_kind=\"$workload_kind\",resource_type=\"memory\",resource_source=\"desired\",mode=\"variants\",rightsizing_policy=\"$rs_policy\",horizontal_policy=\"$h_policy\"}[1d])\n  ),\n  default_variant = max by(resource_id,container) (\n    avg_over_time(kompass_rs_recommendations{namespace=\"$namespace\",workload_name=\"$workload_name\",workload_kind=\"$workload_kind\",resource_type=\"memory\",resource_source=\"desired\",mode=\"variants\",rightsizing_policy=\"$rs_policy\",horizontal_policy=\"\"}[1d])\n  ) unless on(resource_id,container) selected_variant,\n  variant = selected_variant or default_variant,\n  with_variant = (requests * 0) + on(resource_id,container) group_left variant,\n  without_variant = requests unless on(resource_id,container) variant,\n  policy_requests = with_variant or without_variant,\n  expected = count by(resource_id) (owners),\n  complete = count by(resource_id) (requests) == expected,\n  has_variant = count by(resource_id) (variant) > 0,\n  current_total = sum by(resource_id) (requests),\n  policy_total = sum by(resource_id) (policy_requests)\n)\n(100 * (current_total - policy_total) / current_total\n  and on(resource_id) complete\n  and on(resource_id) has_variant\n  and on(resource_id) (current_total > 0)\n\n) unless on(resource_id) active",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "Potential savings ($rs_policy)",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Memory Savings (%)",
+      "transformations": [
+        {
+          "disabled": true,
+          "id": "seriesToRows",
+          "options": {}
+        },
+        {
+          "disabled": true,
+          "id": "groupBy",
+          "options": {
+            "fields": {
+              "Metric": {
+                "aggregations": [],
+                "operation": "groupby"
+              },
+              "Value": {
+                "aggregations": [
+                  "sum"
+                ],
+                "operation": "aggregate"
+              }
+            }
+          }
+        },
+        {
+          "disabled": true,
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "includeByName": {},
+            "indexByName": {},
+            "renameByName": {
+              "Metric": "Workload | Container",
+              "Time": "",
+              "Value (sum)": "Sum"
+            }
+          }
+        }
+      ],
+      "type": "timeseries"
+    },
+    {
+      "id": 15,
+      "type": "timeseries",
+      "title": "JVM GC Time Ratio (%)",
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 12,
+        "y": 14
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "VictoriaMetrics"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "noValue": "Unavailable",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "VictoriaMetrics"
+          },
+          "editorMode": "code",
+          "expr": "max by(resource_id,container) (\n  avg_over_time(kompass_container_jvm_gc_time_ratio_max{\n    namespace=\"$namespace\",created_by_name=\"$workload_name\",created_by_kind=\"$workload_kind\",container=~\"$container\"\n  }[30m])\n) * 100",
+          "legendFormat": "{{container}}",
+          "range": true,
+          "refId": "A",
+          "interval": "1m"
+        }
+      ],
+      "description": "Average of the recorded GC time ratio over the default 30-minute JVM GC lookback; this is the ratio used to select the heap buffer."
+    },
+    {
+      "id": 22,
+      "title": "",
+      "type": "canvas",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "VictoriaMetrics"
+      },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "refId": "State",
+          "expr": "WITH (\n  inventory = max by(resource_id,namespace,created_by_name,created_by_kind) (\n    kompass_pod_info{namespace=\"$namespace\",namespace!~\"kube[-_]system\",created_by_name=\"$workload_name\",created_by_kind=\"$workload_kind\",status=\"running\"}\n  ),\n  unknown_workload = label_set(vector(1),\"namespace\",\"$namespace\",\"created_by_name\",\"$workload_name\",\"created_by_kind\",\"$workload_kind\")\n    unless on(namespace,created_by_name,created_by_kind) inventory,\n  actions = max by(resource_id,cr_kind,phase,rightsizing_policy_name) (\n    kompass_rs_action_info{management_schema=\"1\",cr_kind=~\"Action|ClusterAction\",resource_id!=\"\"}\n  ),\n  scoped_actions = (label_match(actions,\"cr_kind\",\"Action\") and on(resource_id) label_mismatch(inventory,\"created_by_kind\",\"clustervirtualworkload\"))\n    or (label_match(actions,\"cr_kind\",\"ClusterAction\") and on(resource_id) label_match(inventory,\"created_by_kind\",\"clustervirtualworkload\")),\n  schema_action = inventory and on(resource_id) scoped_actions,\n  legacy_active = label_replace(\n    kompass_rs_action_info{management_schema!=\"1\",namespace=\"$namespace\",workload_name=\"$workload_name\",action_type=~\".+\"},\n    \"created_by_name\",\"$1\",\"workload_name\",\"(.+)\"\n  ),\n  active = (inventory and on(resource_id) label_mismatch(scoped_actions,\"rightsizing_policy_name\",\"\"))\n    or ((inventory and on(namespace,created_by_name) legacy_active) unless on(resource_id) schema_action),\n  management = label_set(active,\"status\",\"Active\")\n    or label_set(inventory unless on(resource_id) active,\"status\",\"Inactive\")\n    or label_set(unknown_workload,\"status\",\"Unknown\"),\n  auto = inventory and on(resource_id) max by(resource_id) (kompass_pod_info{jvm_indication_source=~\"auto|both\",status=\"running\"}),\n  manual = inventory and on(resource_id) max by(resource_id) (kompass_pod_info{jvm_indication_source=~\"manual|both\",status=\"running\"}),\n  detection_values = label_set(auto and on(resource_id) manual,\"detection\",\"Both\")\n    or label_set(auto unless on(resource_id) manual,\"detection\",\"Auto\")\n    or label_set(manual unless on(resource_id) auto,\"detection\",\"Manual\"),\n  exporter_telemetry = (\n    max by(namespace,pod,container) (\n      count_over_time(jvm_memory_used_bytes{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",pod!=\"\",container!=\"\"}[3h]) > bool 0\n    )\n    and on(namespace,pod,container)\n    max by(namespace,pod,container) (\n      count_over_time(jvm_memory_init_bytes{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",pod!=\"\",container!=\"\"}[3h]) > bool 0\n    )\n    and on(namespace,pod,container)\n    max by(namespace,pod,container) (\n      count_over_time(jvm_memory_bytes_max{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",pod!=\"\",container!=\"\"}[3h]) > bool 0\n    )\n    and on(namespace,pod,container)\n    max by(namespace,pod,container) (\n      count_over_time(jvm_gc_collection_seconds_sum{namespace=~\"$namespace\",namespace!~\"kube[-_]system\",pod!=\"\",container!=\"\"}[3h]) > bool 0\n    )\n  ),\n  exporter_owners = max by(namespace,pod,container,resource_id) (\n    last_over_time(kompass_pod_info{namespace=\"$namespace\",created_by_name=\"$workload_name\",created_by_kind=\"$workload_kind\"}[3h])\n  ),\n  exporter = max by(resource_id) (exporter_owners and on(namespace,pod,container) exporter_telemetry),\n  detection_rows = detection_values or label_set((inventory and on(resource_id) exporter) unless on(resource_id) (auto or manual),\"detection\",\"None\"),\n  exporter_state = label_set(inventory and on(resource_id) exporter,\"exporter_active\",\"Active\")\n    or label_set((inventory and on(resource_id) (auto or manual)) unless on(resource_id) exporter,\"exporter_active\",\"Inactive\"),\n  jvm_rows = management * on(resource_id) group_left(detection) detection_rows * on(resource_id) group_left(exporter_active) exporter_state,\n  non_jvm_management = management unless on(resource_id) (auto or manual or exporter),\n  display_rows = label_join(\n    label_replace(\n      label_replace(\n        label_replace(jvm_rows or non_jvm_management,\"status_text\",\"Workload status: $1\",\"status\",\"(.+)\"),\n        \"detection_text\",\"JVM Detection: $1\",\"detection\",\"(.+)\"\n      ),\n      \"exporter_text\",\"JVM Exporter: $1\",\"exporter_active\",\"(.+)\"\n    ),\n    \"display\",\"  \",\"status_text\",\"detection_text\",\"exporter_text\"\n  )\n)\ndisplay_rows",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "inlineEditing": false,
+        "showAdvancedTypes": false,
+        "panZoom": false,
+        "zoomToContent": true,
+        "tooltip": {
+          "mode": "none",
+          "disableForOneClick": false
+        },
+        "root": {
+          "type": "frame",
+          "name": "Workload status",
+          "placement": {
+            "left": 0,
+            "top": 0,
+            "width": 100,
+            "height": 100
+          },
+          "constraint": {
+            "horizontal": "left",
+            "vertical": "top"
+          },
+          "background": {
+            "color": {
+              "fixed": "transparent"
+            }
+          },
+          "border": {
+            "color": {
+              "fixed": "transparent"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "name": "Workload status",
+              "placement": {
+                "left": 1,
+                "top": 0,
+                "width": 98,
+                "height": 100
+              },
+              "constraint": {
+                "horizontal": "left",
+                "vertical": "top"
+              },
+              "background": {
+                "color": {
+                  "fixed": "transparent"
+                }
+              },
+              "border": {
+                "color": {
+                  "fixed": "transparent"
+                }
+              },
+              "config": {
+                "align": "left",
+                "valign": "top",
+                "color": {
+                  "fixed": "text"
+                },
+                "size": 14,
+                "text": {
+                  "fixed": "",
+                  "field": "display",
+                  "mode": "field"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "pluginVersion": "11.0.0"
     }
   ],
   "preload": false,
