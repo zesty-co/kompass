@@ -164,8 +164,8 @@ manager:
       cpu: 100m
       memory: 128Mi
     limits:
-      cpu: 100m
-      memory: 128Mi
+      cpu: 128m
+      memory: 192Mi
   # -- Probe timing overrides. Exec handlers are fixed; legacy HTTP handlers are ignored.
   probes:
     startup:

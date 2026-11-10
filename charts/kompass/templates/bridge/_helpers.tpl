@@ -69,3 +69,10 @@ Kompass Bridge service
 {{- define "kompass.bridge.service" -}}
 {{- (index .Values.global "kompass-bridge").name -}}
 {{- end -}}
+
+{{/* Release-specific Lease for actor cleanup leadership. */}}
+{{- define "kompass.bridge.cleanupLeaderElectionID" -}}
+{{- $bridge := index .Values "kompass-bridge" -}}
+{{- $suffix := $bridge.manager.leaderElection.idSuffix | default "kompass-bridge-actor-cleanup" -}}
+{{- printf "%s-%s" .Release.Name $suffix | trunc 63 | trimSuffix "-" -}}
+{{- end -}}

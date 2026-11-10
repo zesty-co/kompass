@@ -1,0 +1,98 @@
+# Apply this file with the Kompass chart to disable Guardian and rightsizing for
+# Kompass workloads and restore the resources used before the Guardian profile
+# became the chart default.
+# Helm merges resource maps: null explicitly removes inherited requests/limits.
+global:
+  guardian:
+    enabled: false
+
+rightsizing:
+  enabled: true
+  config:
+    kompassWorkloadsRightsizing:
+      enabled: false
+
+victoriaMetrics:
+  server:
+    resources:
+      requests:
+        memory: "3Gi"
+        cpu: "0.5"
+      limits: null
+
+victoriaMetricsCluster:
+  vmselect:
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "0.5"
+      limits: null
+  vminsert:
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "0.5"
+      limits: null
+  vmstorage:
+    resources:
+      requests:
+        memory: "3Gi"
+        cpu: "0.5"
+      limits: null
+  vmauth:
+    resources:
+      requests: null
+      limits: null
+
+victoriaMetricsAgent:
+  resources:
+    requests: null
+    limits: null
+
+victoriaMetricsAlert:
+  server:
+    resources:
+      requests: null
+      limits: null
+
+victoriaMetricsAuth:
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "0.1"
+    limits: null
+
+kubeStateMetrics:
+  resources:
+    requests: null
+    limits: null
+
+grafana:
+  resources:
+    requests: null
+    limits: null
+  sidecar:
+    resources:
+      requests: null
+      limits: null
+
+cert-manager:
+  resources:
+    requests: null
+    limits: null
+  cainjector:
+    resources:
+      requests: null
+      limits: null
+  webhook:
+    resources:
+      requests: null
+      limits: null
+
+metrics-server:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 200Mi
+    limits: null
+

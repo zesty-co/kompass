@@ -1,0 +1,89 @@
+suite: Bridge actor cleanup
+release:
+  name: cleanup
+  namespace: zesty-system
+templates:
+  - templates/bridge/deployment.yaml
+  - templates/bridge/role.yaml
+tests:
+  - it: keeps older Bridge images compatible while cleanup is disabled
+    template: templates/bridge/deployment.yaml
+    set:
+      global.kompass-bridge.enabled: true
+      kompass-bridge.actorRegistry.cleanup.enabled: false
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].args
+          content: --actor-cleanup-enabled=true
+      - notContains:
+          path: spec.template.spec.containers[0].args
+          content: --leader-elect=true
+  - it: enables five-minute cleanup with a ten-minute TTL and release-specific leadership
+    template: templates/bridge/deployment.yaml
+    set:
+      global.kompass-bridge.enabled: true
+      kompass-bridge.actorRegistry.cleanup.enabled: true
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --actor-cleanup-enabled=true
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --actor-cleanup-interval=5m
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --actor-cleanup-ttl=10m
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --leader-elect=true
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --leader-election-id=cleanup-kompass-bridge-actor-cleanup
+  - it: supports custom timing and election IDs
+    template: templates/bridge/deployment.yaml
+    set:
+      global.kompass-bridge.enabled: true
+      kompass-bridge.actorRegistry.cleanup.enabled: true
+      kompass-bridge.actorRegistry.cleanup.interval: 2m
+      kompass-bridge.actorRegistry.cleanup.ttl: 20m
+      kompass-bridge.manager.leaderElection.idSuffix: custom
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --actor-cleanup-interval=2m
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --actor-cleanup-ttl=20m
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --leader-election-id=cleanup-custom
+  - it: requires leader election when cleanup is enabled
+    template: templates/bridge/deployment.yaml
+    set:
+      global.kompass-bridge.enabled: true
+      kompass-bridge.actorRegistry.cleanup.enabled: true
+      kompass-bridge.manager.leaderElection.enabled: false
+    asserts:
+      - failedTemplate:
+          errorMessage: kompass-bridge actor cleanup requires manager.leaderElection.enabled=true
+  - it: grants Lease permissions for cleanup
+    template: templates/bridge/role.yaml
+    set:
+      global.kompass-bridge.enabled: true
+      kompass-bridge.actorRegistry.cleanup.enabled: true
+    asserts:
+      - contains:
+          path: rules
+          content:
+            apiGroups: [coordination.k8s.io]
+            resources: [leases]
+            verbs: [get, list, watch, create, update, patch]
+  - it: omits Lease permissions when cleanup is disabled
+    template: templates/bridge/role.yaml
+    set:
+      global.kompass-bridge.enabled: true
+      kompass-bridge.actorRegistry.cleanup.enabled: false
+    asserts:
+      - lengthEqual:
+          path: rules
+          count: 2

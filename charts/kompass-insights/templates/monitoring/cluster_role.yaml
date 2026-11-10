@@ -16,39 +16,30 @@ rules:
   - nodes
   - nodes/proxy
   - pods
-  verbs:
-  - get
-  - list
+  verbs: ["get", "list"]
 - apiGroups:
   - apps
   resources:
   - deployments
   - statefulsets
   - daemonsets
-  verbs:
-  - get
+  verbs: ["get"]
 - apiGroups:
   - argoproj.io
   resources:
   - rollouts
-  verbs:
-  - get
+  verbs: ["get"]
 - apiGroups:
   - kompass.zesty.co
   resources:
   - workloaddescriptors
-  verbs:
-  - list
-  - get
+  verbs: ["list", "get"]
 - apiGroups:
   - ""
   resources:
   - secrets
   resourceNames:
   - {{ .Values.insights.secret  }}
-  verbs:
-  - get
-  - list
-  - watch
+  verbs: ["get", "list", "watch"]
 {{- end }}
   

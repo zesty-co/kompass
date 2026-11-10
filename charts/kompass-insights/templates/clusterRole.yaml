@@ -7,6 +7,16 @@ metadata:
     app.kubernetes.io/name: "{{ include "zesty-k8s.fullname" . }}"
     {{- include "zesty-k8s.requiredLabels" . | nindent 4 }}
 rules:
+  {{- if .Capabilities.APIVersions.Has "config.openshift.io/v1/Infrastructure" }}
+  # Read the ROSA cluster name from the named OpenShift Infrastructure object.
+  - apiGroups:
+      - "config.openshift.io"
+    resources:
+      - "infrastructures"
+    resourceNames:
+      - "cluster"
+    verbs: ["get"]
+  {{- end }}
   # Write permissions.
   - apiGroups:
       - "rightsizing.kompass.zesty.co"
@@ -15,34 +25,19 @@ rules:
       - "zesty.co"
     resources:
       - "*"
-    verbs:
-      - "*"
-  - apiGroups:
-      - "qscaler.qubex.ai"
-    resources:
-      - qcacherevisioncreations
-    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+    verbs: ["*"]
   - apiGroups:
       - ""
     resources:
       - persistentvolumeclaims
-    verbs: ["get", "list", "watch", "patch"]
-  - apiGroups:
-      - "qscaler.qubex.ai"
-    resources:
-      - workloadprotections
-      - qnodes
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    verbs: ["get", "list", "watch"]
   {{- if .Values.insights.clusterRole.fullRO }}
   # fullRO=true. Full read-only discovery for building ownerReference maps.
   - apiGroups:
       - "*"
     resources:
       - "*"
-    verbs:
-      - get
-      - list
-      - watch
+    verbs: ["get", "list", "watch"]
   {{- end }}
   # fullRO=false. Explicit resource coverage instead of wildcard read-only discovery.
   - apiGroups:
@@ -56,7 +51,7 @@ rules:
       - analysistemplates
       - experiments
       - analysisruns
-    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+    verbs: ["get", "list", "watch"]
   - apiGroups:
       - "kafka.strimzi.io"
     resources:
@@ -69,13 +64,13 @@ rules:
       - kafkamirrormaker2s
       - kafkarebalances
       - kafkabridges
-    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+    verbs: ["get", "list", "watch"]
   - apiGroups:
       - "core.strimzi.io"
     resources:
       - strimzipodsets
       - strimzipodsets/status
-    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+    verbs: ["get", "list", "watch"]
   - apiGroups:
       - "clickhouse.altinity.com"
     resources:
@@ -83,19 +78,19 @@ rules:
       - clickhouseinstallationtemplates
       - clickhouseoperatorconfigurations
       - clickhousekeeperinstallations
-    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+    verbs: ["get", "list", "watch"]
   - apiGroups:
       - "cloudwatch.aws.amazon.com"
     resources:
       - amazoncloudwatchagents
-    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+    verbs: ["get", "list", "watch"]
   - apiGroups:
       - "flink.apache.org"
     resources:
       - flinkdeployments
       - flinksessionjobs
       - flinkstatesnapshots
-    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+    verbs: ["get", "list", "watch"]
   - apiGroups:
       - "monitoring.coreos.com"
     resources:
@@ -106,7 +101,7 @@ rules:
       - prometheusrules
       - servicemonitors
       - thanosrulers
-    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+    verbs: ["get", "list", "watch"]
   - apiGroups:
       - "actions.github.com"
     resources:
@@ -120,11 +115,10 @@ rules:
       - ephemeralrunners
       - ephemeralrunnersets
       - horizontalrunnerautoscalers
-    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+    verbs: ["get", "list", "watch"]
   - apiGroups:
       - ""
     resources:
-      - configmaps
       - events
       - namespaces
       - nodes
@@ -134,21 +128,18 @@ rules:
       - services
       - endpoints
       - nodes/proxy
-    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+    verbs: ["get", "list", "watch"]
   - apiGroups:
       - ""
     resources:
       - pods/log
-    verbs:
-      - get
+    verbs: ["get"]
   - apiGroups:
       - "metrics.k8s.io"
     resources:
       - pods
       - nodes
-    verbs:
-      - get
-      - list
+    verbs: ["get", "list"]
   - apiGroups:
       - apps
     resources:
@@ -156,59 +147,59 @@ rules:
       - replicasets
       - daemonsets
       - statefulsets
-    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+    verbs: ["get", "list", "watch"]
   - apiGroups:
       - batch
     resources:
       - cronjobs
       - jobs
-    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+    verbs: ["get", "list", "watch"]
   - apiGroups:
       - policy
     resources:
       - poddisruptionbudgets
-    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+    verbs: ["get", "list", "watch"]
   - apiGroups:
       - "storage.k8s.io"
     resources:
       - storageclasses
-    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+    verbs: ["get", "list", "watch"]
   - apiGroups:
       - "karpenter.sh"
     resources:
       - nodepools
       - nodeclaims
-    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+    verbs: ["get", "list", "watch"]
   - apiGroups:
       - "karpenter.k8s.aws"
     resources:
       - ec2nodeclasses
-    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+    verbs: ["get", "list", "watch"]
   - apiGroups:
       - "keda.sh"
     resources:
       - scaledjobs
       - scaledobjects
-    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+    verbs: ["get", "list", "watch"]
   - apiGroups:
       - autoscaling
     resources:
       - horizontalpodautoscalers
-    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+    verbs: ["get", "list", "watch"]
   - apiGroups:
       - "apiextensions.k8s.io"
     resources:
       - customresourcedefinitions
-    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+    verbs: ["get", "list", "watch"]
   - apiGroups:
       - rbac.authorization.k8s.io
     resources:
       - clusterroles
       - clusterrolebindings
-    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+    verbs: ["get", "list", "watch"]
   - apiGroups:
       - admissionregistration.k8s.io
     resources:
       - mutatingwebhookconfigurations
       - validatingwebhookconfigurations
-    {{- include "zesty-k8s.verbs" . | nindent 4 }}
+    verbs: ["get", "list", "watch"]

@@ -6,6 +6,27 @@ metadata:
   annotations:
     cert-manager.io/inject-ca-from: "{{ .Release.Namespace }}/kompass-pod-rightsizing-webhook-cert"
 webhooks:
+{{- if .Values.actionTaker.webhooks.hpa.enabled }}
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: {{ include "kompass-webhook-svc.name" . }}
+      namespace: {{ .Release.Namespace }}
+      path: /mutate-autoscaling-v2-horizontalpodautoscaler
+  failurePolicy: Ignore
+  name: vhorizontalpodautoscaler-v2.kb.io
+  rules:
+  - apiGroups:
+    - autoscaling
+    apiVersions:
+    - v2
+    operations:
+    - UPDATE
+    resources:
+    - horizontalpodautoscalers
+  sideEffects: None
+{{- end }}
 - admissionReviewVersions:
   - v1
   clientConfig:

@@ -14,49 +14,44 @@ rules:
       - secrets
     resourceNames:
       - "{{ .Values.insights.secret }}"
-    verbs:
-      - get
-      - patch
-      - update
+    verbs: ["get", "update"]
   - apiGroups:
       - ""
     resources:
       - secrets
-    verbs:
-      - get
-      - list
-      - watch
+    verbs: ["get", "list", "watch"]
   - apiGroups:
       - apps
     resources:
       - deployments
-    verbs:
-      - get
-      - list
-      - patch
-      - update
+    verbs: ["get", "list", "update"]
   - apiGroups:
       - batch
     resources:
       - jobs
-    verbs: ["get", "list", "watch", "create", "update", "patch"]
-  - apiGroups: [""]
-    resources: [secrets]
+    verbs: ["get", "list", "watch", "create"]
+  - apiGroups:
+      - ""
+    resources:
+      - "secrets"
     resourceNames:
       - {{ .Values.global.license.secretName | quote }}
     verbs: ["update"]
   # Kubernetes cannot restrict Secret creation by resourceNames.
-  - apiGroups: [""]
-    resources: [secrets]
+  - apiGroups:
+      - ""
+    resources:
+      - "secrets"
     verbs: ["create"]
 {{- if .Values.pvcExpansion.enabled }}
-  - apiGroups: [""]
+  - apiGroups:
+      - ""
     resources:
       - persistentvolumeclaims
-    verbs: ["get", "list", "watch", "patch", "update"]
+    verbs: ["get", "list", "watch", "patch"]
 {{- end }}
   - apiGroups:
       - ""
     resources:
       - configmaps
-    verbs: ["get", "list", "watch", "create", "update", "patch"]
+    verbs: ["get", "list", "watch", "create", "update"]

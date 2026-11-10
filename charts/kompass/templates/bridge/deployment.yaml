@@ -17,6 +17,13 @@
 {{- $runtimeClassName := include "kompass.workload.resolveString" (dict "global" $globalValues "component" $bridgeValues "key" "runtimeClassName") | trim -}}
 {{- $image := $bridgeValues.image | default (dict) -}}
 {{- $autoscaling := $bridgeValues.autoscaling | default (dict) -}}
+{{- $actorRegistry := $bridgeValues.actorRegistry | default dict -}}
+{{- $actorCleanup := $actorRegistry.cleanup | default dict -}}
+{{- $manager := $bridgeValues.manager | default dict -}}
+{{- $leaderElection := $manager.leaderElection | default dict -}}
+{{- if and $actorCleanup.enabled (not $leaderElection.enabled) -}}
+{{- fail "kompass-bridge actor cleanup requires manager.leaderElection.enabled=true" -}}
+{{- end -}}
 {{- $ports := $bridgeValues.ports | default (dict) -}}
 {{- $probes := $bridgeValues.probes | default (dict) -}}
 {{- $reservedLicenseEnvNames := list "LICENSE_SECRET_NAME" "LICENSE_DOCUMENT_KEY" -}}
@@ -95,6 +102,13 @@ spec:
             - "--grpc-server-port=:{{ $bridgeValues.ports.grpc.containerPort }}"
             - "--metrics-addr=:{{ $bridgeValues.ports.metrics.containerPort }}"
             - "--probe-addr=:{{ $bridgeValues.ports.health.containerPort }}"
+            {{- if $actorCleanup.enabled }}
+            - "--actor-cleanup-enabled=true"
+            - "--actor-cleanup-ttl={{ $actorCleanup.ttl }}"
+            - "--actor-cleanup-interval={{ $actorCleanup.interval }}"
+            - "--leader-elect=true"
+            - "--leader-election-id={{ include "kompass.bridge.cleanupLeaderElectionID" . }}"
+            {{- end }}
             {{- range $bridgeValues.extraArgs }}
             - {{ . | quote }}
             {{- end }}
