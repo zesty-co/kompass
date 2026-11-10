@@ -92,7 +92,7 @@ jobs:
       - name: publish charts and index
         if: steps.changed-charts.outputs.subcharts == 'true' || steps.changed-charts.outputs.kompass == 'true'
         run: |
-          cr upload --commit "$GITHUB_SHA"
+          cr upload --commit "$GITHUB_SHA" --release-notes-file RELEASE_NOTES.md
           # Build one index containing all packages, from the current Pages branch.
           git fetch origin gh-pages:refs/remotes/origin/gh-pages
           cr index --push

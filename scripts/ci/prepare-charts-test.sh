@@ -35,6 +35,8 @@ data:
   version: {{ .Chart.Version | quote }}
 YAML
 done
+printf '## Changelog\n\n- feat: approved umbrella change\n' > "$source_charts/kompass/RELEASE_NOTES.md"
+printf '## Changelog\n\n- fix: approved insights change\n' > "$source_charts/kompass-insights/RELEASE_NOTES.md"
 cat >> "$source_charts/kompass-insights/Chart.yaml" <<'YAML'
 dependencies:
   - name: admission
@@ -55,6 +57,9 @@ grep -q 'name: test-admission' "$temporary/rendered.yaml"
 helm package "$temporary/prepared/kompass" --destination "$temporary/packages"
 mkdir "$temporary/unpacked"
 tar -xzf "$temporary/packages/kompass-1.0.0.tgz" -C "$temporary/unpacked"
+cmp "$source_charts/kompass/RELEASE_NOTES.md" "$temporary/unpacked/kompass/RELEASE_NOTES.md"
+cmp "$source_charts/kompass-insights/RELEASE_NOTES.md" \
+  "$temporary/unpacked/kompass/charts/kompass-insights/RELEASE_NOTES.md"
 yq -e '[.dependencies[].repository] | all_c(. == "https://unpublished.invalid/charts")' \
   "$temporary/unpacked/kompass/Chart.yaml" >/dev/null
 [ ! -f "$temporary/unpacked/kompass/Chart.lock" ]
