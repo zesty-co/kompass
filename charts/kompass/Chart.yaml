@@ -53,7 +53,7 @@ dependencies:
     alias: kubeStateMetrics
     condition: kubeStateMetrics.enabled
     repository: https://prometheus-community.github.io/helm-charts
-    version: 8.4.1
+    version: 9.0.1
   - name: cert-manager
     repository: https://charts.jetstack.io
     condition: cert-manager.enabled
