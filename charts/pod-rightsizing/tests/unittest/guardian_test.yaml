@@ -11,6 +11,8 @@ templates:
   - templates/guardian/role_binding.yaml
   - templates/guardian/cluster_role.yaml
   - templates/guardian/cluster_role_binding.yaml
+values:
+  - ../render/fixtures/guardian-request-ceilings-values.yaml
 tests:
   - it: renders no Deployment when Kompass workload rightsizing is disabled
     template: templates/guardian/guardian.yaml
@@ -122,7 +124,7 @@ tests:
           path: spec.template.spec.serviceAccountName
           value: custom-guardian
 
-  - it: grants Guardian only namespaced operational permissions
+  - it: grants Guardian bounded namespaced read and write permissions
     template: templates/guardian/role.yaml
     set:
       global.guardian.enabled: true
@@ -142,6 +144,10 @@ tests:
               resources: ["secrets"]
               resourceNames: ["kompass-insights-secret"]
               verbs: ["list", "watch"]
+            - apiGroups: [""]
+              resources: ["secrets"]
+              resourceNames: ["test-supported-kinds"]
+              verbs: ["get"]
             - apiGroups: [""]
               resources: ["events"]
               verbs: ["create", "patch"]
@@ -170,9 +176,23 @@ tests:
             - apiGroups: ["rightsizing.kompass.zesty.co"]
               resources: ["actions/status"]
               verbs: ["update"]
-            - apiGroups: ["*"]
-              resources: ["*"]
+            - apiGroups: ["batch"]
+              resources: ["jobs", "cronjobs"]
               verbs: ["get"]
+
+  - it: grants get access only to the configured supported-kinds Secret
+    template: templates/guardian/role.yaml
+    set:
+      global.guardian.enabled: true
+      global.supportedKindsSecretName: renamed-supported-kinds
+    asserts:
+      - contains:
+          path: rules
+          content:
+            apiGroups: [""]
+            resources: ["secrets"]
+            resourceNames: ["renamed-supported-kinds"]
+            verbs: ["get"]
 
   - it: binds the namespaced Guardian role to its dedicated ServiceAccount
     template: templates/guardian/role_binding.yaml
@@ -312,7 +332,7 @@ tests:
       global.cxLogging.ingressUrl: https://logs.example.test
     asserts:
       - equal:
-          path: spec.template.spec.containers[0].env[2]
+          path: spec.template.spec.containers[0].env[3]
           value:
             name: CX_API_KEY
             valueFrom:
@@ -321,12 +341,12 @@ tests:
                 key: api-key
                 optional: true
       - equal:
-          path: spec.template.spec.containers[0].env[3]
+          path: spec.template.spec.containers[0].env[4]
           value:
             name: CX_CLUSTER_NAME
             value: cluster-one
       - equal:
-          path: spec.template.spec.containers[0].env[5]
+          path: spec.template.spec.containers[0].env[6]
           value:
             name: CORALOGIX_INGRESS_URL
             value: https://logs.example.test

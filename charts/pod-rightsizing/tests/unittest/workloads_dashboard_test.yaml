@@ -21,7 +21,7 @@ tests:
           pattern: '"Rec\. vCPU"'
       - matchRegex:
           path: data["workloads-table.json"]
-          pattern: '"Saved vCPU"'
+          pattern: '"Saved vCPU %"'
       - matchRegex:
           path: data["workloads-table.json"]
           pattern: '"Current Memory"'
@@ -30,7 +30,7 @@ tests:
           pattern: '"Rec\. Memory"'
       - matchRegex:
           path: data["workloads-table.json"]
-          pattern: '"Saved Memory"'
+          pattern: '"Saved Memory %"'
       - matchRegex:
           path: data["workloads-table.json"]
           pattern: '"detection": "JVM Detection"'
@@ -63,13 +63,13 @@ tests:
           pattern: 'count_over_time\(jvm_memory_used_bytes'
       - matchRegex:
           path: data["workloads-table.json"]
+          pattern: 'exporter_owners.*dashboard_pods'
+      - notMatchRegex:
+          path: data["workloads-table.json"]
           pattern: 'last_over_time\(kompass_pod_info.*\[3h\]'
       - matchRegex:
           path: data["workloads-table.json"]
-          pattern: 'tlast_over_time\(kompass_rs_audit_event'
-      - matchRegex:
-          path: data["workloads-table.json"]
-          pattern: 'execution_state.*removed'
+          pattern: 'assigned_rightsizing_policy'
       - matchRegex:
           path: data["workloads-table.json"]
           pattern: 'kompass_container_jvm_max_heap_max'

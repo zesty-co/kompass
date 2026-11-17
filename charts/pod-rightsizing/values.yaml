@@ -1,6 +1,7 @@
 enabled: false
 jvmRightsizingEnabled: false
 jvmConfig:
+  jvmHeapTargetEnvVar: JAVA_TOOL_OPTIONS
   jvmGcLookback: 30m
   jvmHeapUsagePercentile: 95
   jvmGcBufferBands:
@@ -34,6 +35,8 @@ cxLogging:
   metricsUrl: "https://ingress.eu2.coralogix.com:443"
   timeDeltaUrl: "https://ingress.eu2.coralogix.com:443/sdk/v1/time"
 global:
+  readScope: cluster
+  # supportedKinds, additionalSupportedKinds, and supportedKindsSecretName are required from the parent chart.
   license:
     secretName: kompass-license
     documentKey: kompass_license
@@ -104,7 +107,7 @@ actionTaker:
   name: "action-taker"
   image:
     name: "/pod-rightsizing/action-taker"
-    tag: "v0.9.6"
+    tag: "v0.10.0"
   resources:
     requests:
       cpu: 100m
@@ -133,7 +136,7 @@ guardian:
       type: RuntimeDefault
   image:
     name: "/pod-rightsizing/guardian"
-    tag: "v0.9.6"
+    tag: "v0.10.0"
   resources:
     requests:
       cpu: 100m
@@ -203,7 +206,7 @@ recommendationsMaker:
   name: "recommendations-maker"
   image:
     name: "/pod-rightsizing/recommendations-maker"
-    tag: "v0.9.6"
+    tag: "v0.10.0"
     args:
   port: 8088
   resources:
@@ -240,7 +243,7 @@ metricsExporter:
   #     type: RuntimeDefault
   image:
     name: "/pod-rightsizing/metrics-exporter"
-    tag: "v0.9.6"
+    tag: "v0.10.0"
     args:
   resources:
     requests:
@@ -280,7 +283,7 @@ bridgeDataExporter:
   #     type: RuntimeDefault
   image:
     name: "/pod-rightsizing/bridge-data-exporter"
-    tag: "v0.9.6"
+    tag: "v0.10.0"
     args:
   resources:
     requests:
@@ -363,17 +366,4 @@ hooks:
     repository: kubectl
     tag: latest
   workloadLabels: {}
-# Additional workload kinds, using the same field names as supported_kinds.yaml.
-# Properties is optional and currently accepts only Virtual and Standalone.
-# Virtual is always enabled implicitly, including when Properties is omitted, empty,
-# or contains only Standalone. Set Properties: [Standalone] to also enable standalone support.
-# Entries for an already supported Group/Version/Kind do not override its properties.
-# Example:
-# additionalSupportedKinds:
-#   - Group: example.io
-#     Version: v1
-#     Kind: Application
-#     Alias: exampleapplication
-#     Properties: [Standalone]
-additionalSupportedKinds: []
 secret: kompass-rightsizing-secret

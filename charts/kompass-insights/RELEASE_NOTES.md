@@ -1,13 +1,17 @@
 # kompass\-insights release notes
 
-Version: 2.3.34 → 2.3.35
+Version: 2.3.35 → 2.3.36
 
 ## Changelog
 
+### Bug fixes
+
+- **Insights Agent:** fix: resolve Oracle pricing from canonical shape labels
+
 ### Other changes
 
-- **Insights Agent:** Added templates/aws\-auth\-rbac.yaml.
-- **Insights Agent:** Updated templates/monitoring/cluster\_role.yaml.
-- **Insights Agent:** Updated templates/role.yaml.
-- **Insights Agent:** Added templates/rosa\-metadata\-rbac.yaml.
-- **Insights Agent:** Updated templates/clusterRole.yaml.
+- **Insights Agent:** Updated values.yaml key \`insights.clusterRole.fullRO\`.
+- **Insights Agent:** Updated values.yaml key \`gcpBilling.project\`.
+- **Insights Agent:** Updated values.yaml key \`gcpBilling.table\`.
+- **Insights Agent:** Updated values.yaml key \`gcpBilling.location\`.
+- **Insights Agent:** Updated values.yaml key \`gcpBilling.enabled\`.

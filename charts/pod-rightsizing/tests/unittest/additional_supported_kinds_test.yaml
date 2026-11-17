@@ -1,135 +1,60 @@
-suite: Additional supported kinds configuration
+suite: Global supported kinds contract
 templates:
+  - templates/action-taker/role.yaml
   - templates/recommendations-maker/secret.yaml
   - templates/validations.yaml
 values:
   - ../render/fixtures/guardian-request-ceilings-values.yaml
 tests:
-  - it: keeps the default configuration empty
+  - it: grants RBAC from global values and does not copy extension catalog into aggregation secret
+    template: templates/action-taker/role.yaml
+    documentIndex: 0
+    set:
+      global.supportedKinds:
+        - Group: example.io
+          Version: v1
+          Kind: Widget
+          Alias: widget
+      global.additionalSupportedKinds:
+        - Group: extension.io
+          Version: v2
+          Kind: Gadget
+          Alias: gadget
+          Resource: gadgets
+    asserts:
+      - contains:
+          path: rules
+          content:
+            apiGroups: [example.io]
+            resources: [widgets]
+            verbs: [get, list, watch]
+      - contains:
+          path: rules
+          content:
+            apiGroups: [extension.io]
+            resources: [gadgets]
+            verbs: [get, list, watch]
+  - it: keeps aggregation configuration and excludes extension payload from rightsizing secret
     template: templates/recommendations-maker/secret.yaml
     asserts:
-      - equal:
+      - isNotNull:
+          path: stringData.customReplicaAggregationMethods
+      - isNull:
           path: stringData.additionalSupportedKinds
-          value: |
-            []
-  - it: passes legacy entries and optional standalone properties through to the rightsizing secret
-    template: templates/recommendations-maker/secret.yaml
-    set:
-      additionalSupportedKinds:
-        - Group: legacy.example.io
-          Version: v1
-          Kind: Application
-          Alias: legacyapplication
-        - Group: example.io
-          Version: v1
-          Kind: Application
-          Alias: exampleapplication
-          Properties: [Standalone]
-    asserts:
-      - equal:
-          path: stringData.additionalSupportedKinds
-          value: |
-            - Alias: legacyapplication
-              Group: legacy.example.io
-              Kind: Application
-              Version: v1
-            - Alias: exampleapplication
-              Group: example.io
-              Kind: Application
-              Properties:
-              - Standalone
-              Version: v1
-  - it: accepts explicit virtual
+  - it: accepts an explicit empty extensions list
     template: templates/validations.yaml
     set:
-      additionalSupportedKinds:
-        - Group: example.io
-          Version: v1
-          Kind: Application
-          Alias: exampleapplication
-          Properties: [Virtual]
+      global.additionalSupportedKinds: []
     asserts:
       - notFailedTemplate: {}
-  - it: accepts virtual and standalone
+  - it: accepts builtin properties used by the parent catalog
     template: templates/validations.yaml
     set:
-      additionalSupportedKinds:
-        - Group: example.io
+      global.supportedKinds:
+        - Group: apps
           Version: v1
-          Kind: Application
-          Alias: exampleapplication
-          Properties: [Virtual, Standalone]
+          Kind: Deployment
+          Alias: deployment
+          Properties: [Native, Standalone, Virtual, Builtin]
     asserts:
       - notFailedTemplate: {}
-  - it: accepts empty properties
-    template: templates/validations.yaml
-    set:
-      additionalSupportedKinds:
-        - Group: example.io
-          Version: v1
-          Kind: Application
-          Alias: exampleapplication
-          Properties: []
-    asserts:
-      - notFailedTemplate: {}
-  - it: accepts null properties
-    template: templates/validations.yaml
-    set:
-      additionalSupportedKinds:
-        - Group: example.io
-          Version: v1
-          Kind: Application
-          Alias: exampleapplication
-          Properties: null
-    asserts:
-      - notFailedTemplate: {}
-  - it: rejects native
-    template: templates/validations.yaml
-    set:
-      additionalSupportedKinds:
-        - Group: example.io
-          Version: v1
-          Kind: Application
-          Alias: exampleapplication
-          Properties: [Native]
-    asserts:
-      - failedTemplate:
-          errorMessage: 'additionalSupportedKinds[0].Properties contains unsupported property "Native": allowed properties are Virtual and Standalone'
-  - it: rejects builtin
-    template: templates/validations.yaml
-    set:
-      additionalSupportedKinds:
-        - Group: example.io
-          Version: v1
-          Kind: Application
-          Alias: exampleapplication
-          Properties: [Builtin]
-    asserts:
-      - failedTemplate:
-          errorMessage: 'additionalSupportedKinds[0].Properties contains unsupported property "Builtin": allowed properties are Virtual and Standalone'
-  - it: rejects unknown alongside an allowed property
-    template: templates/validations.yaml
-    set:
-      additionalSupportedKinds:
-        - Group: example.io
-          Version: v1
-          Kind: Application
-          Alias: exampleapplication
-          Properties: [Virtual, Future]
-    asserts:
-      - failedTemplate:
-          errorMessage: 'additionalSupportedKinds[0].Properties contains unsupported property "Future": allowed properties are Virtual and Standalone'
-  - it: rejects a scalar instead of a properties array on upgrade
-    template: templates/validations.yaml
-    release:
-      isUpgrade: true
-    set:
-      additionalSupportedKinds:
-        - Group: example.io
-          Version: v1
-          Kind: Application
-          Alias: exampleapplication
-          Properties: Standalone
-    asserts:
-      - failedTemplate:
-          errorMessage: additionalSupportedKinds[0].Properties must be an array

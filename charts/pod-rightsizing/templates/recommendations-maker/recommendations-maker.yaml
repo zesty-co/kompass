@@ -68,9 +68,11 @@ spec:
         - name: {{ .Values.recommendationsMaker.name }}
           image: {{ .Values.registry }}{{ .Values.recommendationsMaker.image.name }}:{{ .Values.recommendationsMaker.image.tag  | default .Chart.AppVersion }}
           imagePullPolicy: {{ .Values.imagePullPolicy | default "Always" }}
-          {{- if .Values.recommendationsMaker.image.args }}
-          args: {{ toYaml .Values.recommendationsMaker.image.args | nindent 10 }}
-          {{- end }}
+          args:
+            - --read-scope={{ .Values.global.readScope | default "cluster" }}
+            {{- with .Values.recommendationsMaker.image.args }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           env:
             - name: CM_NAME
               value: {{ include "kompass-pod-rightsizing-config.name" . }}
@@ -116,6 +118,8 @@ spec:
                   key: CLUSTER_ID
             - name: RIGHTSIZING_SECRET_NAME
               value: {{ .Values.secret }}
+            - name: SUPPORTED_KINDS_SECRET_NAME
+              value: {{ .Values.global.supportedKindsSecretName | quote }}
             - name: JVM_RIGHTSIZING_ENABLED
               value: {{ .Values.jvmRightsizingEnabled | default false | quote }}
             {{- if and .Values.global.cxLogging .Values.global.cxLogging.enabled }}

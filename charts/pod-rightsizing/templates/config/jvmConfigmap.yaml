@@ -12,6 +12,7 @@ data:
   jvmAutoDiscoveryEnvSignals: {{ include "pod-rightsizing.jvmAutoDiscovery.envSignals" . | quote }}
   jvmAutoDiscoveryCommandSignals: {{ include "pod-rightsizing.jvmAutoDiscovery.commandSignals" . | quote }}
   jvmAutoDiscoveryImageSignals: {{ include "pod-rightsizing.jvmAutoDiscovery.imageSignals" . | quote }}
+  jvmHeapTargetEnvVar: {{ .Values.jvmConfig.jvmHeapTargetEnvVar | default "JAVA_TOOL_OPTIONS" | quote }}
   jvmGcLookback: {{ .Values.jvmConfig.jvmGcLookback | quote }}
   jvmHeapUsagePercentile: {{ .Values.jvmConfig.jvmHeapUsagePercentile | quote }}
   jvmGcBufferBands: {{ .Values.jvmConfig.jvmGcBufferBands | toJson | quote }}

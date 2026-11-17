@@ -8,6 +8,8 @@ global:
   license:
     secretName: kompass-license
     documentKey: kompass_license
+  # Controls wildcard reads for Kompass components.
+  readScope: cluster
   supportedKindsSecretName: kompass-supported-kinds
   additionalSupportedKinds: []
   supportedKinds:
@@ -293,6 +295,7 @@ validator:
   # -- (array) Topology spread constraints for validator job.
   topologySpreadConstraints: []
 kompass-insights:
+  # GCP billing settings use kompass-insights.gcpBilling; see docs/gcp-billing.md.
   # -- (bool) Enable or disable the Kompass Insights feature components.
   # This should be disabled only for distinct scenarios and is not recommended for most use-cases.
   # Advise with Zesty support before disabling it.

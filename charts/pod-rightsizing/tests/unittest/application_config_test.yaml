@@ -8,6 +8,34 @@ templates:
   - templates/action-taker/action-taker.yaml
   - templates/recommendations-maker/recommendations-maker.yaml
 tests:
+  - it: defaults Action Taker to cluster read scope
+    template: templates/action-taker/action-taker.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[1].args
+          content: --read-scope=cluster
+  - it: defaults Recommendation Maker to cluster read scope
+    template: templates/recommendations-maker/recommendations-maker.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --read-scope=cluster
+  - it: propagates supportedKinds read scope to Action Taker
+    template: templates/action-taker/action-taker.yaml
+    set:
+      global.readScope: supportedKinds
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[1].args
+          content: --read-scope=supportedKinds
+  - it: propagates supportedKinds read scope to Recommendation Maker
+    template: templates/recommendations-maker/recommendations-maker.yaml
+    set:
+      global.readScope: supportedKinds
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].args
+          content: --read-scope=supportedKinds
   - it: creates the dedicated JVM base only when JVM rightsizing is enabled
     template: templates/config/jvmConfigmap.yaml
     set:
@@ -24,6 +52,7 @@ tests:
             jvmAutoDiscoveryEnvSignals: "JAVA_HOME,JAVA_OPTS,JAVA_TOOL_OPTIONS,JDK_JAVA_OPTIONS,MAVEN_HOME"
             jvmAutoDiscoveryCommandSignals: "java,-jar,.jar,.war"
             jvmAutoDiscoveryImageSignals: "openjdk,temurin,corretto,bitnami/java,kafka,jenkins/jenkins"
+            jvmHeapTargetEnvVar: JAVA_TOOL_OPTIONS
             jvmGcLookback: 30m
             jvmHeapUsagePercentile: "95"
             jvmXmxIncreaseMinRelative: "0.1"
@@ -32,6 +61,15 @@ tests:
             jvmXmxDecreaseMinAbsolute: 50Mi
       - notExists:
           path: data.JVM_RIGHTSIZING_ENABLED
+  - it: renders the configured JVM heap target environment variable
+    template: templates/config/jvmConfigmap.yaml
+    set:
+      jvmRightsizingEnabled: true
+      jvmConfig.jvmHeapTargetEnvVar: CUSTOM_HEAP_OPTS
+    asserts:
+      - equal:
+          path: data.jvmHeapTargetEnvVar
+          value: CUSTOM_HEAP_OPTS
   - it: omits the JVM base when JVM rightsizing is disabled
     template: templates/config/jvmConfigmap.yaml
     asserts:

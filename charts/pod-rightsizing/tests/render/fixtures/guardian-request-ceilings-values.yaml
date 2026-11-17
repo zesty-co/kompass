@@ -1,4 +1,59 @@
 global:
+  supportedKindsSecretName: test-supported-kinds
+  supportedKinds:
+    - Group: apps
+      Version: v1
+      Kind: Deployment
+      Alias: deployment
+    - Group: apps
+      Version: v1
+      Kind: StatefulSet
+      Alias: statefulset
+    - Group: apps
+      Version: v1
+      Kind: DaemonSet
+      Alias: daemonset
+    - Group: apps
+      Version: v1
+      Kind: ReplicaSet
+      Alias: replicaset
+    - Group: batch
+      Version: v1
+      Kind: Job
+      Alias: job
+    - Group: batch
+      Version: v1
+      Kind: CronJob
+      Alias: cronjob
+    - Group: argoproj.io
+      Version: v1alpha1
+      Kind: Rollout
+      Alias: rollout
+    - Group: argoproj.io
+      Version: v1alpha1
+      Kind: Workflow
+      Alias: workflow
+    - Group: keda.sh
+      Version: v1alpha1
+      Kind: ScaledJob
+      Alias: scaledjob
+    - Group: sparkoperator.k8s.io
+      Version: v1beta2
+      Kind: SparkApplication
+      Alias: sparkapplication
+    - Group: ""
+      Version: v1
+      Kind: Pod
+      Alias: pod
+    - Group: kompass.zesty.co
+      Version: v1alpha1
+      Kind: VirtualWorkload
+      Alias: virtualworkload
+    - Group: kompass.zesty.co
+      Version: v1alpha1
+      Kind: ClusterVirtualWorkload
+      Alias: clustervirtualworkload
+  additionalSupportedKinds: []
   guardian:
     requestCeilings:
       actionTaker:

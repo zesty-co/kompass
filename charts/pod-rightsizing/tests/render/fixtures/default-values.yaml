@@ -1,1 +1,9 @@
 enabled: false
+global:
+  supportedKindsSecretName: test-supported-kinds
+  supportedKinds:
+    - Group: apps
+      Version: v1
+      Kind: Deployment
+      Alias: deployment
+  additionalSupportedKinds: []

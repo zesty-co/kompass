@@ -96,7 +96,7 @@ tests:
           content:
             name: LICENSE_DOCUMENT_KEY
             value: ignored-document
-  - it: grants namespaced list and watch for only the default license
+  - it: grants namespaced secret reads without a separate license rule
     template: templates/action-taker/role.yaml
     documentIndex: 1
     asserts:
@@ -105,23 +105,21 @@ tests:
       - equal:
           path: metadata.namespace
           value: zesty-system
-      - contains:
-          path: rules
-          content:
+      - equal:
+          path: rules[1]
+          value:
             apiGroups: [""]
             resources: [secrets]
-            resourceNames: [kompass-license]
-            verbs: [list, watch]
-  - it: restricts license list and watch to the configured name
+            verbs: [get, list, watch]
+  - it: keeps namespaced secret reads unchanged with a custom license name
     template: templates/action-taker/role.yaml
     documentIndex: 1
     set:
       global.license.secretName: custom-license
     asserts:
-      - contains:
-          path: rules
-          content:
+      - equal:
+          path: rules[1]
+          value:
             apiGroups: [""]
             resources: [secrets]
-            resourceNames: [custom-license]
-            verbs: [list, watch]
+            verbs: [get, list, watch]
