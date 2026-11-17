@@ -28,6 +28,9 @@ jobs:
       - name: test local chart preparation
         run: sh scripts/ci/prepare-charts-test.sh
 
+      - name: test release note verification
+        run: python3 scripts/ci/verify-release-notes-test.py
+
       - name: detect chart changes
         env:
           EVENT_NAME: ${{ github.event_name }}
