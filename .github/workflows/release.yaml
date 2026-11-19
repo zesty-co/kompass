@@ -76,24 +76,31 @@ jobs:
         if: steps.changed-charts.outputs.subcharts == 'true' || steps.changed-charts.outputs.kompass == 'true'
         run: |
           rm -rf .cr-index .cr-release-packages
-          mkdir -p .cr-index .cr-release-packages
+          mkdir -p .cr-index .cr-release-packages/{subcharts,main-chart}
 
       - name: package subcharts
         if: steps.changed-charts.outputs.subcharts == 'true'
         run: |
           while IFS= read -r chart; do
-            helm package ".ci-charts/${chart#charts/}" --destination .cr-release-packages
+            helm package ".ci-charts/${chart#charts/}" --destination .cr-release-packages/subcharts
           done < "$RUNNER_TEMP/changed-subcharts"
 
-      - name: package kompass
+      - name: package kompass main chart
         if: steps.changed-charts.outputs.kompass == 'true'
-        run: helm package .ci-charts/kompass --destination .cr-release-packages
+        run: helm package .ci-charts/kompass --destination .cr-release-packages/main-chart
 
       - name: publish charts and index
         if: steps.changed-charts.outputs.subcharts == 'true' || steps.changed-charts.outputs.kompass == 'true'
         run: |
-          cr upload --commit "$GITHUB_SHA" --release-notes-file RELEASE_NOTES.md
+          upload_args=(--commit "$GITHUB_SHA" --release-notes-file RELEASE_NOTES.md)
+          if [[ "${{ steps.changed-charts.outputs.subcharts }}" == "true" ]]; then
+            cr upload "${upload_args[@]}" --package-path .cr-release-packages/subcharts --make-release-latest=false
+          fi
+          if [[ "${{ steps.changed-charts.outputs.kompass }}" == "true" ]]; then
+            cr upload "${upload_args[@]}" --package-path .cr-release-packages/main-chart --make-release-latest=true
+          fi
           # Build one index containing all packages, from the current Pages branch.
+          mv .cr-release-packages/*/*.tgz .cr-release-packages/
           git fetch origin gh-pages:refs/remotes/origin/gh-pages
           cr index --push
         env:
