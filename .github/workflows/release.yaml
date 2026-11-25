@@ -3,12 +3,22 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      chart_version:
+        description: Published Kompass chart version to validate (e.g. 0.6.3)
+        required: true
+        type: string
 concurrency:
   group: chart-release
   queue: max
 jobs:
   release:
-    if: '!startsWith(github.event.head_commit.message, ''chore:'') && !startsWith(github.event.head_commit.message, ''docs:'') && !startsWith(github.event.head_commit.message, ''ci:'')'
+    if: >-
+      github.event_name == 'push' &&
+      !startsWith(github.event.head_commit.message, 'chore:') &&
+      !startsWith(github.event.head_commit.message, 'docs:') &&
+      !startsWith(github.event.head_commit.message, 'ci:')
     outputs:
       kompass_version: ${{ steps.package-kompass.outputs.version }}
     permissions:
@@ -115,7 +125,10 @@ jobs:
           artifact_name: production-site-${{ github.run_attempt }}
   validate:
     needs: release
-    if: needs.release.outputs.kompass_version != ''
+    if: >-
+      !cancelled() &&
+      ((github.event_name == 'workflow_dispatch' && inputs.chart_version != '') ||
+       (needs.release.result == 'success' && needs.release.outputs.kompass_version != ''))
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -125,7 +138,7 @@ jobs:
       GITLAB_REF: dev
       COMPONENT: kompass-spoke
       UNIFIED_HELM_SOURCE: github
-      UNIFIED_HELM_CHART_VERSION: ${{ needs.release.outputs.kompass_version }}
+      UNIFIED_HELM_CHART_VERSION: ${{ inputs.chart_version || needs.release.outputs.kompass_version }}
       UNIFIED_HELM_CHANNEL: devel
       AUTOMATION_BRANCH: dev
       RUN_ENVIRONMENT: Staging
