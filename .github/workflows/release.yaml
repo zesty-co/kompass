@@ -14,18 +14,12 @@ concurrency:
   queue: max
 jobs:
   release:
-    if: >-
-      github.event_name == 'push' &&
-      !startsWith(github.event.head_commit.message, 'chore:') &&
-      !startsWith(github.event.head_commit.message, 'docs:') &&
-      !startsWith(github.event.head_commit.message, 'ci:')
+    if: github.event_name == 'push' && !startsWith(github.event.head_commit.message, 'chore:') && !startsWith(github.event.head_commit.message, 'docs:') && !startsWith(github.event.head_commit.message, 'ci:')
     outputs:
       kompass_version: ${{ steps.package-kompass.outputs.version }}
+      pages_artifact: ${{ steps.publish.outputs.pages_artifact }}
     permissions:
       contents: write
-      pages: write
-      id-token: write
-    environment: github-pages
     runs-on: ubuntu-latest
     env:
       CR_GIT_REPO: ${{ github.event.repository.name }}
@@ -95,6 +89,7 @@ jobs:
           version=$(helm show chart .cr-release-packages/main-chart/*.tgz | yq -er '.version')
           echo "version=$version" >> "$GITHUB_OUTPUT"
       - name: publish charts and index
+        id: publish
         if: steps.changed-charts.outputs.subcharts == 'true' || steps.changed-charts.outputs.kompass == 'true'
         run: |
           upload_args=(--commit "$GITHUB_SHA" --release-notes-file RELEASE_NOTES.md)
@@ -110,25 +105,36 @@ jobs:
           cr index --push
           git fetch origin gh-pages
           git worktree add --detach "$RUNNER_TEMP/pages" FETCH_HEAD
+          echo "pages_artifact=production-site-$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
         env:
           CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/configure-pages@v5
-        if: steps.changed-charts.outputs.subcharts == 'true' || steps.changed-charts.outputs.kompass == 'true'
       - uses: actions/upload-pages-artifact@v3
-        if: steps.changed-charts.outputs.subcharts == 'true' || steps.changed-charts.outputs.kompass == 'true'
+        if: steps.publish.outputs.pages_artifact != ''
         with:
-          name: production-site-${{ github.run_attempt }}
+          name: ${{ steps.publish.outputs.pages_artifact }}
           path: ${{ runner.temp }}/pages
-      - uses: actions/deploy-pages@v4
-        if: steps.changed-charts.outputs.subcharts == 'true' || steps.changed-charts.outputs.kompass == 'true'
-        with:
-          artifact_name: production-site-${{ github.run_attempt }}
-  validate:
+  deploy:
     needs: release
-    if: >-
-      !cancelled() &&
-      ((github.event_name == 'workflow_dispatch' && inputs.chart_version != '') ||
-       (needs.release.result == 'success' && needs.release.outputs.kompass_version != ''))
+    if: needs.release.outputs.pages_artifact != ''
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment
+        with:
+          artifact_name: ${{ needs.release.outputs.pages_artifact }}
+  validate:
+    needs:
+      - release
+      - deploy
+    if: |-
+      !cancelled() && ((github.event_name == 'workflow_dispatch' && inputs.chart_version != '') ||
+       (needs.deploy.result == 'success' && needs.release.outputs.kompass_version != ''))
     runs-on: ubuntu-latest
     permissions:
       contents: read
