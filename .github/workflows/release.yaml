@@ -1,39 +1,36 @@
 name: release
-
 on:
   push:
     branches:
       - main
-
-# Release runs share the gh-pages index; let each publication finish before the next.
 concurrency:
   group: chart-release
-  cancel-in-progress: false
-
+  queue: max
 jobs:
   release:
-    if: "!startsWith(github.event.head_commit.message, 'chore:') && !startsWith(github.event.head_commit.message, 'docs:')"
+    if: '!startsWith(github.event.head_commit.message, ''chore:'') && !startsWith(github.event.head_commit.message, ''docs:'') && !startsWith(github.event.head_commit.message, ''ci:'')'
+    outputs:
+      kompass_version: ${{ steps.package-kompass.outputs.version }}
     permissions:
       contents: write
+      pages: write
+      id-token: write
+    environment: github-pages
     runs-on: ubuntu-latest
     env:
       CR_GIT_REPO: ${{ github.event.repository.name }}
       CR_OWNER: ${{ github.repository_owner }}
-
     steps:
       - name: checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - name: git config
         run: |
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-
       - name: setup chart tools
         uses: ./.github/actions/setup-chart-tools
-
       - name: find changed charts
         id: changed-charts
         run: |
@@ -59,11 +56,9 @@ jobs:
 
           echo "subcharts=$subcharts_changed" >> "$GITHUB_OUTPUT"
           echo "kompass=$kompass_changed" >> "$GITHUB_OUTPUT"
-
       - name: prepare chart dependencies from this commit
         if: steps.changed-charts.outputs.subcharts == 'true' || steps.changed-charts.outputs.kompass == 'true'
         run: sh scripts/ci/prepare-charts.sh .ci-charts
-
       - name: install chart releaser
         if: steps.changed-charts.outputs.subcharts == 'true' || steps.changed-charts.outputs.kompass == 'true'
         uses: helm/chart-releaser-action@v1.5.0
@@ -71,24 +66,24 @@ jobs:
           install_only: true
         env:
           CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: initialize release directories
         if: steps.changed-charts.outputs.subcharts == 'true' || steps.changed-charts.outputs.kompass == 'true'
         run: |
           rm -rf .cr-index .cr-release-packages
           mkdir -p .cr-index .cr-release-packages/{subcharts,main-chart}
-
       - name: package subcharts
         if: steps.changed-charts.outputs.subcharts == 'true'
         run: |
           while IFS= read -r chart; do
             helm package ".ci-charts/${chart#charts/}" --destination .cr-release-packages/subcharts
           done < "$RUNNER_TEMP/changed-subcharts"
-
       - name: package kompass main chart
+        id: package-kompass
         if: steps.changed-charts.outputs.kompass == 'true'
-        run: helm package .ci-charts/kompass --destination .cr-release-packages/main-chart
-
+        run: |
+          helm package .ci-charts/kompass --destination .cr-release-packages/main-chart
+          version=$(helm show chart .cr-release-packages/main-chart/*.tgz | yq -er '.version')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
       - name: publish charts and index
         if: steps.changed-charts.outputs.subcharts == 'true' || steps.changed-charts.outputs.kompass == 'true'
         run: |
@@ -103,5 +98,68 @@ jobs:
           mv .cr-release-packages/*/*.tgz .cr-release-packages/
           git fetch origin gh-pages:refs/remotes/origin/gh-pages
           cr index --push
+          git fetch origin gh-pages
+          git worktree add --detach "$RUNNER_TEMP/pages" FETCH_HEAD
         env:
           CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/configure-pages@v5
+        if: steps.changed-charts.outputs.subcharts == 'true' || steps.changed-charts.outputs.kompass == 'true'
+      - uses: actions/upload-pages-artifact@v3
+        if: steps.changed-charts.outputs.subcharts == 'true' || steps.changed-charts.outputs.kompass == 'true'
+        with:
+          name: production-site-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/pages
+      - uses: actions/deploy-pages@v4
+        if: steps.changed-charts.outputs.subcharts == 'true' || steps.changed-charts.outputs.kompass == 'true'
+        with:
+          artifact_name: production-site-${{ github.run_attempt }}
+  validate:
+    needs: release
+    if: needs.release.outputs.kompass_version != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 90
+    env:
+      PIPELINES_API: ${{ secrets.GITLAB_PROJECT_API_URL }}
+      GITLAB_REF: dev
+      COMPONENT: kompass-spoke
+      UNIFIED_HELM_SOURCE: github
+      UNIFIED_HELM_CHART_VERSION: ${{ needs.release.outputs.kompass_version }}
+      UNIFIED_HELM_CHANNEL: devel
+      AUTOMATION_BRANCH: dev
+      RUN_ENVIRONMENT: Staging
+    steps:
+      - name: Trigger GitLab staging pipeline
+        id: trigger
+        env:
+          TRIGGER_TOKEN: ${{ secrets.TRIGGER_TOKEN }}
+        run: |
+          response=$(curl --fail --silent --show-error --max-time 60 --request POST \
+            --form-string "token=${TRIGGER_TOKEN:?missing trigger token}" \
+            --form-string "ref=$GITLAB_REF" \
+            --form-string "variables[COMPONENT]=$COMPONENT" \
+            --form-string "variables[UNIFIED_HELM_SOURCE]=$UNIFIED_HELM_SOURCE" \
+            --form-string "variables[UNIFIED_HELM_CHANNEL]=$UNIFIED_HELM_CHANNEL" \
+            --form-string "variables[UNIFIED_HELM_CHART_VERSION]=$UNIFIED_HELM_CHART_VERSION" \
+            --form-string "variables[AUTOMATION_BRANCH]=$AUTOMATION_BRANCH" \
+            --form-string "variables[RUN_ENVIRONMENT]=$RUN_ENVIRONMENT" \
+            "$PIPELINES_API/trigger/pipeline")
+          id=$(jq -er '.id | numbers' <<< "$response")
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+      - name: Wait for GitLab pipeline
+        env:
+          PIPELINE_ID: ${{ steps.trigger.outputs.id }}
+          READ_TOKEN: ${{ secrets.READ_TOKEN }}
+        run: |
+          while true; do
+            status=$(curl --fail --silent --show-error --retry 3 --max-time 30 \
+              --header "PRIVATE-TOKEN: ${READ_TOKEN:?missing read token}" \
+              "$PIPELINES_API/pipelines/$PIPELINE_ID" | jq -er '.status')
+            echo "GitLab pipeline $PIPELINE_ID: $status"
+            case "$status" in
+              success) exit 0 ;;
+              created|waiting_for_resource|preparing|pending|running|scheduled|manual) sleep 30 ;;
+              *) exit 1 ;;
+            esac
+          done
